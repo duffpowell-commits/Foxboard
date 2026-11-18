@@ -457,6 +457,7 @@ $('#drawDone').onclick=()=>setDrawMode(false);
 $('#drawColor').addEventListener('change',e=>setColor(e.target.value));
 $('#drawPal').onclick=()=>openSheet('Colors','pal',b=>{
   const sw=(list)=>{ const w=h('div',{class:'swatches'}); list.forEach(c=>{ const i=h('i',{}); i.style.background=c; i.onclick=()=>{ setColor(c); if(tool==='eraser'||tool==='pick') tool='pencil'; updDrawbar(); closeSheet(); }; w.append(i); }); return w; };
+  const gg=gameById(activeGame); if(gg){ b.append(h('div',{class:'hint'},gg.name+' palette')); b.append(sw(gg.palette)); }
   if(recent.length){ b.append(h('div',{class:'hint'},'Recent')); b.append(sw(recent)); }
   b.append(h('div',{class:'hint'},'Retro 16-color palette')); b.append(sw(PALETTE));
   b.append(h('div',{class:'hint'},'Tip: 💧 picks any color off the canvas.'));
@@ -729,7 +730,7 @@ $('#plFps').addEventListener('input',e=>{ doc.fps=+e.target.value; $('#plFpsLbl'
 $('#plClose').onclick=()=>{ clearTimeout(playT); $('#player').classList.remove('open'); };
 
 /* ---------- sheet ---------- */
-function openSheet(title,kind,build){ $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML=''; build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
+function openSheet(title,kind,build){ curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML=''; build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
 function closeSheet(){ endEdit(); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
 $('#shClose').onclick=closeSheet; $('#scrim').onclick=closeSheet;
 function h(tag,attrs,...kids){ const el=document.createElement(tag); for(const k in attrs||{}){ if(k.startsWith('on')) el.addEventListener(k.slice(2),attrs[k]); else el.setAttribute(k,attrs[k]); } for(const c of kids) el.append(c); return el; }
@@ -764,6 +765,8 @@ function openProps(focusText){
       tr[0].oninput=()=>{ tol=+tr[0].value; tr[1].textContent=tol; };
       b.append(row('Remove BG',h('button',{class:'acc',onclick:()=>removeBg(o,tol)},'✂ Remove background'),...tr));
       b.append(h('div',{class:'hint'},'Removes the solid color touching the edges (great for AI art on plain backgrounds). Raise tolerance if bits are left; undo if it eats too much. For fine cleanup use Draw › 🧽 on this image.'));
+      const pg=gameById(activeGame);
+      b.append(row('Palette',pg?h('button',{onclick:()=>snapToPalette(o,pg.palette)},'🎨 Snap to '+pg.name+' palette'):h('button',{onclick:()=>snapToPalette(o,PALETTE)},'🎨 Snap to retro 16'),h('button',{onclick:()=>openBible()},'📖')));
       const a=o.adj||(o.adj={b:100,c:100,s:100,h:0,g:0,blur:0});
       b.append(row('Brightness',...rangeIn(0,200,1,a.b??100,v=>a.b=v,v=>v+'%')));
       b.append(row('Contrast',...rangeIn(0,200,1,a.c??100,v=>a.c=v,v=>v+'%')));
@@ -880,6 +883,9 @@ function openMenu(){
     g.append(h('button',{onclick:openPages},'🎞 Frames'));
     g.append(h('button',{onclick:()=>openAI()},'✨ AI studio'));
     g.append(h('button',{onclick:openSaveTemplate},'⭐ Save as template'));
+    g.append(h('button',{onclick:()=>openBible()},'📖 Style bible'));
+    g.append(h('button',{onclick:openLibrary},'📚 Shared library'));
+    g.append(h('button',{onclick:openSendToGame},'🎮 Send to game'));
     b.append(g);
     b.append(h('div',{class:'hint'},'Autosave lives in this browser and can get wiped. Save a project file (.json) to keep it for real — reopens with every layer and frame editable.'));
     b.append(h('div',{class:'hint'},'Gestures: drag to move · pinch to zoom · drag empty space to pan · tap empty space to deselect · ↻ rotates (snaps 15°). In Draw mode two fingers zoom instead of painting.'));
@@ -926,6 +932,14 @@ function cleanSVG(txt,W,H){
 function loadSrc(src){ return new Promise((res,rej)=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=src; imgCache.set(src,im); }); }
 async function svgToPng(src,w,h){ const im=await loadSrc(src); const c=document.createElement('canvas'); c.width=Math.max(1,Math.round(w)); c.height=Math.max(1,Math.round(h)); c.getContext('2d').drawImage(im,0,0,c.width,c.height); return c.toDataURL('image/png'); }
 
+function gameCharUI(){
+  const charSel=h('select',{});
+  const fill=()=>{ charSel.innerHTML=''; charSel.append(h('option',{value:''},'No set character'));
+    bible.characters.filter(c=>!activeGame||c.game===activeGame).forEach(c=>charSel.append(h('option',{value:c.id},c.name))); };
+  const gs=gamePicker(()=>fill()); fill();
+  return {rows:[row('Game style',gs,h('button',{onclick:()=>openBible()},'📖')),row('Character',charSel)],
+    game:()=>gameById(gs.value), char:()=>bible.characters.find(c=>c.id===charSel.value)||null};
+}
 function openAI(mode){
   if(drawMode) setDrawMode(false);
   mode=mode||(doc.pixel?'pixel':'vector');
@@ -947,29 +961,31 @@ function openAI(mode){
       const sizeSel=h('select',{}); [16,24,32,48,64].forEach(n=>{ const op=h('option',{value:n},n+'×'+n); if(n===(doc.pixel?Math.min(64,Math.max(16,Math.min(doc.w,doc.h)<=24?16:Math.min(doc.w,doc.h)<=40?32:Math.min(doc.w,doc.h)<=56?48:64)):32)) op.selected=true; sizeSel.append(op); });
       const styleSel=h('select',{}); ['16-bit SNES RPG','8-bit NES (4 colors)','Game Boy (4 greens)','Modern indie (Sea of Stars-like shading)','Dark gothic horror'].forEach(s=>styleSel.append(h('option',{value:s},s)));
       const palB=h('button',{},'Use retro 16 palette'); let usePal=false; palB.onclick=()=>{ usePal=!usePal; palB.classList.toggle('on',usePal); };
-      extra=[row('Size',sizeSel),row('Style',styleSel,palB)];
+      const gc=gameCharUI();
+      extra=[...gc.rows,row('Size',sizeSel),row('Fallback style',styleSel,palB)];
       go.onclick=()=>runAI(async(sig)=>{
-        const N=+sizeSel.value;
+        const N=+sizeSel.value; const G=gc.game(), C=gc.char();
         const prompt=`You are an expert pixel artist making a game sprite. ${AI_RULES}
-Subject: ${ta.value.trim()||'a small adventurer'}
-Canvas: exactly ${N} by ${N} pixels. Transparent background. Subject centered, filling most of the canvas, readable silhouette, 1-pixel dark outline, light from the top-left, ${styleSel.value} style.${usePal?' Use only these colors: '+PALETTE.join(', ')+'.':' At most 16 colors.'}
+Subject: ${ta.value.trim()||(C?C.name+', idle pose':'a small adventurer')}
+${C?'Character (stay exactly on-model; these details matter): '+C.look+'\n':''}${G?'Game art style ('+G.name+'): '+G.sprite+'\n':''}Canvas: exactly ${N} by ${N} pixels. Transparent background. Subject centered, filling most of the canvas, readable silhouette, 1-pixel dark outline${G?'':', light from the top-left, '+styleSel.value+' style'}.${G?' Use only these colors (plus skin, hair and clothing tones the character needs, kept few): '+G.palette.join(', ')+'.':usePal?' Use only these colors: '+PALETTE.join(', ')+'.':' At most 16 colors.'}
 Reply with only JSON: {"palette":["#rrggbb", ...],"rows":["...", ...]}
 "rows" has exactly ${N} strings, each exactly ${N} characters. "." is a transparent pixel; "0"-"9" then "a"-"f" index into "palette" (0 = first color).`;
         const j=await sampleFn.json(prompt,{signal:sig,modelTier:'complex',cache:false});
         const r=parsePixels(j,N); getImg(r.src);
-        const o=imageObj(r.src,r.w,r.h,'AI: '+(ta.value.trim()||'sprite').slice(0,30),doc.pixel?1:0.8); addObj(o);
+        const o=imageObj(r.src,r.w,r.h,'AI: '+(ta.value.trim()||(C?C.name:'sprite')).slice(0,30),doc.pixel?1:0.8); addObj(o);
         return `Added a ${r.w}×${r.h} sprite as a new layer. Hit Generate again for another take, or use Draw to touch it up.`;
       });
     } else if(mode==='vector'){
       ta.placeholder='e.g. a haunted lighthouse at night, big moon, lantern glow';
       const styleSel=h('select',{}); ['Flat vector, bold shapes','Dark gothic illustration','Cartoon with thick outlines','Minimal icon','Moody silhouette scene'].forEach(s=>styleSel.append(h('option',{value:s},s)));
       const bgB=h('button',{},'Transparent background'); let tbg=false; bgB.onclick=()=>{ tbg=!tbg; bgB.classList.toggle('on',tbg); };
-      extra=[row('Style',styleSel,bgB)];
+      const gc=gameCharUI();
+      extra=[...gc.rows,row('Fallback style',styleSel,bgB)];
       go.onclick=()=>runAI(async(sig)=>{
-        const W=doc.w,H=doc.h;
+        const W=doc.w,H=doc.h; const G=gc.game(), C=gc.char();
         const prompt=`You are an illustrator who draws in SVG. ${AI_RULES}
-Draw: ${ta.value.trim()||'a cozy campfire'}
-Style: ${styleSel.value}. ${tbg?'Transparent background — draw only the subject.':'Fill the whole canvas with a background.'}
+Draw: ${ta.value.trim()||(C?C.name:'a cozy campfire')}
+${C?'Character (stay exactly on-model): '+C.look+'\n':''}Style: ${G?G.hd+' Palette to lean on: '+G.palette.join(', '):styleSel.value}. ${tbg?'Transparent background — draw only the subject.':'Fill the whole canvas with a background.'}
 Rules: one <svg> element with viewBox="0 0 ${W} ${H}". Use only shapes, paths, gradients and <text>. No <image>, no scripts, no external links or fonts. Rich detail: layered shapes, shading with gradients, highlights. Keep it under 25 KB.
 Reply with only the SVG code.`;
         const {text}=await sampleFn(prompt,{signal:sig,modelTier:'complex',cache:false,onText:({text})=>{ out.textContent='Drawing… '+Math.round(text.length/1024)+' KB'; }});
@@ -1223,6 +1239,264 @@ function openSaveTemplate(){
   });
 }
 
+/* ---------- style bible (games, palettes, characters) ---------- */
+const DEFAULT_BIBLE={games:[
+  {id:'duffquest',name:'DuffQuest',repo:'duffpowell-commits/duffquest',inbox:'grok_art',key:'#FF00FF',decoder:false,
+   sprite:'Modern high-detail pixel art with crisp outlines, no blur, no anti-aliasing. Readable at game scale. Comedy RPG set in Omaha, warm and punchy.',
+   hd:'Bold flat cartoon: thick near-black ink outlines that taper at the ends, flat solid colour fills with at most ONE hard cel-shadow tone, clean simple shapes, rubbery expressive faces. No gradients, no texture, no gloss, no airbrush. Backgrounds are flat graphics (two-tone sunburst or flat speed lines), never painted scenery.',
+   palette:['#14121A','#0E1A33','#1E4A66','#E0A030','#3FF2E6','#FFFFFF']},
+  {id:'lethemoor',name:'Lethemoor',repo:'duffpowell-commits/lethemoor',inbox:'grok_art',key:'#00FF00',decoder:true,
+   sprite:'HD-2D style pixel art: crisp hand-placed pixels, no anti-aliasing, no blur, no gradients. 3/4 front view, full body, idle, centered. Max 16 colors: desaturated bone, rust, moss green, ink black, ONE warm accent (lantern amber). Single warm light from a lantern, low and to the right; deep shadows, rim light. Gothic, Edgar Allan Poe, quiet dread, something slightly wrong with the anatomy. Never chibi, cute, anime gloss or 3D-render look.',
+   hd:'Gothic dark illustration in the amber-and-ink palette: near-black blues, one warm lantern-amber light source, bone and blood accents, heavy shadow, quiet dread.',
+   palette:['#05070c','#0b111b','#141d2b','#202d40','#33445a','#4d6078','#2a170a','#5a3414','#8f561f','#c98a2e','#f2c25a','#ffe9a8','#4a0710','#8a1020','#c81e2e','#6f6656','#a99c84','#d9cdb4']}
+],characters:[
+  {id:'duff',name:'Duff',game:'duffquest',look:'Buff man. Dirty-blond undercut with the hair tied back in a ponytail, blue eyes, ginger-blond stubble, stretched earlobes with round plugs and small spiked hoops, calm flat stare. Black tee, work apron, red shoes. Tattoos (viewer-independent, HIS sides): LEFT arm shoulder to wrist is a near-solid black blackout sleeve with skin-tone geometric shapes (flower of life, mandalas, a grinning skull on the inner arm). RIGHT upper arm: grey-wash biomechanical horn/flame piece; RIGHT forearm: a dark creature head with several glowing orange eyes framed by leaves (NOT a panther). Back of LEFT hand: eye mandala with finger dots, no ring. Back of RIGHT hand: four lines of red brush calligraphy. LEFT side of the neck below the ear: a realistic fox with a pale blue rose third eye. At 64 px: left arm reads almost solid dark ink, right arm skin with grey markings.'},
+  {id:'bearer',name:'The Lantern Bearer',game:'lethemoor',look:'Lone survivor of the Watch: hooded, face lost in shadow, ragged coat, carrying a lantern low in the right hand (the only warm light). Lean, wary posture.'}
+]};
+let bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)), bibleSrc='default';
+const BIBLE_LS='foxboard.bible', GAME_LS='foxboard.game';
+let activeGame=(()=>{ try{ return localStorage.getItem(GAME_LS)||''; }catch(e){ return ''; } })();
+function gameById(id){ return bible.games.find(g=>g.id===id)||null; }
+function setActiveGame(id){ activeGame=id||''; try{ localStorage.setItem(GAME_LS,activeGame); }catch(e){} }
+function validBible(b){ return b&&Array.isArray(b.games)&&Array.isArray(b.characters); }
+try{ const s=localStorage.getItem(BIBLE_LS); if(s){ const b=JSON.parse(s); if(validBible(b)){ bible=b; bibleSrc='local'; } } }catch(e){}
+async function saveBible(){
+  try{ localStorage.setItem(BIBLE_LS,JSON.stringify(bible)); }catch(e){}
+  if(dbCap){ try{ await dbCap.doc('bible/main').set({games:bible.games,characters:bible.characters,at:Date.now()}); return 'shared'; }catch(e){ return 'local'; } }
+  return 'local';
+}
+function snapToPalette(o,pal){
+  const im=srcOf(o); if(!im){ toast('Image still loading'); return; }
+  const W=im.naturalWidth||im.width, H=im.naturalHeight||im.height;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.drawImage(im,0,0);
+  let id; try{ id=g.getImageData(0,0,W,H); }catch(e){ toast('Cannot edit this image'); return; }
+  const P=pal.map(hexToRGBA), d=id.data, cache=new Map();
+  for(let i=0;i<d.length;i+=4){
+    if(d[i+3]<8) continue;
+    if(doc.pixel) d[i+3]=d[i+3]<128?0:255;
+    const k=(d[i]<<16)|(d[i+1]<<8)|d[i+2]; let best=cache.get(k);
+    if(best===undefined){ let bd=1e9; best=0; P.forEach((p,j)=>{ const dd=(p[0]-d[i])**2*2+(p[1]-d[i+1])**2*4+(p[2]-d[i+2])**2*3; if(dd<bd){bd=dd;best=j;} }); cache.set(k,best); }
+    d[i]=P[best][0]; d[i+1]=P[best][1]; d[i+2]=P[best][2];
+  }
+  g.putImageData(id,0,0);
+  const src=c.toDataURL('image/png'); edit(()=>{ o.src=src; o.natW=W; o.natH=H; }); toast('Snapped to '+pal.length+' colors');
+}
+function gamePicker(onChange,withNone){
+  const s=h('select',{}); if(withNone!==false) s.append(h('option',{value:''},'No game style'));
+  bible.games.forEach(g=>{ const op=h('option',{value:g.id},g.name); if(g.id===activeGame) op.selected=true; s.append(op); });
+  s.onchange=()=>{ setActiveGame(s.value); onChange&&onChange(s.value); }; return s;
+}
+function openBible(gid){
+  gid=gid||activeGame||(bible.games[0]&&bible.games[0].id);
+  const canEditBible=!userCap||userIsOwner||bibleSrc!=='shared';
+  openSheet('📖 Style bible','bible',b=>{
+    const tabs=h('div',{class:'tabs'});
+    bible.games.forEach(g=>{ const bt=h('button',{class:g.id===gid?'on':''},g.name); bt.onclick=()=>openBible(g.id); tabs.append(bt); });
+    b.append(tabs);
+    const g=gameById(gid); if(!g){ b.append(h('div',{class:'hint'},'No games yet.')); return; }
+    b.append(h('div',{class:'hint'},bibleSrc==='shared'?'Shared with everyone on Foxboard. AI, palettes and Send to game all read this.':'AI, palettes and Send to game all read this.'));
+    b.append(row('Use it',h('button',{class:g.id===activeGame?'on':'',onclick:()=>{ setActiveGame(g.id===activeGame?'':g.id); openBible(gid); }},g.id===activeGame?'✓ Active game':'Make active')));
+    const sw=h('div',{class:'swatches'});
+    g.palette.forEach((c,i)=>{ const it=h('i',{title:c}); it.style.background=c; it.onclick=()=>{ setColor(c); toast('Draw color '+c); }; if(canEditBible) it.oncontextmenu=e=>{ e.preventDefault(); g.palette.splice(i,1); openBible(gid); }; sw.append(it); });
+    b.append(h('div',{class:'hint'},'Palette — tap = draw with it'+(canEditBible?' · long-press = remove':'')));
+    b.append(sw);
+    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ const c=$('#drawColor').value; if(!g.palette.includes(c)) g.palette.push(c); openBible(gid); }},'＋ Add current draw color')));
+    const sp=h('textarea',{}); sp.value=g.sprite; const hd=h('textarea',{}); hd.value=g.hd;
+    if(!canEditBible){ sp.readOnly=true; hd.readOnly=true; }
+    b.append(h('div',{class:'hint'},'Pixel sprite style'),sp,h('div',{class:'hint'},'Illustration / card style'),hd);
+    const keyIn=h('input',{type:'color',value:g.key||'#FF00FF'}); keyIn.disabled=!canEditBible;
+    b.append(row('Key color',keyIn,h('span',{class:'hint'},'flat background the game\'s importer cuts out')));
+    b.append(row('Repo',h('span',{},g.repo+' › '+g.inbox+'/')));
+    const decB=h('button',{class:g.decoder===false?'':'on'},g.decoder===false?'Inbox decoder: not installed':'Inbox decoder: installed ✓'); decB.disabled=!canEditBible;
+    decB.onclick=()=>{ g.decoder=g.decoder===false; openBible(gid); toast('Save the bible to keep this'); };
+    b.append(row('Send to game',decB));
+    b.append(h('h4',{style:'margin:12px 0 4px'},'Characters'));
+    bible.characters.filter(c=>c.game===gid).forEach(c=>{
+      const ta=h('textarea',{}); ta.value=c.look; ta.readOnly=!canEditBible; ta.oninput=()=>{ c.look=ta.value; };
+      const nm=h('input',{type:'text',value:c.name}); nm.readOnly=!canEditBible; nm.oninput=()=>{ c.name=nm.value; }; nm.style.flex='1';
+      b.append(row('',nm,canEditBible?h('button',{class:'danger',onclick:()=>{ bible.characters=bible.characters.filter(x=>x!==c); openBible(gid); }},'🗑'):''),ta);
+    });
+    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ bible.characters.push({id:uid(),name:'New character',game:gid,look:'Describe how they look: build, hair, face, clothes, marks.'}); openBible(gid); }},'＋ Add character')));
+    if(canEditBible){
+      const sv=h('button',{class:'acc'},'💾 Save bible');
+      sv.onclick=async()=>{ g.sprite=sp.value; g.hd=hd.value; g.key=keyIn.value; sv.disabled=true; const w=await saveBible(); sv.disabled=false; toast(w==='shared'?'Bible saved for everyone':'Bible saved on this phone'); };
+      b.append(row('',sv,h('button',{onclick:()=>{ bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)); openBible(gid); toast('Reset to defaults — Save to keep'); }},'Reset to defaults')));
+    } else b.append(h('div',{class:'hint'},'Only Duff can edit the bible.'));
+  });
+}
+
+/* ---------- send to game (GitHub connector) ---------- */
+let mcpCap=null;
+(async()=>{ try{ if(window.claude&&window.claude.use) mcpCap=await window.claude.use('mcp'); }catch(e){ mcpCap=null; } })();
+function blobToB64(blob){ return new Promise((res,rej)=>{ const fr=new FileReader(); fr.onload=()=>res(String(fr.result).split(',')[1]||''); fr.onerror=rej; fr.readAsDataURL(blob); }); }
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function onKey(c,key){ const k=document.createElement('canvas'); k.width=c.width; k.height=c.height; const g=k.getContext('2d'); g.fillStyle=key; g.fillRect(0,0,k.width,k.height); g.drawImage(c,0,0); return k; }
+function ghErr(e){
+  const c=e&&e.code;
+  if(c==='server_not_connected') return 'GitHub isn\'t connected. Add it in Claude: Settings › Connectors › GitHub, then try again.';
+  if(c==='needs_reauth') return 'GitHub sign-in expired. Reconnect it in Claude: Settings › Connectors.';
+  if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required') return 'Foxboard needs your OK to use GitHub — tap Send again and Allow.';
+  if(c==='blocked_by_policy') return 'Your Claude org blocks this GitHub tool.';
+  if(c==='selection_required') return 'Pick which GitHub connector to use in the prompt Claude shows, then try again.';
+  if(c==='tool_error'&&/\b404\b|Not Found/i.test(String(e.message||''))) return 'GitHub says it can\'t see that repo. It\'s private and your GitHub connector only has public access. On github.com (phone browser): Settings › Applications › the Claude/Anthropic app › Configure › give it access to this repo. Then Send again.';
+  if(c==='tool_error') return 'GitHub said no: '+String(e.message||'').slice(0,160);
+  if(c==='server_unavailable'||c==='upstream_error') return 'GitHub didn\'t answer — it may or may not have landed. Check the repo before sending again.';
+  return 'Couldn\'t send ('+(c||'error')+').';
+}
+function openSendToGame(){
+  if(drawMode) setDrawMode(false);
+  selId=null; refreshUI(); draw();
+  openSheet('🎮 Send to game','send',b=>{
+    if(!mcpCap){ b.append(h('div',{class:'out'},'Send to game works when Foxboard is open inside the Claude app with the GitHub connector on. Here, use Export instead.')); return; }
+    const games=bible.games.filter(g=>g.repo&&g.inbox);
+    if(!games.length){ b.append(h('div',{class:'hint'},'Add a game with a repo in the Style bible first.')); return; }
+    let gid=gameById(activeGame)&&gameById(activeGame).repo?activeGame:games[0].id;
+    const gs=h('select',{}); games.forEach(g=>{ const op=h('option',{value:g.id},g.name); if(g.id===gid) op.selected=true; gs.append(op); });
+    const ni=h('input',{type:'text',value:slug()}); ni.style.flex='1';
+    const multi=doc.pages.length>1;
+    let what=multi?'sheet':'frame', scale=1, keyBg=doc.pixel&&(!doc.bg||doc.bg==='transparent');
+    const wb=[['frame','This frame'],['sheet','Sprite sheet'],['gif','GIF']].filter(([k])=>multi||k==='frame').map(([k,l])=>{ const bt=h('button',{},l); bt.dataset.k=k; bt.onclick=()=>{ what=k; upd(); }; return bt; });
+    const sb=[1,2,4].filter(s=>Math.max(doc.w,doc.h)*s<=4096).map(s=>{ const bt=h('button',{},s+'×'); bt.dataset.s=s; bt.onclick=()=>{ scale=s; upd(); }; return bt; });
+    const kb=h('button',{},'Key-color background'); kb.onclick=()=>{ keyBg=!keyBg; upd(); };
+    const info=h('div',{class:'hint'}), out=h('div',{class:'out hidden'});
+    function upd(){
+      const g=gameById(gs.value)||games[0];
+      wb.forEach(x=>x.classList.toggle('on',x.dataset.k===what)); sb.forEach(x=>x.classList.toggle('on',+x.dataset.s===scale));
+      kb.classList.toggle('on',keyBg&&what!=='gif'); kb.disabled=what==='gif'; kb.textContent=`Key-color background (${g.key})`;
+      info.textContent=`Lands in ${g.repo} › ${g.inbox}/${ymd(new Date())}-foxboard/ as ${(ni.value||'art').replace(/[^a-z0-9_-]+/gi,'_')}.${what==='gif'?'gif':'png'} — the game's art inbox. A Claude session imports it into the game from there.`;
+    }
+    gs.onchange=()=>{ gid=gs.value; setActiveGame(gid); upd(); }; ni.oninput=upd;
+    b.append(row('Game',gs),row('Name',ni)); if(multi) b.append(row('What',...wb)); b.append(row('Scale',...sb),row('',kb),info);
+    const go=h('button',{class:'acc'},'🚀 Send');
+    go.onclick=async()=>{
+      const g=gameById(gs.value)||games[0]; const [owner,repo]=g.repo.split('/');
+      const name=(ni.value||'art').trim().replace(/[^a-z0-9_-]+/gi,'_').slice(0,60)||'art';
+      if(g.decoder===false){ out.classList.remove('hidden'); out.textContent=`${g.name}'s art inbox isn't switched on yet. Next time you open a Claude session on ${g.repo.split('/')[1]}, tell it: "apply Foxboard's integrations/duffquest-foxboard-inbox.patch, then flip the decoder on in Foxboard's bible". Until then, use Export.`; return; }
+      go.disabled=true; out.classList.remove('hidden'); out.textContent='Rendering…';
+      try{
+        let blob, ext;
+        if(what==='gif'){ blob=makeGIF(scale); ext='gif'; }
+        else { let c=what==='sheet'?renderSheet(scale,Math.min(doc.pages.length,8),0,false):renderToCanvas(scale,false); if(keyBg) c=onKey(c,g.key); blob=await new Promise(r=>c.toBlob(r,'image/png')); ext='png'; }
+        if(!blob) throw {code:'too_big'};
+        const now=new Date(), stamp=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
+        const dir=`${g.inbox}/${ymd(now)}-foxboard`, path=`${dir}/${name}-${stamp}.${ext}.b64`;
+        let content;
+        const lt=await mcpCap.listTools().catch(()=>null);
+        if(lt&&lt.fileArgs) content={$file:{data:blob,name:`${name}.${ext}`,type:ext==='gif'?'image/gif':'image/png'}};
+        else { content=await blobToB64(blob); if(content.length>900000) throw {code:'too_big'}; }
+        out.textContent='Sending to GitHub… (first time asks you to Allow)';
+        await mcpCap.callTool('github','create_or_update_file',{owner,repo,branch:'main',path,content,message:`Foxboard: ${name}.${ext} from Duff's phone (auto-decodes to ${ext})`});
+        out.innerHTML=''; out.append(`Sent ✓ ${name}.${ext} → ${g.name}. GitHub turns it into a real .${ext} in about a minute: `, h('a',{href:`https://github.com/${g.repo}/tree/main/${dir}`,target:'_blank',rel:'noopener'},'open the folder'));
+        toast('Sent to '+g.name);
+      }catch(e){ out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
+      finally{ go.disabled=false; }
+    };
+    b.append(row('',go),out);
+    b.append(h('div',{class:'hint'},'Goes into the game\'s grok_art inbox, never straight into the game, so nothing breaks the build.'));
+    upd();
+  });
+}
+
+/* ---------- shared library (everyone on Foxboard) ---------- */
+let dbCap=null, userCap=null, userIsOwner=false, myUserId=null, canWriteShared=null;
+let libItems=[], libNotes=[], libState='loading';
+const names=new Map();
+async function nameOf(ids){ ids=[...new Set(ids.filter(Boolean))].filter(i=>!names.has(i)); if(ids.length&&userCap){ try{ const ps=await userCap.profiles(ids); ids.forEach(i=>names.set(i,(ps[i]&&ps[i].name)||'Someone')); }catch(e){} } }
+function who(id){ return id&&id===myUserId?'you':(names.get(id)||'Someone'); }
+(async()=>{
+  try{ if(window.claude&&window.claude.use){ [dbCap,userCap]=await Promise.all([window.claude.use('db'),window.claude.use('user')]); } }catch(e){}
+  if(userCap){ try{ userIsOwner=!!userCap.isOwner(); }catch(e){} try{ myUserId=await userCap.id(); }catch(e){} try{ canWriteShared=await userCap.can('data.write'); }catch(e){ canWriteShared=null; } }
+  if(!dbCap){ libState='off'; return; }
+  const t=setTimeout(()=>{ if(libState==='loading') libState='slow'; },10000);
+  dbCap.doc('bible/main').onSnapshot(s=>{ if(s.exists){ const b=s.data(); if(validBible(b)){ bible={games:JSON.parse(JSON.stringify(b.games)),characters:JSON.parse(JSON.stringify(b.characters))}; bibleSrc='shared'; } } },()=>{});
+  dbCap.collection('library').orderBy('at','desc').limit(200).onSnapshot(s=>{
+    clearTimeout(t); libState='ok'; libItems=s.docs.map(d=>({id:d.id,...d.data()}));
+    nameOf(libItems.map(i=>i.by)).then(()=>{ if(sheetIs('library')) openLibrary(); });
+  },e=>{ clearTimeout(t); libState='error:'+(e&&e.code); });
+  dbCap.collection('libnotes').orderBy('at','desc').limit(500).onSnapshot(s=>{
+    libNotes=s.docs.map(d=>({id:d.id,...d.data()}));
+    nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')) openLibItem(curLibItem); });
+  },()=>{});
+})();
+let curSheet=null, curLibItem=null;
+function sheetIs(k){ return curSheet===k && $('#sheet').classList.contains('open'); }
+const CHUNK=180000;
+async function shareCanvas(btn){
+  endEdit();
+  const json=JSON.stringify({...doc,cur:0});
+  if(json.length>CHUNK*20){ toast('Too big to share (big images) — export it instead',2600); return; }
+  btn.disabled=true; btn.textContent='Sharing…';
+  const id=uid()+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
+  try{
+    for(let n=0;n<parts.length;n++) await dbCap.doc(`libchunks/${id}_${n}`).set({item:id,n,data:parts[n]});
+    const th=pageThumb(0,128).toDataURL('image/png');
+    await dbCap.doc(`library/${id}`).set({name:doc.name||'Untitled',w:doc.w,h:doc.h,frames:doc.pages.length,pixel:!!doc.pixel,by:myUserId||'',at:Date.now(),thumb:th,chunks:parts.length});
+    toast('Shared with everyone on Foxboard');
+  }catch(e){ toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
+  btn.disabled=false; btn.textContent='⬆ Share this canvas';
+}
+async function openLibCanvas(it){
+  try{
+    toast('Opening…');
+    const s=await dbCap.collection('libchunks').where('item','==',it.id).get();
+    const parts=s.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n);
+    if(parts.length!==it.chunks) throw 0;
+    useTemplate(migrate(JSON.parse(parts.map(p=>p.data).join(''))));
+    toast('Opened a copy of "'+it.name+'"');
+  }catch(e){ toast('Could not open that one'); }
+}
+async function deleteLibItem(it){
+  try{ await dbCap.doc(`library/${it.id}`).delete(); for(let n=0;n<(it.chunks||0);n++) await dbCap.doc(`libchunks/${it.id}_${n}`).delete();
+    for(const nt of libNotes.filter(x=>x.item===it.id)) await dbCap.doc(`libnotes/${nt.id}`).delete(); toast('Deleted'); }
+  catch(e){ toast('Delete failed ('+(e&&e.code||'error')+')'); }
+}
+function fmtDate(t){ try{ return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
+function openLibrary(){
+  curSheet='library';
+  openSheet('📚 Shared library','library',b=>{
+    if(!dbCap){ b.append(h('div',{class:'out'},'The shared library works when Foxboard is open inside the Claude app (signed in). Duff shares Foxboard with you from its page in Claude.')); return; }
+    if(canWriteShared!==false){ const sb=h('button',{class:'acc'},'⬆ Share this canvas'); sb.onclick=()=>shareCanvas(sb); b.append(row('',sb)); }
+    else b.append(h('div',{class:'hint'},'You can browse and open things here. To share or leave notes, Duff has to invite you as an Editor.'));
+    if(libState==='loading') b.append(h('div',{class:'hint'},'Loading…'));
+    else if(libState==='slow') b.append(h('div',{class:'hint'},'Can\'t reach the library yet — still trying.'));
+    else if(String(libState).startsWith('error')) b.append(h('div',{class:'hint'},'Library unavailable here.'));
+    else if(!libItems.length) b.append(h('div',{class:'hint'},'Nothing shared yet. Share a canvas and it shows up for everyone.'));
+    const g=h('div',{class:'grid2'});
+    libItems.forEach(it=>{
+      const nc=libNotes.filter(n=>n.item===it.id).length;
+      const im=h('img',{src:String(it.thumb||'').startsWith('data:image/png')?it.thumb:'',alt:''}); im.style.cssText='width:100%;border-radius:8px;background:#3b3650;image-rendering:pixelated';
+      const bt=h('button',{class:'preset',onclick:()=>openLibItem(it.id)},im);
+      bt.append(document.createTextNode(String(it.name||'Untitled').slice(0,40)),h('small',{},`${who(it.by)} · ${fmtDate(it.at)}${nc?` · 💬${nc}`:''}`));
+      g.append(bt);
+    });
+    b.append(g);
+  });
+  curSheet='library';
+}
+function openLibItem(id){
+  const it=libItems.find(x=>x.id===id); if(!it){ openLibrary(); return; }
+  curLibItem=id; curSheet='libitem';
+  openSheet(String(it.name||'Untitled').slice(0,40),'libitem',b=>{
+    const im=h('img',{src:String(it.thumb||'').startsWith('data:image/png')?it.thumb:'',alt:''}); im.style.cssText='width:160px;border-radius:10px;background:#3b3650;image-rendering:pixelated';
+    b.append(im,h('div',{class:'hint'},`${it.w}×${it.h}${it.frames>1?` · ${it.frames} frames`:''} · shared by ${who(it.by)} · ${fmtDate(it.at)}`));
+    const acts=[h('button',{class:'acc',onclick:()=>openLibCanvas(it)},'📂 Open a copy')];
+    if(it.by===myUserId||userIsOwner) acts.push(h('button',{class:'danger',onclick:()=>{ deleteLibItem(it); openLibrary(); }},'🗑 Delete'));
+    acts.push(h('button',{onclick:openLibrary},'← Back'));
+    b.append(row('',...acts));
+    b.append(h('h4',{style:'margin:12px 0 4px'},'Notes'));
+    const ns=libNotes.filter(n=>n.item===it.id).sort((a,b)=>a.at-b.at);
+    if(!ns.length) b.append(h('div',{class:'hint'},'No notes yet. Testers: say what reads wrong.'));
+    ns.forEach(n=>{ const d=h('div',{class:'out'}); d.append(h('b',{},who(n.by)+': '),document.createTextNode(String(n.text||'').slice(0,1000))); if(n.by===myUserId||userIsOwner){ const x=h('button',{style:'min-height:28px;padding:2px 8px;margin-left:6px'},'✕'); x.onclick=async()=>{ try{ await dbCap.doc('libnotes/'+n.id).delete(); }catch(e){ toast('Could not delete'); } }; d.append(x); } b.append(d); });
+    if(canWriteShared!==false){
+      const ta=h('textarea',{placeholder:'Leave a note on this art…'});
+      const send=h('button',{class:'acc'},'💬 Add note');
+      send.onclick=async()=>{ const t=ta.value.trim(); if(!t) return; send.disabled=true; try{ await dbCap.collection('libnotes').add({item:it.id,text:t.slice(0,1000),by:myUserId||'',at:Date.now()}); ta.value=''; }catch(e){ toast(e&&e.code==='invalid_argument'?'Duff has to invite you as an Editor to leave notes':'Note failed'); } send.disabled=false; };
+      b.append(ta,row('',send));
+    }
+  });
+  curSheet='libitem';
+}
+
 /* ---------- export ---------- */
 let downloads=null;
 (async()=>{ try{ if(window.claude&&window.claude.use) downloads=await window.claude.use('downloads'); }catch(e){ downloads=null; } })();
@@ -1287,6 +1561,7 @@ function openExport(){
         deliver(blob,fn,()=>showImage(c,fmt)); }, fmt==='jpg'?'image/jpeg':'image/png', 0.92); };
     const pv=h('button',{onclick:()=>{ if(fmt==='gif'){ try{ const u=URL.createObjectURL(makeGIF(scale)); $('#ivImg').src=u; $('#imgview').classList.add('open'); }catch(e){ toast('GIF failed — try a smaller scale'); } return; } const c=make(); if(c) showImage(c,fmt); }},'👁 Preview');
     b.append(row('',go,pv));
+    b.append(row('',h('button',{onclick:openSendToGame},'🎮 Send to game instead')));
     b.append(h('div',{class:'hint'},doc.pixel?'Pixel art: 1× for in-game use, 4–8× to share. Sprite sheet frames go left→right, top→bottom.':'Tip: 2× is sharper on phone screens.'));
     upd();
   });
@@ -1333,7 +1608,7 @@ for(const p of doc.pages) for(const o of p.objects) if(o.type==='image') getImg(
 refreshUI(); updUndo(); resize(); fit(); renderPages(); updDrawbar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const p of doc.pages) for(const o of p.objects) if(o.type==='text') fitText(o); draw(); thumbsSoon(); });
 if(!doc.pages.some(p=>p.objects.length)) setTimeout(()=>toast('Tap Text, Shape, Image, Draw or ✨AI to start',2600),400);
-window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
+window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
 })();
 </script>
 </body>

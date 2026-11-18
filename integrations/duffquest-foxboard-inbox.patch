@@ -1,0 +1,93 @@
+diff --git a/.github/workflows/build.yml b/.github/workflows/build.yml
+index b75c9a4..0291c0a 100644
+--- a/.github/workflows/build.yml
++++ b/.github/workflows/build.yml
+@@ -5,7 +5,9 @@ name: build
+ # "Artifacts" box on GitHub; the phone can open them straight from the GitHub app/site.
+ on:
+   push:
++    paths-ignore: ["grok_art/**"]  # art drops never ship by themselves (see foxboard_decode.yml)
+   pull_request:
++    paths-ignore: ["grok_art/**"]
+   workflow_dispatch:
+ 
+ env:
+diff --git a/.github/workflows/foxboard_decode.yml b/.github/workflows/foxboard_decode.yml
+new file mode 100644
+index 0000000..b4549e2
+--- /dev/null
++++ b/.github/workflows/foxboard_decode.yml
+@@ -0,0 +1,58 @@
++name: foxboard-decode
++
++# Foxboard (Duff's phone art editor, repo duffpowell-commits/Foxboard) sends art through the
++# GitHub connector, which can only write text. So it commits art into grok_art/ as base64
++# (`<name>-<time>.png.b64` / `.gif.b64`). This job turns each one back into the real image and
++# removes the .b64. Its own push uses GITHUB_TOKEN, which never triggers other workflows, and
++# build.yml ignores grok_art/ anyway (art drops never ship by themselves).
++on:
++  push:
++    branches: [main]
++    paths: ["grok_art/**/*.b64"]
++  workflow_dispatch:
++
++permissions:
++  contents: write
++
++concurrency:
++  group: foxboard-decode
++  cancel-in-progress: false
++
++jobs:
++  decode:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          fetch-depth: 1
++          sparse-checkout: grok_art
++      - name: Decode base64 art drops
++        run: |
++          set -euo pipefail
++          found=0
++          while IFS= read -r -d '' f; do
++            out="${f%.b64}"
++            if ! tr -d '\r\n ' < "$f" | base64 -d > "$out" 2>/dev/null; then
++              echo "::warning::not valid base64, left as is: $f"; rm -f "$out"; continue
++            fi
++            sig=$(head -c 4 "$out" | od -An -tx1 | tr -d ' \n')
++            case "$sig" in
++              89504e47|47494638) ;;   # PNG, GIF
++              *) echo "::warning::not a PNG/GIF, left as is: $f"; rm -f "$out"; continue ;;
++            esac
++            git rm -q "$f"
++            git add "$out"
++            echo "decoded $out"
++            found=1
++          done < <(find grok_art -name '*.b64' -print0)
++          if [ "$found" = 1 ]; then
++            git config user.name "github-actions[bot]"
++            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
++            git commit -q -m "Foxboard: decode art drop"
++            for i in 1 2 3; do
++              if git pull -q --rebase origin main && git push -q origin HEAD:main; then exit 0; fi
++              sleep $((i * 5))
++            done
++            echo "::error::could not push the decoded art"; exit 1
++          fi
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 00abf22..140ba65 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -270,6 +270,10 @@ History of everything built: `TRACKER.md` (newest first).
+   `docs/ref/duff/hand_*.png` (photos `photo_*_hand_*_2026-11-18.jpg`, sheet `hand_tattoos_canon.png`), never invent. Any new or
+   re-made Duff sprite sheet: `python3 tools/hand_tattoos/stamp.py <sheet>` then `tools/hand_tattoos/atlas.py`. Audit of the
+   stills/promos still to redo: `docs/reviews/hand_tattoo_audit_2026-11-18.md`.
++- **Foxboard inbox (Nov 18):** Duff's phone art editor Foxboard (repo `duffpowell-commits/Foxboard`) has a Send to
++  game button that commits art into `grok_art/<date>-foxboard/` (base64 first; `foxboard_decode.yml` decodes it to
++  PNG/GIF and pushes as github-actions[bot]). `build.yml` ignores `grok_art/**`, so a drop never builds or ships.
++  Expect bot commits on main: `git fetch` before pushing, as always. Sprites come on the `#FF00FF` key.
+ - **Fully automatic art pipeline (Nov 10), no Duff steps:** Canva `generate-image` -> put each media id full-bleed on
+   its own 1920x1080 page of one Canva design (`edit-design` insert_fill, commit) -> `export-design` png -> Zapier
+   Google Drive "Upload File" (connection `023ae0fb-19cc-8509-b28e-979de3a98f75`, pass it as connection_id) with the
