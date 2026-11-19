@@ -1,0 +1,11 @@
+{
+ "mode": "sketch",
+ "prompt": "top-down mossy cobblestone floor, rounded grey stones with bright green moss in the gaps, cracks and pebbles, soft even light, detailed painted game texture",
+ "n": 1,
+ "seed": 778,
+ "at": 1795116422319,
+ "strength": 0.6,
+ "w": 256,
+ "h": 256,
+ "init": "forge/jobs/fb-vary-sub60-20261119.init.b64"
+}

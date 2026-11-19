@@ -61,6 +61,8 @@ async def main():
         check('sketch: whole-frame job with strength + init', r.get('mode') == 'sketch' and r.get('s') == 0.6 and r.get('init') and r.get('w') == 0, r)
         r = await ev(f"""(()=>{{ try{{ const r=Foxboard.forgeFiles({{mode:'sketch',id:'{img}',prompt:'x',strength:2}}); const j=JSON.parse(r.files[Object.keys(r.files).find(k=>k.endsWith('.json'))]); return j.strength; }}catch(e){{ return String(e.message||e); }} }})()""")
         check('sketch: strength is clamped (<=0.95)', r == 0.95, r)
+        r = await ev(f"""(()=>{{ try{{ const r=Foxboard.forgeFiles({{mode:'sketch',id:'{img}',prompt:'x',strength:0.3}}); return JSON.parse(r.files[Object.keys(r.files).find(k=>k.endsWith('.json'))]).strength; }}catch(e){{ return String(e.message||e); }} }})()""")
+        check('sketch: strength floor 0.5 (FLUX leaves a flat sketch flat below that)', r == 0.5, r)
 
         # 3) seamless flag + 2) seed lock
         r = await ev("""(()=>{ try{ const r=Foxboard.forgeFiles({mode:'new',prompt:'cobblestone floor',tile:true,seed:'12345'}); const j=JSON.parse(Object.values(r.files)[0]); return {tile:j.tile,seed:j.seed}; }catch(e){ return {err:String(e)}; } })()""")
@@ -90,7 +92,7 @@ async def main():
         await pg.locator('#shBody textarea').first.fill('a mossy stone bridge')
         await tap('#shBody button:has-text("Queue it")'); await pg.wait_for_timeout(600)
         jobs = await ev("__commits.filter(c=>c.path.endsWith('.json')).map(c=>JSON.parse(c.content))")
-        check('screen queues a sketch job with strength', bool(jobs) and jobs[-1].get('mode') == 'sketch' and 0.2 <= jobs[-1].get('strength', 0) <= 0.95, jobs[-1] if jobs else None)
+        check('screen queues a sketch job, default follow -> strength ~0.87', bool(jobs) and jobs[-1].get('mode') == 'sketch' and abs(jobs[-1].get('strength', 0) - 0.87) < 0.011, jobs[-1] if jobs else None)
 
         # 2) variations + 7) gallery/favorites: a finished job on this phone
         await ev("""(()=>{ const L=JSON.parse(localStorage.getItem('foxboard.forgejobs')||'[]'); })()""")
@@ -102,7 +104,7 @@ async def main():
         n0 = await ev("__commits.length")
         vid = await ev(f"""(async()=>{{ try{{ return await Foxboard.vary('{jid}',1,'subtle'); }}catch(e){{ return 'ERR '+(e.message||e); }} }})()""")
         vj = await ev("(()=>{ const c=__commits.filter(c=>c.path.endsWith('.json')).pop(); return JSON.parse(c.content); })()")
-        check('vary subtle: sketch from the take, same prompt, seed kept, low strength', vj.get('mode') == 'sketch' and vj.get('strength') == 0.35 and vj.get('seed') == 501 and 'lantern' in vj.get('prompt', ''), (vid, vj))
+        check('vary subtle: sketch from the take, same prompt, seed kept, low strength', vj.get('mode') == 'sketch' and vj.get('strength') == 0.6 and vj.get('seed') == 501 and 'lantern' in vj.get('prompt', ''), (vid, vj))
         sent_init = await ev("__commits.slice(%d).some(c=>c.path.endsWith('.init.b64'))" % n0)
         check('vary: the take is sent as the init image', sent_init)
         fav = await ev(f"Foxboard.favorite('{jid}',0)")

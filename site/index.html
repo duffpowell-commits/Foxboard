@@ -1295,7 +1295,7 @@ function forgePromptOf(j){ return j.prompt||String(j.label||'').replace(/^(Sketc
 async function forgeVary(j,k,how){
   const u=await forgeImgFor(j,k); if(!u) throw new Error('That take didn\'t load — try again');
   const subtle=how!=='strong';
-  return forgeQueue({mode:'sketch',initSrc:u,prompt:forgePromptOf(j),strength:subtle?0.35:0.6,n:2,key:j.key||null,tile:!!j.tile,
+  return forgeQueue({mode:'sketch',initSrc:u,prompt:forgePromptOf(j),strength:subtle?0.6:0.8,n:2,key:j.key||null,tile:!!j.tile,
     seed:j.seed!=null?j.seed+k:undefined,box:j.box||null,page:j.page,label:(subtle?'Subtle: ':'Strong: ')+String(forgePromptOf(j)).slice(0,60)});
 }
 function forgeFav(j,k,on){ const f=new Set(j.fav||[]); if(on===undefined) on=!f.has(k); if(on) f.add(k); else f.delete(k); j.fav=[...f]; forgeSaveLocal(); return on; }
@@ -1385,7 +1385,7 @@ function buildForge(b,ta){
     const key=keyBg?((G&&G.key)||'#FF00FF'):null;
     const prompt=[txt||(C?C.name:''), C?('Character details (keep exactly): '+C.look):'', G?('Art style: '+(doc.pixel?G.sprite:G.hd)):'', tile?'Seamless tileable texture, even lighting, no vignette, no single centered subject.':'', key?`Plain flat solid ${keyName(key)} background, nothing else behind the subject, no floor shadow.`:''].filter(Boolean).join(' ');
     const opts={mode:from==='new'?'new':'sketch',prompt,n,w,h:hh,key,tile,seed:seedIn.value.trim()||undefined,label:(from==='new'?'':'Sketch: ')+(txt||(C?C.name:'image'))};
-    if(from!=='new'){ opts.strength=1-(+follow[0].value)/100; if(from==='layer'&&so) opts.id=so.id; }
+    if(from!=='new'){ opts.strength=0.95-((+follow[0].value)-5)/75*0.2; /* follow 5..80 -> strength 0.95 (loose) .. 0.75 (close) */ if(from==='layer'&&so) opts.id=so.id; }
     go.disabled=true; out.classList.remove('hidden'); out.textContent='Queuing on GitHub… (first time asks you to Allow)';
     try{
       await forgeQueue(opts); const j=forgeJobs[0];
@@ -2559,7 +2559,8 @@ function forgeBuild(opts){
       else { init=renderToCanvas(Math.min(16,768/Math.max(doc.w,doc.h)),false); box=box||{x:0,y:0,w:doc.w,h:doc.h}; }
       init=flattenOn(init,opts.key||'#ffffff');
       if(!job.prompt) throw new Error('Say what your sketch should become');
-      job.strength=Math.round(Math.max(0.2,Math.min(0.95,+(opts.strength??0.65)))*100)/100;
+      // FLUX schnell barely paints over a flat sketch below ~0.7 (Nov 19 runner A/B: 0.7 came back blank, 0.75-0.93 painted), so 0.5 is the floor
+      job.strength=Math.round(Math.max(0.5,Math.min(0.95,+(opts.strength??0.87)))*100)/100;
       if(opts.key) job.key=opts.key;
       if(!opts.label) label='Sketch: '+job.prompt;
     } else { o=apiObj(opts.id); if(o.type!=='image') throw new Error('Pick an image layer'); D=imageData(o); init=D.c; }
@@ -2630,7 +2631,7 @@ const API_DOC={
   addPage:'addPage(copy=true) -> new frame after the current one', goPage:'goPage(i)', delPage:'delPage(i)', setFps:'setFps(n)',
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
-  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.2-0.95, lower = closer to the sketch. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
+  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.5-0.95 (default 0.87), lower = closer to the sketch; below ~0.75 a flat sketch stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
   forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local} — the job files without sending (Claude commits them with git)',
   vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
   takes:'takes() -> [{job, k, seed, prompt, fav}] every finished Forge take on this phone', favorite:'favorite(jobId, k, on?) -> bool',
