@@ -2311,7 +2311,9 @@ function forgeBuild(opts){
     } else if(mode==='expand'){
       const e=typeof opts.expand==='string'?expandAmounts(o,opts.expand):(opts.expand||{}); const L=Math.round(e.l||0),R=Math.round(e.r||0),T=Math.round(e.t||0),B=Math.round(e.b||0);
       if(!(L||R||T||B)) throw new Error('Nothing to expand');
-      const c=document.createElement('canvas'); c.width=D.W+L+R; c.height=D.H+T+B; const cg=c.getContext('2d'); cg.filter='blur('+Math.round(Math.max(c.width,c.height)/40)+'px)'; cg.drawImage(D.c,0,0,c.width,c.height); cg.filter='none'; cg.drawImage(D.c,L,T); init=c;
+      const c=document.createElement('canvas'); c.width=D.W+L+R; c.height=D.H+T+B; const cg=c.getContext('2d'); cg.filter='blur('+Math.round(Math.max(c.width,c.height)/40)+'px)'; cg.drawImage(D.c,0,0,c.width,c.height); cg.filter='none'; cg.drawImage(D.c,L,T);
+      { const sd=D.id.data; let op=true; for(let i=3;i<sd.length;i+=4) if(sd[i]<255){ op=false; break; } if(op){ const id2=cg.getImageData(0,0,c.width,c.height); for(let i=3;i<id2.data.length;i+=4) id2.data[i]=255; cg.putImageData(id2,0,0); } }
+      init=c;
       mask=document.createElement('canvas'); mask.width=c.width; mask.height=c.height; const g=mask.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.fillStyle='#000'; g.fillRect(L+2,T+2,D.W-4,D.H-4);
       const kx=o.w/D.W, ky=o.h/D.H; box={x:o.x-L*kx,y:o.y-T*ky,w:c.width*kx,h:c.height*ky};
     } else if(mode==='upscale'){ job.scale=4; box={x:o.x,y:o.y,w:o.w,h:o.h}; }
