@@ -31,8 +31,11 @@ python tests/test_forge_key.py
 ```
 `test_gif_templates.py` decodes the exported GIF with Pillow, an independent decoder, and checks frames, loop, timing and transparency.
 
-## Forge (image engine, bake-off stage)
+## Forge (the default image generator)
 `forge/` + `.github/workflows/forge.yml`: FLUX.1-schnell (Apache-2.0, commercial use OK) on GitHub's free
 public-repo runners through stable-diffusion.cpp. No GPU, no API bill, no cooldown; minutes per image.
-Edit `forge/prompts.json` to render; PNGs + timings land in `forge/out/`. Only runs while the repo is public
-(private runners are too small and cost minutes). Prompts and outputs here are public.
+It's the go-to for all of Duff's image creation: in the app it's ✨AI › 🔥 Forge (first tab), and Claude chats
+queue the same jobs (art-director skill). Canva is the fallback for private or urgent images.
+Queue: commit `forge/jobs/<id>.json` (`prompt`, `n` ≤ 4, `w`/`h` multiples of 64 up to 1024, `seed`, `key` or null).
+Results: `forge/results/<id>/<k>.png` + `<k>.b64` + `done.json`. Key-colour jobs come back with an exact-key
+background (`forge/keyfix.py`). Only runs while the repo is public. Prompts and outputs here are public.
