@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "A closed hinged dark iron shutter now covers the lantern's whole glass and hides the flame; only a thin sliver of dim orange light leaks at the shutter's edge",
+ "n": 1,
+ "seed": 21,
+ "at": 1795112862343,
+ "w": 640,
+ "h": 640,
+ "init": "forge/jobs/lm-hand-hooded-klein-20261119.init.b64",
+ "mask": "forge/jobs/lm-hand-hooded-klein-20261119.mask.b64"
+}
