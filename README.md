@@ -29,3 +29,9 @@ python tests/test_gif_templates.py
 python tests/test_pipeline.py
 ```
 `test_gif_templates.py` decodes the exported GIF with Pillow, an independent decoder, and checks frames, loop, timing and transparency.
+
+## Forge (image engine, bake-off stage)
+`forge/` + `.github/workflows/forge.yml`: FLUX.1-schnell (Apache-2.0, commercial use OK) on GitHub's free
+public-repo runners through stable-diffusion.cpp. No GPU, no API bill, no cooldown; minutes per image.
+Edit `forge/prompts.json` to render; PNGs + timings land in `forge/out/`. Only runs while the repo is public
+(private runners are too small and cost minutes). Prompts and outputs here are public.

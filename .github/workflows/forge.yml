@@ -1,0 +1,48 @@
+name: forge-bakeoff
+# Foxboard Forge bake-off: FLUX.1-schnell (Apache-2.0) on a free CPU runner via stable-diffusion.cpp.
+on:
+  push:
+    paths: ["forge/prompts.json", ".github/workflows/forge.yml", "forge/*.py"]
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency: { group: forge, cancel-in-progress: false }
+jobs:
+  render:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - name: Machine + free disk
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          nproc; free -g; df -h /
+      - name: stable-diffusion.cpp
+        env: { GH_TOKEN: "${{ github.token }}" }
+        run: |
+          mkdir -p sd && cd sd
+          gh api repos/leejet/stable-diffusion.cpp/releases/latest --jq '.assets[].name' || true
+          url=$(gh api repos/leejet/stable-diffusion.cpp/releases/latest --jq '.assets[].browser_download_url' | grep -i linux | grep -iv -E 'cuda|vulkan|rocm|sycl|arm|aarch' | head -1 || true)
+          echo "asset: $url"
+          if [ -n "$url" ]; then curl -sSL -o sd.zip "$url" && unzip -q -o sd.zip || true; fi
+          SD=$(find . -type f \( -name sd -o -name sd-cli \) | head -1)
+          if [ -z "$SD" ] || ! "$SD" --help >/dev/null 2>&1; then
+            git clone --depth 1 --recursive https://github.com/leejet/stable-diffusion.cpp src
+            cmake -S src -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=ON >/dev/null
+            cmake --build build -j"$(nproc)" --config Release >/dev/null
+            SD=$(find build -type f \( -name sd -o -name sd-cli \) -perm -u+x | head -1)
+          fi
+          echo "SD=$(realpath "$SD")" >> "$GITHUB_ENV"
+          echo "LD_LIBRARY_PATH=$(dirname "$(realpath "$SD")"):$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
+      - name: Models
+        run: |
+          pip install -q huggingface_hub hf_transfer
+          HF_HUB_ENABLE_HF_TRANSFER=1 python forge/get_models.py
+          df -h /
+      - name: Render
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python forge/render.py
