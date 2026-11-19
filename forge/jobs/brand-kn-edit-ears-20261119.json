@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "Two tall red fox ears, each pierced with a large stretched black tunnel gauge near its base, a row of small black spiked hoop earrings along the outer rim, and one gold spiked ring near the tip. Same painted style, colours and lighting as the rest of the fox.",
+ "n": 2,
+ "seed": 4401,
+ "at": 1795123609872,
+ "w": 768,
+ "h": 768,
+ "init": "forge/jobs/brand-kn-edit-ears-20261119.init.b64",
+ "mask": "forge/jobs/brand-kn-edit-ears-20261119.mask.b64"
+}

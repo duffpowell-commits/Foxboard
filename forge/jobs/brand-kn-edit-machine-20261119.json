@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "A black and steel coil tattoo machine with a gold grip tube and a thin needle tip, lying diagonally from upper left to lower right, crossing the other blade in an X like a jolly roger crossbone. Same painted style, colours and lighting as the rest of the picture.",
+ "n": 2,
+ "seed": 4402,
+ "at": 1795123609872,
+ "w": 768,
+ "h": 768,
+ "init": "forge/jobs/brand-kn-edit-machine-20261119.init.b64",
+ "mask": "forge/jobs/brand-kn-edit-machine-20261119.mask.b64"
+}
