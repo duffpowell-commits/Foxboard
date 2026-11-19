@@ -56,5 +56,22 @@ check("seamless texture passes", not any("seamless" in f for f in score(tile, "t
 ramp = Image.new("RGB", (256, 256)); ramp.putdata([(x // 2, x // 2, x // 2) for y in range(256) for x in range(256)])
 check("seam flagged on a ramp", any("seamless" in f for f in score(ramp, "texture")["flags"]))
 
+# cut: key -> alpha, crop, despill only the edge band (moss inside a figure keeps its green)
+im = Image.new("RGB", (200, 300), KEY); d = ImageDraw.Draw(im)
+d.rectangle([40, 30, 160, 280], fill=(110, 150, 110))       # green-cast fringe ring (spill)
+d.rectangle([44, 34, 156, 276], fill=COAT)                   # body
+d.rectangle([80, 120, 120, 160], fill=(40, 120, 50))         # moss patch deep inside
+cut, fixed = art_loop.cut_image(im, "#00FF00", height=None)
+cpx = cut.load(); W, H = cut.size
+check("cut crops to the subject", (W, H) == (121, 251), (W, H))
+edge = cpx[0, H // 2]
+check("edge fringe has no green cast", edge[1] <= max(edge[0], edge[2]), edge)
+moss = cpx[60, 110]
+check("moss inside keeps its green", moss[1] > max(moss[0], moss[2]) + 40, moss)
+check("despill touched some pixels", fixed > 0, fixed)
+pad = Image.new("RGB", (220, 320), KEY); pad.paste(im, (10, 10))
+c2, _ = art_loop.cut_image(pad, "#00FF00", height=125)
+check("cut resizes to the asked height", c2.size[1] == 125, c2.size)
+
 print(f"\n{'ALL PASS' if not fails else f'{fails} FAILED'}")
 sys.exit(1 if fails else 0)

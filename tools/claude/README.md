@@ -37,8 +37,9 @@ Render, judge, reroll, deliver, without Duff babysitting it (steps in the art-lo
 python3 tools/claude/art_loop.py queue  --id lm-sky-c-20261119 --prompt-file p.txt --n 4 --w 512 --h 512 [--key '#00FF00']
 python3 tools/claude/art_loop.py status lm-sky-c-20261119
 python3 tools/claude/art_loop.py score  lm-sky-c-20261119 --kind sprite|texture|scene|hud [--aspect 0.37]
+python3 tools/claude/art_loop.py cut    lm-sky-c-20261119/1 pick.png --height 640
 ```
 `score` flags what kept going wrong by eye: key punching holes through the subject, floor shadow,
 watermarks/stray marks, cropped head or sides, floating feet, off-palette, baked glow, seams on
-textures. It writes `forge/out/<id>_sheet.png`. It's a pre-filter: still look at the sheet
+textures. It writes `forge/out/<id>_sheet.png`. `cut` turns the pick into a game-ready PNG: key to transparent, crop, resize, and despill (green/magenta cast pulled out of the 3 px edge band only, so moss inside stays green). It's a pre-filter: still look at the sheet
 (it can't see faces, and the faceless rule is the one that matters most). Test: `tests/test_art_loop.py`.
