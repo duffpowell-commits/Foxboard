@@ -1,0 +1,12 @@
+{
+ "mode": "edit",
+ "prompt": "Background scene: a misty harbour at night, wet cobbles, distant ship lanterns, fog. The subject in front stays exactly as it is, lit to match.",
+ "n": 1,
+ "seed": 31,
+ "at": 1795128458742,
+ "engine": "flux",
+ "w": 512,
+ "h": 1024,
+ "init": "forge/jobs/fb-real-bg2-20261119.init.b64",
+ "mask": "forge/jobs/fb-real-bg2-20261119.mask.b64"
+}
