@@ -1,31 +1,46 @@
-name: forge-bakeoff
-# Foxboard Forge bake-off: FLUX.1-schnell (Apache-2.0) on a free CPU runner via stable-diffusion.cpp.
+name: forge
+# Foxboard Forge: FLUX.1-schnell (Apache-2.0) on free public-repo CPU runners via stable-diffusion.cpp.
+# Foxboard commits forge/jobs/<id>.json; each version renders on its own runner; results land in forge/results/<id>/.
 on:
   push:
-    paths: ["forge/prompts.json", ".github/workflows/forge.yml", "forge/*.py"]
     branches: [main]
+    paths: ["forge/jobs/**"]
   workflow_dispatch:
 permissions:
   contents: write
 concurrency: { group: forge, cancel-in-progress: false }
 jobs:
-  render:
+  plan:
     if: github.event.repository.private == false
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    outputs:
+      matrix: ${{ steps.p.outputs.matrix }}
+      any: ${{ steps.p.outputs.any }}
     steps:
       - uses: actions/checkout@v4
-      - name: Machine + free disk
-        run: |
-          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
-          nproc; free -g; df -h /
+        with: { sparse-checkout: forge }
+      - id: p
+        run: python forge/plan.py
+  render:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        item: ${{ fromJson(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: forge }
+      - name: Free disk
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
       - name: stable-diffusion.cpp
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
           mkdir -p sd && cd sd
-          gh api repos/leejet/stable-diffusion.cpp/releases/latest --jq '.assets[].name' || true
           url=$(gh api repos/leejet/stable-diffusion.cpp/releases/latest --jq '.assets[].browser_download_url' | grep -i linux | grep -iv -E 'cuda|vulkan|rocm|sycl|arm|aarch' | head -1 || true)
-          echo "asset: $url"
           if [ -n "$url" ]; then curl -sSL -o sd.zip "$url" && unzip -q -o sd.zip || true; fi
           SD=$(find . -type f \( -name sd -o -name sd-cli \) | head -1)
           if [ -z "$SD" ] || ! "$SD" --help >/dev/null 2>&1; then
@@ -38,11 +53,25 @@ jobs:
           echo "LD_LIBRARY_PATH=$(dirname "$(realpath "$SD")"):$LD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - name: Models
         run: |
-          pip install -q huggingface_hub hf_transfer
+          pip install -q huggingface_hub hf_transfer pillow
           HF_HUB_ENABLE_HF_TRANSFER=1 python forge/get_models.py
-          df -h /
       - name: Render
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          python forge/render.py
+          python forge/render_one.py "${{ matrix.item.job }}" "${{ matrix.item.k }}"
+  finish:
+    needs: [plan, render]
+    if: always() && needs.plan.outputs.any == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { sparse-checkout: forge }
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull -q origin main
+          python forge/finish.py
+          git add forge/results
+          git commit -q -m "[skip ci] forge: done" || exit 0
+          for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 5; done

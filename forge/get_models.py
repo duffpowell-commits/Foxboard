@@ -20,7 +20,7 @@ out["DIFF"] = get("leejet/FLUX.1-schnell-gguf", f)
 out["CLIP"] = get("comfyanonymous/flux_text_encoders", "clip_l.safetensors")
 t5g = pick("city96/t5-v1_1-xxl-encoder-gguf", [("q8_0",), ("q6_k",)])
 if t5g: out["T5GGUF"] = get("city96/t5-v1_1-xxl-encoder-gguf", t5g)
-out["T5FP16"] = get("comfyanonymous/flux_text_encoders", "t5xxl_fp16.safetensors")
+if "T5GGUF" not in out: out["T5FP16"] = get("comfyanonymous/flux_text_encoders", "t5xxl_fp16.safetensors")
 for repo in ["leejet/FLUX.1-schnell-gguf", "black-forest-labs/FLUX.1-schnell", "ffxvs/vae-flux"]:
     v = pick(repo, [("ae.safetensors",), ("ae.sft",), ("vae", "safetensors")])
     if v:

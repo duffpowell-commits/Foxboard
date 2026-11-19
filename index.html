@@ -940,16 +940,112 @@ function gameCharUI(){
   return {rows:[row('Game style',gs,h('button',{onclick:()=>openBible()},'📖')),row('Character',charSel)],
     game:()=>gameById(gs.value), char:()=>bible.characters.find(c=>c.id===charSel.value)||null};
 }
+/* ---------- Forge: FLUX.1-schnell on free GitHub runners (repo Foxboard, forge/) ---------- */
+const FORGE_REPO={owner:'duffpowell-commits',repo:'Foxboard'};
+const FORGE_SIZES=[['Square 768 (~15 min)',768,768,15],['Square 512 (~7 min)',512,512,7],['Square 1024 (~27 min)',1024,1024,27],['Portrait 576×1024 (~16 min)',576,1024,16],['Landscape 1024×576 (~16 min)',1024,576,16]];
+const FORGE_LS='foxboard.forgejobs';
+let forgeJobs=[]; const forgeImgs=new Map(); let forgeChecking=false;
+function forgeLoadLocal(){ try{ const a=JSON.parse(localStorage.getItem(FORGE_LS)||'[]'); if(Array.isArray(a)) forgeJobs=a; }catch(e){} }
+function forgeSaveLocal(){ try{ localStorage.setItem(FORGE_LS,JSON.stringify(forgeJobs.slice(0,30))); }catch(e){} }
+forgeLoadLocal();
+function keyName(hx){ return /^#?ff00ff$/i.test(hx)?'magenta (#FF00FF)':/^#?00ff00$/i.test(hx)?'pure green (#00FF00)':hx; }
+function forgeEta(j){ const per=(FORGE_SIZES.find(z=>z[1]===j.w&&z[2]===j.h)||[0,0,0,15])[3]; return (per+5)*60000; }
+function forgeText(res){
+  const parts=[]; for(const c of (res&&res.content)||[]){ if(c.type==='text') parts.push(c.text); else if(c.resource){ if(c.resource.text) parts.push(c.resource.text); else if(c.resource.blob){ try{ parts.push(atob(c.resource.blob)); }catch(e){} } } }
+  if(typeof res?.payload==='string') parts.push(res.payload);
+  return parts.join('\n');
+}
+async function forgeFetch(path){ return forgeText(await mcpCap.callTool('github','get_file_contents',{...FORGE_REPO,path},{cache:false})); }
+async function forgeCheck(j){
+  let changed=false;
+  for(let k=0;k<j.n;k++){
+    if((j.got||[]).includes(k)||(j.failed||[]).includes(k)) continue;
+    try{
+      const t=await forgeFetch(`forge/results/${j.id}/${k}.b64`);
+      const m=t.match(/(png|webp):([A-Za-z0-9+/=]{200,})/);
+      if(m){ forgeImgs.set(j.id+'/'+k,`data:image/${m[1]};base64,${m[2]}`); j.got=[...(j.got||[]),k]; changed=true; }
+    }catch(e){ if(e&&e.code!=='tool_error') throw e; }
+  }
+  if((j.got||[]).length<j.n && Date.now()-j.at>forgeEta(j)){
+    try{ const d=JSON.parse((await forgeFetch(`forge/results/${j.id}/done.json`)).replace(/^[^{]*/,'').replace(/[^}]*$/,'')); if(Array.isArray(d.failed)){ j.failed=d.failed; changed=true; } }catch(e){}
+  }
+  j.state=(j.got||[]).length+(j.failed||[]).length>=j.n?'done':'rendering';
+  if(changed) forgeSaveLocal();
+  return changed;
+}
+async function forgeImgFor(j,k){
+  const key=j.id+'/'+k; if(forgeImgs.has(key)) return forgeImgs.get(key);
+  const t=await forgeFetch(`forge/results/${j.id}/${k}.b64`); const m=t.match(/(png|webp):([A-Za-z0-9+/=]{200,})/);
+  if(!m) return null; const u=`data:image/${m[1]};base64,${m[2]}`; forgeImgs.set(key,u); return u;
+}
+async function forgeAdd(u,name){
+  const png=await (async()=>{ const im=await loadSrc(u); const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); return {src:c.toDataURL('image/png'),w:c.width,h:c.height}; })();
+  getImg(png.src); addObj(imageObj(png.src,png.w,png.h,'Forge: '+name,1)); toast('Added to the canvas');
+}
+function buildForge(b,ta){
+  ta.placeholder='Describe the picture: who/what, pose, setting, mood. e.g. a gothic bell tower at dawn, crows circling, one lit window';
+  const gc=gameCharUI();
+  const sz=h('select',{}); FORGE_SIZES.forEach(([l,w,hh],i)=>sz.append(h('option',{value:i},l)));
+  const nv=h('select',{}); [1,2,3,4].forEach(n=>{ const o=h('option',{value:n},n+(n>1?' versions':' version')); if(n===2) o.selected=true; nv.append(o); });
+  let keyBg=false; const kb=h('button',{},'Flat key background (sprites to import)'); kb.onclick=()=>{ keyBg=!keyBg; kb.classList.toggle('on',keyBg); };
+  const out=h('div',{class:'out hidden'}); const go=h('button',{class:'acc'},'🔥 Queue it');
+  b.append(ta,...gc.rows,row('Size',sz),row('Versions',nv),row('',kb),row('',go),out);
+  b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo.'));
+  const list=h('div',{}); b.append(h('h4',{style:'margin:12px 0 4px'},'Your Forge jobs'),list);
+  function render(){
+    list.innerHTML='';
+    if(!forgeJobs.length){ list.append(h('div',{class:'hint'},'Nothing queued yet.')); return; }
+    forgeJobs.slice(0,10).forEach(j=>{
+      const box=h('div',{class:'layer',style:'flex-direction:column;align-items:stretch'});
+      const left=Math.max(0,Math.ceil((j.at+forgeEta(j)-Date.now())/60000));
+      const st=j.state==='done'?`✅ ${(j.got||[]).length}/${j.n} ready`+((j.failed||[]).length?` · ❌ ${(j.failed||[]).length} failed`:''):`⏳ ${(j.got||[]).length}/${j.n} ready · ${left?'~'+left+' min left':'any minute now'}`;
+      box.append(h('div',{class:'nm',style:'white-space:normal'},`${String(j.label||'').slice(0,80)} · ${j.w}×${j.h}`),h('div',{class:'hint',style:'margin:2px 4px'},st));
+      const strip=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap'});
+      (j.got||[]).forEach(k=>{
+        const im=h('img',{alt:''}); im.style.cssText='width:84px;height:84px;object-fit:cover;border-radius:8px;background:#3b3650;cursor:pointer';
+        const u=forgeImgs.get(j.id+'/'+k); if(u) im.src=u; else forgeImgFor(j,k).then(x=>{ if(x) im.src=x; }).catch(()=>{});
+        im.onclick=async()=>{ try{ const x=await forgeImgFor(j,k); if(x) forgeAdd(x,j.label||'image'); }catch(e){ toast('Could not load it — try again'); } };
+        strip.append(im);
+      });
+      box.append(strip);
+      if(j.state!=='done'){ const cb=h('button',{style:'align-self:flex-start;margin-top:4px'},'↻ Check now'); cb.onclick=async()=>{ cb.disabled=true; try{ await forgeCheck(j); }catch(e){ toast(ghErr(e)); } render(); }; box.append(cb); }
+      if((j.got||[]).length) box.append(h('div',{class:'hint',style:'margin:2px 4px'},'Tap a picture to add it as a layer.'));
+      list.append(box);
+    });
+  }
+  render();
+  (async()=>{ if(!mcpCap||forgeChecking) return; forgeChecking=true; let ch=false;
+    for(const j of forgeJobs.filter(j=>j.state!=='done'&&Date.now()-j.at>4*60000).slice(0,3)){ try{ ch=(await forgeCheck(j))||ch; }catch(e){ break; } }
+    forgeChecking=false; if(ch&&sheetIs('ai')) render(); })();
+  go.onclick=async()=>{
+    if(!mcpCap){ out.classList.remove('hidden'); out.textContent='Forge needs Foxboard open inside the Claude app with the GitHub connector on.'; return; }
+    const G=gc.game(), C=gc.char(), txt=ta.value.trim();
+    if(!txt&&!C){ out.classList.remove('hidden'); out.textContent='Describe what you want first.'; return; }
+    const [,w,hh]=FORGE_SIZES[+sz.value], n=+nv.value;
+    const key=keyBg?((G&&G.key)||'#FF00FF'):null;
+    const prompt=[txt||(C?C.name:''), C?('Character details (keep exactly): '+C.look):'', G?('Art style: '+(doc.pixel?G.sprite:G.hd)):'', key?`Plain flat solid ${keyName(key)} background, nothing else behind the subject, no floor shadow.`:''].filter(Boolean).join(' ');
+    const id=Date.now().toString(36)+uid();
+    const job={prompt:prompt.slice(0,1500),n,w,h:hh,seed:Math.floor(Math.random()*1e9),key,at:Date.now()};
+    go.disabled=true; out.classList.remove('hidden'); out.textContent='Queuing on GitHub… (first time asks you to Allow)';
+    try{
+      await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path:`forge/jobs/${id}.json`,content:JSON.stringify(job,null,1),message:`Forge job ${id}: ${n}x ${w}x${hh}`});
+      forgeJobs.unshift({id,label:txt||(C?C.name:'image'),n,w,h:hh,at:job.at,state:'rendering',got:[],failed:[]}); forgeSaveLocal();
+      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta({w,h:hh})/60000)} min. Keep working — come back to ✨AI › Forge and tap Check now.`;
+      render();
+    }catch(e){ out.textContent=ghErr(e); }
+    finally{ go.disabled=false; }
+  };
+}
 function openAI(mode){
   if(drawMode) setDrawMode(false);
-  mode=mode||(doc.pixel?'pixel':'vector');
+  mode=mode||'forge';
   openSheet('✨ AI studio','ai',b=>{
-    if(aiReady && !sampleFn){
+    if(aiReady && !sampleFn && mode!=='forge'){
       b.append(h('div',{class:'out'},'AI needs Foxboard opened inside the Claude app (it runs on your Claude plan — no API key, no extra bill). Everything else works here.'));
       return;
     }
     const tabs=h('div',{class:'tabs'});
-    [['pixel','👾 Pixel sprite'],['vector','🎨 Vector art'],['layout','📐 Design it'],['critique','🧐 Critique']].forEach(([k,l])=>{ const bt=h('button',{class:k===mode?'on':''},l); bt.onclick=()=>openAI(k); tabs.append(bt); });
+    [['forge','🔥 Forge'],['pixel','👾 Pixel sprite'],['vector','🎨 Vector art'],['layout','📐 Design it'],['critique','🧐 Critique']].forEach(([k,l])=>{ const bt=h('button',{class:k===mode?'on':''},l); bt.onclick=()=>openAI(k); tabs.append(bt); });
     b.append(tabs);
     const ta=h('textarea',{placeholder:''});
     const out=h('div',{class:'out hidden'});
@@ -996,6 +1092,8 @@ Reply with only the SVG code.`;
         addObj(o);
         return 'Added as a new image layer. Use Remove background, adjustments or Draw to finish it.';
       });
+    } else if(mode==='forge'){
+      buildForge(b,ta); return;
     } else if(mode==='layout'){
       ta.placeholder='e.g. boss card for "The Ex-Husband" — HP 120, weakness: honesty, flavor line at the bottom';
       extra=[h('div',{class:'hint'},'Claude places text and shapes on this frame using your canvas size. Your existing layers stay; undo removes the whole layout.')];
@@ -1650,7 +1748,7 @@ for(const p of doc.pages) for(const o of p.objects) if(o.type==='image') getImg(
 refreshUI(); updUndo(); resize(); fit(); renderPages(); updDrawbar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const p of doc.pages) for(const o of p.objects) if(o.type==='text') fitText(o); draw(); thumbsSoon(); });
 if(!doc.pages.some(p=>p.objects.length)) setTimeout(()=>toast('Tap Text, Shape, Image, Draw or ✨AI to start',2600),400);
-window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
+window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,forgeCheck,get forgeJobs(){return forgeJobs;},setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
 })();
 </script>
 </body>

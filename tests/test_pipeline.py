@@ -3,7 +3,7 @@
 Run: python tests/test_pipeline.py [path/to/index.html]
 Prints PASS/FAIL per check and exits non-zero on any failure.
 """
-import asyncio, base64, io, pathlib, sys
+import asyncio, base64, io, json, pathlib, sys
 from playwright.async_api import async_playwright
 from PIL import Image
 
@@ -39,7 +39,9 @@ function docRef(path){ return {id:path.split('/').pop(),path,
 window.__store=store;
 const db={doc:docRef,collection:p=>query(p)};
 const mcp={ async listTools(){ return {servers:[{server:'github',authStatus:'connected',tools:[]}],fileArgs:true}; },
-  async callTool(server,tool,input){ window.__calls.push({server,tool,input}); if(window.__fail404) throw {code:'tool_error',message:'failed to create/update file: PUT https://api.github.com/... 404 Not Found []'}; return {content:[],payload:{}}; } };
+  async callTool(server,tool,input){ window.__calls.push({server,tool,input}); if(window.__fail404) throw {code:'tool_error',message:'failed to create/update file: PUT https://api.github.com/... 404 Not Found []'};
+    if(tool==='get_file_contents'){ if(window.__forgeReady && /\/(0|1)\.b64$/.test(input.path)) return {content:[{type:'text',text:'[Resource from github at repo://x/contents/'+input.path+'] png:'+window.__forgePNG}],payload:'png:'+window.__forgePNG}; throw {code:'tool_error',message:'404 Not Found'}; }
+    return {content:[],payload:{}}; } };
 const user={ isOwner:()=>true, canEdit:()=>true, async can(){ return true; }, async id(){ return 'u_duff'; }, async me(){ return {id:'u_duff'}; }, async profiles(ids){ const o={}; ids.forEach(i=>o[i]={name:i==='u_britt'?'Brittany':'Duff'}); return o; } };
 const N=16; const rows=[]; for(let y=0;y<N;y++){ let r=''; for(let x=0;x<N;x++) r+=(x>3&&x<12&&y>3&&y<12)?'0':'.'; rows.push(r); }
 const sample=async(input,opts={})=>{ window.__prompts.push(String(input)); const t='ok'; opts.onText&&opts.onText({text:t,delta:t}); return {text:t,truncated:false}; };
@@ -151,6 +153,34 @@ async def main():
               const b=document.createElement('button'); await __fb.shareCanvas(b); await new Promise(r=>setTimeout(r,300));
               return [...window.__store.keys()].filter(k=>k.startsWith('libchunks/')).length; })()""")
             check('big canvas chunks under the db doc limit', r >= 4, r)
+
+        # --- Forge ---
+        ok = await ev("typeof __fb.forgeCheck==='function'")
+        check('forge exists', ok)
+        if ok:
+            await ev("""(()=>{ const c=document.createElement('canvas'); c.width=40; c.height=40; const g=c.getContext('2d'); g.fillStyle='#ff00ff'; g.fillRect(0,0,40,40); g.fillStyle='#123456'; g.fillRect(10,10,20,20); window.__forgePNG=c.toDataURL('image/png').split(',')[1]; window.__calls=[]; })()""")
+            await ev("__fb.setActiveGame('duffquest'); __fb.openAI('forge')"); await pg.wait_for_timeout(300)
+            await pg.fill('#shBody textarea', 'a gothic bell tower at dawn')
+            await pg.select_option('#shBody select >> nth=1', 'duff')
+            await pg.click('button:has-text("Flat key background")')
+            await pg.click('button:has-text("Queue it")'); await pg.wait_for_timeout(500)
+            calls = await ev("window.__calls.filter(c=>c.tool==='create_or_update_file').map(c=>({repo:c.input.repo,owner:c.input.owner,path:c.input.path,branch:c.input.branch,content:c.input.content}))")
+            check('forge queues one job file in Foxboard/forge/jobs', len(calls) == 1 and calls[0]['repo'] == 'Foxboard' and calls[0]['path'].startswith('forge/jobs/') and calls[0]['path'].endswith('.json') and calls[0]['branch'] == 'main', calls)
+            if calls:
+                job = json.loads(calls[0]['content'])
+                check('job carries prompt, character look, style and key bg', 'bell tower' in job['prompt'] and 'blackout' in job['prompt'] and 'flat' in job['prompt'].lower() and job['key'] == '#FF00FF' and job['n'] == 2 and job['w'] == 768, job)
+            jobs = await ev("__fb.forgeJobs.length")
+            check('job listed in the app', jobs >= 1, jobs)
+            await ev("window.__forgeReady=true")
+            await pg.click('button:has-text("Check now")'); await pg.wait_for_timeout(800)
+            got = await ev("__fb.forgeJobs[0].got")
+            check('check pulls both finished versions', got == [0, 1], got)
+            n0 = await ev("__fb.doc.pages[__fb.doc.cur].objects.length")
+            await pg.click('#shBody img >> nth=0'); await pg.wait_for_timeout(700)
+            n1 = await ev("__fb.doc.pages[__fb.doc.cur].objects.length")
+            px = await ev("""(async()=>{ const o=__fb.doc.pages[__fb.doc.cur].objects.slice(-1)[0]; const im=new Image(); im.src=o.src; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d'); g.drawImage(im,0,0); return [o.name, Array.from(g.getImageData(20,20,1,1).data)]; })()""")
+            check('tapping a result adds it as a layer', n1 == n0 + 1 and px[0].startswith('Forge') and px[1][:3] == [18, 52, 86], [n0, n1, px])
+
         check('no page errors', not errs, errs)
         await b.close()
     print(f"\n{sum(results)}/{len(results)} passed")
