@@ -159,8 +159,8 @@ async def main():
               const m=r.files[j.mask]; const im=new Image(); await new Promise(z=>{ im.onload=z; im.src='data:image/png;base64,'+m.split(':')[1]; });
               const k=document.createElement('canvas'); k.width=im.width; k.height=im.height; const kg=k.getContext('2d'); kg.drawImage(im,0,0);
               const corner=kg.getImageData(2,2,1,1).data[0], mid=kg.getImageData(Math.round(im.width/2),Math.round(im.height/2),1,1).data[0];
-              return {mode:j.mode, prompt:j.prompt, corner, mid}; }catch(e){ return {err:String(e.message||e)}; } })()""")
-        check('new background: edit job, background masked, subject kept', r.get('mode') == 'edit' and r.get('corner') == 255 and r.get('mid') == 0 and 'misty forest' in (r.get('prompt') or ''), r)
+              return {mode:j.mode, engine:j.engine, prompt:j.prompt, corner, mid}; }catch(e){ return {err:String(e.message||e)}; } })()""")
+        check('new background: edit job, background masked, subject kept', r.get('mode') == 'edit' and r.get('engine') == 'flux' and r.get('corner') == 255 and r.get('mid') == 0 and 'misty forest' in (r.get('prompt') or ''), r)
 
         # 9) before/after
         r = await ev("""(()=>{ const ids=Foxboard.list().map(l=>l.id); try{ Foxboard.compare(ids[ids.length-1]); }catch(e){ return 'ERR '+e.message; }
@@ -213,15 +213,21 @@ with tempfile.TemporaryDirectory() as td:
     (td / 'forge/jobs/sk1.json').write_text(json.dumps({'mode': 'sketch', 'prompt': 'a bridge', 'n': 1, 'w': 512, 'h': 512, 'seed': 7, 'strength': 0.55, 'tile': True, 'init': 'forge/jobs/sk1.init.b64'}))
     (td / 'forge/jobs/nw1.json').write_text(json.dumps({'mode': 'new', 'prompt': 'grass', 'n': 1, 'w': 512, 'h': 512, 'seed': 7}))
     (td / 'models.env').write_text('DIFF=d\nVAE=v\nCLIP=c\nT5GGUF=t\n')
+    (td / 'forge/jobs/bg1.json').write_text(json.dumps({'mode': 'edit', 'engine': 'flux', 'prompt': 'Background scene: harbour', 'n': 1, 'w': 512, 'h': 512, 'seed': 7, 'init': 'forge/jobs/sk1.init.b64', 'mask': 'forge/jobs/sk1.init.b64'}))
+    (td / 'forge/jobs/ex1.json').write_text(json.dumps({'mode': 'expand', 'prompt': '', 'n': 1, 'w': 512, 'h': 512, 'seed': 7, 'init': 'forge/jobs/sk1.init.b64', 'mask': 'forge/jobs/sk1.init.b64'}))
     env = dict(os.environ, FORGE_DRY='1', SD='sd')
     out = {}
-    for jid in ('sk1', 'nw1'):
+    for jid in ('sk1', 'nw1', 'bg1', 'ex1'):
         pr = subprocess.run([sys.executable, str(ROOT / 'forge/render_one.py'), jid, '0'], cwd=td, env=env, capture_output=True, text=True, timeout=60)
         try: out[jid] = json.loads(pr.stdout.strip().splitlines()[-1])
         except Exception: out[jid] = (pr.stdout + pr.stderr)[-300:]
     sk = out['sk1']
     check('render: sketch runs img2img (--init-img, --strength 0.55, no mask)', isinstance(sk, list) and '--init-img' in sk and sk[sk.index('--strength') + 1] == '0.55' and '--mask' not in sk, sk)
     check('render: tile job adds --circular', isinstance(sk, list) and '--circular' in sk)
+    bg = out['bg1']
+    check('render: New background (engine flux) = masked FLUX fill at 0.92, not the klein magic edit', isinstance(bg, list) and '--mask' in bg and bg[bg.index('--strength') + 1] == '0.92', bg if not isinstance(bg, list) else '')
+    ex = out['ex1']
+    check('render: expand repaints its new edges at 0.90', isinstance(ex, list) and ex[ex.index('--strength') + 1] == '0.90', ex if not isinstance(ex, list) else '')
     check('render: plain job has no --circular', isinstance(out['nw1'], list) and '--circular' not in out['nw1'], out['nw1'])
     # a hung renderer becomes a failed take after the cap instead of blocking the queue
     fake = td / 'hang.sh'; fake.write_text('#!/bin/sh\nsleep 60\n'); fake.chmod(0o755)

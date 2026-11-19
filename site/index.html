@@ -2549,11 +2549,12 @@ function snap64(v){ return Math.max(256,Math.min(1024,Math.round(v/64)*64)); }
 async function forgePut(path,content,msg){ await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path,content,message:msg}); }
 function forgeBuild(opts){
   if(opts.mode==='bg'){ const o=apiObj(opts.id); const p=String(opts.prompt||'').trim(); if(!p) throw new Error('Describe the new background');
-    opts={...opts,mode:'edit',maskCanvas:bgMask(o),prompt:'Background scene: '+p+'. The subject in front stays exactly as it is, lit to match.',label:'New background: '+p}; }
+    opts={...opts,mode:'edit',engine:'flux',maskCanvas:bgMask(o),prompt:'Background scene: '+p+'. The subject in front stays exactly as it is, lit to match.',label:'New background: '+p}; }
   const mode=opts.mode||'new', jid=opts.jid||(Date.now().toString(36)+uid()), n=Math.max(1,Math.min(4,opts.n||(mode==='upscale'?1:2)));
   const sd=parseInt(opts.seed,10);
   const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:Number.isFinite(sd)&&sd>=0?sd:Math.floor(Math.random()*1e9),at:Date.now()};
   if(opts.tile) job.tile=true;
+  if(opts.engine==='flux') job.engine='flux'; // whole-area fill (New background) instead of the klein magic edit
   const files={}; let box=opts.box||null, label=opts.label||opts.prompt||mode;
   if(mode==='new'){ job.w=opts.w||768; job.h=opts.h||768; job.key=opts.key||null; if(!job.prompt) throw new Error('Describe the picture'); }
   else {
