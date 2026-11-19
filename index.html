@@ -852,7 +852,7 @@ function runMagic(){
     if(!magicMaskCount()){ toast('Brush over the area first'); return; }
     openSheet('🖌 Magic edit','magicedit',b=>{ const ta=h('textarea',{placeholder:'What goes in the brushed area? e.g. a glowing lantern, a black cat, nothing — just more brick wall'});
       b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const pr=ta.value.trim(); if(!pr){ toast('Say what to paint there'); return; } closeSheet(); const id=await forgeSend({mode:'edit',id:o.id,maskCanvas:mc,prompt:pr},'Magic edit queued ✓ (~10 min) — ✨AI › Forge shows it'); if(id) endMagic(); }},'🔥 Queue it')));
-      b.append(h('div',{class:'hint'},'FLUX repaints only the brushed area to match your words. Free on GitHub machines, about 10 minutes, public. The result lands on top of your image, lined up.')); setTimeout(()=>ta.focus(),200); });
+      b.append(h('div',{class:'hint'},'An AI editing model zooms in on the brushed area and changes only that, keeping the pose, light and style. Say it plainly, e.g. "the flame turned up high". Free on GitHub machines, about 10 minutes, public. The result lands on top of your image, lined up.')); setTimeout(()=>ta.focus(),200); });
     return; }
   if(!magic) return; const o=magicObj(); if(!o){ toast('That image is gone'); endMagic(); return; } const mc=magic.mask, W=mc.width, H=mc.height;
   const md=mc.getContext('2d').getImageData(0,0,W,H).data, m=new Uint8Array(W*H); let n=0;
