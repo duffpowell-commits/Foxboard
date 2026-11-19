@@ -928,7 +928,7 @@ function pageThumb(pi,size,d){
   const c=document.createElement('canvas'); c.width=c.height=size;
   const g=c.getContext('2d'); const s=Math.min(size/d.w,size/d.h);
   g.translate((size-d.w*s)/2,(size-d.h*s)/2);
-  g.fillStyle='#3b3650'; g.fillRect(0,0,d.w*s,d.h*s);
+  g.fillStyle='#1d2536'; g.fillRect(0,0,d.w*s,d.h*s);
   renderPage(g,pi,s,false,d); return c;
 }
 function renderPages(){
