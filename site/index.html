@@ -1940,7 +1940,7 @@ function who(id){ return id&&id===myUserId?'you':(names.get(id)||'Someone'); }
   },e=>{ clearTimeout(t); libState='error:'+(e&&e.code); });
   dbCap.collection('outbox').orderBy('at','desc').limit(20).onSnapshot(s=>{ outboxItems=s.docs.map(d=>({id:d.id,...d.data()})); },()=>{});
   dbCap.collection('fromclaude').orderBy('at','desc').limit(10).onSnapshot(s=>{ fromClaude=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.status!=='draft-uploading'); draftBanner(); },()=>{});
-  if(userIsOwner) dbCap.collection('toclaude').orderBy('at','desc').limit(10).onSnapshot(s=>{ toClaudeItems=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.by===myUserId||!myUserId); if(sheetIs('toclaude')) openClaudeLink(); },()=>{});
+  if(myUserId) dbCap.collection(`toclaude/${myUserId}/items`).orderBy('at','desc').limit(10).onSnapshot(s=>{ toClaudeItems=s.docs.map(d=>({id:d.id,...d.data()})); if(sheetIs('toclaude')) openClaudeLink(); },()=>{});
   dbCap.collection('libnotes').orderBy('at','desc').limit(500).onSnapshot(s=>{
     libNotes=s.docs.map(d=>({id:d.id,...d.data()}));
     nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')&&libItemRefresh) libItemRefresh(); });
@@ -2044,7 +2044,8 @@ function report(kind,e,extra){
     const ent={at:Date.now(),kind:String(kind||'error').slice(0,40),msg,code:e&&e.code?String(e.code).slice(0,60):'',stack:String(e&&e.stack||'').slice(0,1200),extra:extra?String(extra).slice(0,300):'',ua:navigator.userAgent.slice(0,160),ver:APP_VER,where:window.claude?'claude':'site'};
     const L=diagLocal(); L.unshift(ent); try{ localStorage.setItem(DIAG_LS,JSON.stringify(L.slice(0,50))); }catch(_){}
     const k=ent.kind+'|'+msg; if(Date.now()-(diagRecent.get(k)||0)<60000) return; diagRecent.set(k,Date.now());
-    if(dbCap&&diagSent<20){ diagSent++; dbCap.collection('diag').add({...ent,by:myUserId||''}).catch(()=>{}); }
+    // db rule: each person writes only under diag/<their id>/; only Duff (and Claude as Duff) reads across everyone
+    if(dbCap&&myUserId&&diagSent<20){ diagSent++; if(diagSent===1) dbCap.doc(`diag/${myUserId}`).set({at:Date.now()}).catch(()=>{}); dbCap.collection(`diag/${myUserId}/log`).add({...ent,by:myUserId}).catch(()=>{}); }
   }catch(_){}
 }
 window.addEventListener('error',ev=>{ if(ev&&ev.error) report('crash',ev.error); else if(ev&&ev.message) report('crash',ev.message); });
@@ -2053,15 +2054,18 @@ function snapshotPNG(){ const m=Math.max(doc.w,doc.h); const sc=doc.pixel?Math.m
   let u=renderToCanvas(sc,false).toDataURL('image/png'); if(u.length>200000) u=renderToCanvas(Math.min(sc,384/m),true).toDataURL('image/jpeg',0.82); return u; }
 async function sendToClaude(note){
   if(!dbCap) throw new Error('Send to Claude works when Foxboard is open inside the Claude app');
+  if(!myUserId) throw new Error('Sign in to Claude to send');
+  const B=`toclaude/${myUserId}`; // rule: you write only under your own id; Duff + Claude read everyone's
   endEdit(); note=String(note||'').trim().slice(0,2000);
   const json=JSON.stringify(doc); if(json.length>CHUNK*30) throw new Error('Too big to send — save a project file instead');
   const id=Date.now().toString(36)+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
   const layers=O().slice(-60).map(o=>({id:o.id,type:o.type,name:o.name||'',text:o.type==='text'?String(o.text||'').slice(0,80):undefined,x:Math.round(o.x),y:Math.round(o.y),w:Math.round(o.w),h:Math.round(o.h),hidden:!!o.hidden}));
-  await dbCap.doc(`toclaude/${id}`).set({note,by:myUserId||'',at:Date.now(),name:doc.name||'Untitled',w:doc.w,h:doc.h,pixel:!!doc.pixel,frames:doc.pages.length,cur:doc.cur,sel:selId||'',game:activeGame||'',layers:JSON.stringify(layers).slice(0,20000),png:snapshotPNG(),chunks:parts.length,ver:APP_VER,status:'uploading'});
+  await dbCap.doc(B).set({at:Date.now(),by:myUserId});
+  await dbCap.doc(`${B}/items/${id}`).set({note,by:myUserId||'',at:Date.now(),name:doc.name||'Untitled',w:doc.w,h:doc.h,pixel:!!doc.pixel,frames:doc.pages.length,cur:doc.cur,sel:selId||'',game:activeGame||'',layers:JSON.stringify(layers).slice(0,20000),png:snapshotPNG(),chunks:parts.length,ver:APP_VER,status:'uploading'});
   let wrote=0;
-  try{ for(let n=0;n<parts.length;n++){ await dbCap.doc(`toclaudechunks/${id}_${n}`).set({item:id,n,data:parts[n]}); wrote=n+1; }
-    await dbCap.doc(`toclaude/${id}`).update({status:'sent'}); }
-  catch(e){ for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`toclaudechunks/${id}_${n}`).delete(); }catch(_){} } try{ await dbCap.doc(`toclaude/${id}`).delete(); }catch(_){} throw e; }
+  try{ for(let n=0;n<parts.length;n++){ await dbCap.doc(`${B}/chunks/${id}_${n}`).set({item:id,n,data:parts[n]}); wrote=n+1; }
+    await dbCap.doc(`${B}/items/${id}`).update({status:'sent'}); }
+  catch(e){ for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`${B}/chunks/${id}_${n}`).delete(); }catch(_){} } try{ await dbCap.doc(`${B}/items/${id}`).delete(); }catch(_){} throw e; }
   try{ const L=JSON.parse(localStorage.getItem(TOCLAUDE_LS)||'[]'); L.unshift({id,at:Date.now(),note:note.slice(0,120)}); localStorage.setItem(TOCLAUDE_LS,JSON.stringify(L.slice(0,20))); }catch(_){}
   return id;
 }
@@ -2636,9 +2640,9 @@ const API_DOC={
   sticker:'sticker(id, {width, color}) -> outline around a cut-out. width: px for pixel art, else fraction of the image (0.03)',
   newBackground:'newBackground(id, {prompt, n}) -> Promise<jobId>. Forge paints a new scene behind a cut-out, subject kept exactly',
   compare:'compare(id) -> opens a before/after slider: the frame without vs with this layer',
-  sendToClaude:'sendToClaude(note) -> Promise<id>. Canvas (doc + PNG + layer list) and a note into db toclaude/ for Claude',
+  sendToClaude:'sendToClaude(note) -> Promise<id>. Canvas (doc + PNG + layer list) and a note into db toclaude/<userId>/items/<id> (+ /chunks/) for Claude',
   drafts:'drafts() -> drafts Claude sent (db fromclaude/), newest first', openDraft:'openDraft(id) -> opens a Claude draft as the canvas (undoable)',
-  problems:'problems() -> this phone\'s problem log (last 50)', report:'report(kind, message) -> adds to the problem log (and db diag/ inside Claude)',
+  problems:'problems() -> this phone\'s problem log (last 50)', report:'report(kind, message) -> adds to the problem log (and db diag/<userId>/log inside Claude)',
   forgeTrack:'forgeTrack(local) -> show a job queued elsewhere in this phone\'s ✨AI › Forge list',
   undo:'undo()', redo:'redo()'
 };

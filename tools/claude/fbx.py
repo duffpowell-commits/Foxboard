@@ -5,7 +5,7 @@
   fbx.py push-doc doc.json preview.png OUTDIR
   fbx.py pull <id> <db_dir> doc.json
   fbx.py push-draft doc.json preview.png OUTDIR --title T [--note N]   (Claude -> Duff: shows an "open it?" banner)
-  fbx.py inbox <id> <db_dir> OUTDIR                                     (Duff -> Claude: unpacks a Send to Claude item)
+  fbx.py inbox <id> <db_dir> OUTDIR                                     (Duff -> Claude: unpacks toclaude/<user>/items/<id> + chunks)
 
 push-* writes one JSON file per db document into OUTDIR plus OUTDIR/writes.json:
   {"id": ..., "batches": [[{op, collection, doc_id, file_path}, ...], ...]}
@@ -111,10 +111,13 @@ def push_draft(a):
 
 
 def inbox(a):
-    """Unpack a Send to Claude item read with ArtifactData out_dir=<db_dir> (toclaude/<id>.json + toclaudechunks/<id>_<n>.json)."""
+    """Unpack a Send to Claude item read with ArtifactData out_dir=<db_dir>."""
     db = pathlib.Path(a.db_dir); out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
-    meta = read_db(db / "toclaude" / f"{a.id}.json")
-    parts = sorted((c for c in (read_db(f) for f in (db / "toclaudechunks").glob("*.json")) if c.get("item") == a.id), key=lambda c: c["n"])
+    # layout from ArtifactData out_dir: toclaude/<userId>/items/<id>.json + toclaude/<userId>/chunks/<id>_<n>.json
+    hits = list(db.glob(f"**/items/{a.id}.json"))
+    if not hits: sys.exit(f"no items/{a.id}.json under {db}: read toclaude/<userId>/items with out_dir first")
+    meta = read_db(hits[0]); cdir = hits[0].parent.parent / "chunks"
+    parts = sorted((c for c in (read_db(f) for f in cdir.glob(f"{a.id}_*.json")) if c.get("item") == a.id), key=lambda c: c["n"])
     if len(parts) != meta.get("chunks"): sys.exit(f"have {len(parts)} chunks, meta says {meta.get('chunks')}: read every toclaudechunks row for {a.id}")
     doc = json.loads("".join(c["data"] for c in parts)); (out / "doc.json").write_text(json.dumps(doc))
     png = str(meta.get("png", "")); ext = "jpg" if png.startswith("data:image/jpeg") else "png"

@@ -45,9 +45,9 @@ textures. It writes `forge/out/<id>_sheet.png`. `cut` turns the pick into a game
 (it can't see faces, and the faceless rule is the one that matters most). Test: `tests/test_art_loop.py`.
 
 ## 6. Duff → Claude and back (Send to Claude, drafts, problem log)
-- **Inbox:** `ArtifactData query` collection `toclaude` (newest first, `status == "sent"`), with `out_dir`; then read `toclaudechunks` for that item and run `python3 tools/claude/fbx.py inbox <id> <db_dir> OUTDIR` → `doc.json`, `snapshot.png` (Read it), `info.json` (note, layers, selection, game). Reply by updating the row: `{status:"seen", reply:"..."}`.
+- **Inbox:** `ArtifactData list` collection `toclaude` (one marker doc per sender's user id), then `query` `toclaude/<uid>/items` (newest first, `status == "sent"`) and `list` `toclaude/<uid>/chunks`, both with the same `out_dir`; run `python3 tools/claude/fbx.py inbox <id> <db_dir> OUTDIR` → `doc.json`, `snapshot.png` (Read it), `info.json` (note, layers, selection, game). Reply by updating the row: `{status:"seen", reply:"..."}`.
 - **Draft back:** edit `doc.json` with `fb.js`, render a preview, `fbx.py push-draft doc.json preview.png OUTDIR --title "..." --note "..."`, then send each `writes.json` batch. Duff gets an Open banner; it loads as plain data and undo returns his version.
-- **Problems:** `ArtifactData query` collection `diag` — each row has kind (`forge`, `send`, `share`, `ai`, `crash`, `promise`…), msg, code, stack, ua, ver, where (`claude` or `site`).
+- **Problems:** `ArtifactData list` collection `diag` for user ids, then `query` `diag/<uid>/log` — each row has kind (`forge`, `send`, `share`, `ai`, `crash`, `promise`…), msg, code, stack, ua, ver, where (`claude` or `site`).
 
 ## 7. Checks and waits
 - `tools/claude/check.sh` — every test in Chromium, then WebKit (iPhone), then screenshots of the key screens in `/tmp/foxboard-shots` (Read them). `--quick` = Chromium only.

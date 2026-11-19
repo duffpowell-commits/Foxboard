@@ -43,15 +43,15 @@ async def main():
         check('menu has 📨 Send to Claude', await pg.locator('#shBody button:has-text("Send to Claude")').count() == 1)
         # 1) send
         r = await ev("""(async()=>{ const id=await Foxboard.sendToClaude('make the knight read better'); await new Promise(r=>setTimeout(r,50));
-            const m=__db.get('toclaude/'+id); const parts=[...__db.entries()].filter(([k,v])=>k.startsWith('toclaudechunks/')&&v.item===id).map(([k,v])=>v).sort((a,b)=>a.n-b.n);
+            const m=__db.get('toclaude/u_me/items/'+id); const parts=[...__db.entries()].filter(([k,v])=>k.startsWith('toclaude/u_me/chunks/')&&v.item===id).map(([k,v])=>v).sort((a,b)=>a.n-b.n);
             const d=JSON.parse(parts.map(p=>p.data).join('')); return {status:m.status,note:m.note,png:m.png.slice(0,15),layers:JSON.parse(m.layers).length,chunks:m.chunks,got:parts.length,w:d.w,name:d.name}; })()""")
         check('send: meta + chunks land, status sent', g(r, 'status') == 'sent' and g(r, 'got') == g(r, 'chunks') and g(r, 'w') == 48 and g(r, 'name') == 'Knight', r)
         check('send: note, PNG snapshot and layer list included', g(r, 'note') == 'make the knight read better' and str(g(r, 'png')).startswith('data:image/') and g(r, 'layers') == 2, r)
-        r = await ev("""(async()=>{ window.__failSet=p=>p.startsWith('toclaudechunks/'); let err=null; try{ await Foxboard.sendToClaude('x'); }catch(e){ err=e.code; } window.__failSet=null;
-            return {err, left:[...__db.entries()].filter(([k,v])=>(k.startsWith('toclaude/')&&v.note==='x')).length}; })()""")
+        r = await ev("""(async()=>{ window.__failSet=p=>p.includes('/chunks/'); let err=null; try{ await Foxboard.sendToClaude('x'); }catch(e){ err=e.code; } window.__failSet=null;
+            return {err, left:[...__db.entries()].filter(([k,v])=>(k.includes('/items/')&&v.note==='x')).length}; })()""")
         check('send: a failed upload leaves nothing behind', g(r, 'err') == 'quota_exceeded' and g(r, 'left') == 0, r)
         # sheet lists the send + a reply Claude wrote
-        await ev("""(()=>{ const k=[...__db.keys()].find(k=>k.startsWith('toclaude/')); __db.set(k,{...__db.get(k),status:'seen',reply:'Outline it in #14101c and drop to 6 colors.'}); __fire(); })()""")
+        await ev("""(()=>{ const k=[...__db.keys()].find(k=>k.startsWith('toclaude/u_me/items/')); __db.set(k,{...__db.get(k),status:'seen',reply:'Outline it in #14101c and drop to 6 colors.'}); __fire(); })()""")
         await ev("__fb.t.closeSheet(); document.querySelector('#bMenu').click()"); await pg.wait_for_timeout(150)
         try: await pg.click('#shBody button:has-text("Send to Claude")', timeout=2000)
         except Exception: pass
@@ -59,7 +59,7 @@ async def main():
         check('sheet shows Claude\'s reply to a send', 'Outline it in #14101c' in body, body[:200])
         # 3) problem log
         r = await ev("""(async()=>{ Foxboard.report('test','boom one'); Foxboard.report('test','boom one'); const sc=document.createElement('script'); sc.textContent="setTimeout(function(){ throw new Error('kaboom'); },0)"; document.body.append(sc);
-            await new Promise(r=>setTimeout(r,120)); const d=[...__db.entries()].filter(([k])=>k.startsWith('diag/')).map(([k,v])=>v);
+            await new Promise(r=>setTimeout(r,120)); const d=[...__db.entries()].filter(([k])=>k.startsWith('diag/u_me/log/')).map(([k,v])=>v);
             return {local:Foxboard.problems().map(x=>x.msg), db:d.map(x=>x.kind+':'+x.msg), ua:!!(d[0]&&d[0].ua)}; })()""")
         check('problem log: kept on the phone', 'boom one' in (g(r, 'local') or []) and 'kaboom' in (g(r, 'local') or []), r)
         check('problem log: reaches db diag/, deduped, with device info', (g(r, 'db') or []).count('test:boom one') == 1 and 'crash:kaboom' in (g(r, 'db') or []) and g(r, 'ua'), r)
@@ -108,10 +108,10 @@ with tempfile.TemporaryDirectory() as td:
     except Exception as e: ok, meta = False, (pr.stderr or str(e))[-300:]
     check('fbx push-draft: chunks first, fromclaude meta last, title kept', ok, meta if not ok else '')
     # inbox: unpack a Send to Claude item saved by ArtifactData out_dir
-    db = td / 'db'; (db / 'toclaude').mkdir(parents=True); (db / 'toclaudechunks').mkdir()
+    db = td / 'db'; (db / 'toclaude/u_x/items').mkdir(parents=True); (db / 'toclaude/u_x/chunks').mkdir()
     body = json.dumps({'name': 'Knight', 'w': 48, 'h': 32, 'pages': [{'id': 'p', 'objects': []}]}); buf = io.BytesIO(); Image.new('RGB', (48, 32), (1, 2, 3)).save(buf, 'PNG')
-    (db / 'toclaude/abc.json').write_text(json.dumps({'id': 'abc', 'version': 3, 'data': {'note': 'fix it', 'name': 'Knight', 'w': 48, 'h': 32, 'chunks': 2, 'layers': '[{"id":"x"}]', 'png': 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode(), 'status': 'sent'}}))
-    for n in range(2): (db / f'toclaudechunks/abc_{n}.json').write_text(json.dumps({'data': {'item': 'abc', 'n': n, 'data': body[n * 40:(n + 1) * 40] if n == 0 else body[40:]}}))
+    (db / 'toclaude/u_x/items/abc.json').write_text(json.dumps({'id': 'abc', 'version': 3, 'data': {'note': 'fix it', 'name': 'Knight', 'w': 48, 'h': 32, 'chunks': 2, 'layers': '[{"id":"x"}]', 'png': 'data:image/png;base64,' + base64.b64encode(buf.getvalue()).decode(), 'status': 'sent'}}))
+    for n in range(2): (db / f'toclaude/u_x/chunks/abc_{n}.json').write_text(json.dumps({'data': {'item': 'abc', 'n': n, 'data': body[n * 40:(n + 1) * 40] if n == 0 else body[40:]}}))
     pr = subprocess.run([sys.executable, str(ROOT / 'tools/claude/fbx.py'), 'inbox', 'abc', str(db), str(td / 'in')], capture_output=True, text=True)
     ok = (td / 'in/doc.json').exists() and json.loads((td / 'in/doc.json').read_text())['w'] == 48 and (td / 'in/snapshot.png').read_bytes()[:4] == b'\x89PNG' and json.loads((td / 'in/info.json').read_text())['note'] == 'fix it'
     check('fbx inbox: doc + snapshot + note unpacked', ok, (pr.stdout + pr.stderr)[-300:])
