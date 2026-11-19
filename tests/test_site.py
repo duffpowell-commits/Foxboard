@@ -5,7 +5,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent; SITE = ROOT / 'site'
 res = []
 def check(n, ok, x=''):
     res.append(bool(ok)); print(('PASS ' if ok else 'FAIL ') + n + (('  ' + str(x)) if x != '' else ''))
-need = ['index.html', 'manifest.webmanifest', 'sw.js', 'icon-180.png', 'icon-192.png', 'icon-512.png']
+need = ['index.html', 'manifest.webmanifest', 'sw.js', 'icon-180.png', 'icon-192.png', 'icon-512.png', 'host/index.html', 'host/sw.js']
 check('site files present', all((SITE / f).exists() for f in need), [f for f in need if not (SITE / f).exists()])
 if all((SITE / f).exists() for f in need):
     built = (SITE / 'index.html').read_text(); src = (ROOT / 'index.html').read_text()
@@ -28,5 +28,21 @@ if all((SITE / f).exists() for f in need):
                 check(f'{eng}: export saves a file', (await dl.value).suggested_filename.endswith('.png'))
                 check(f'{eng}: no page errors', not errs, errs)
                 await b.close()
-    asyncio.run(main()); srv.shutdown()
+    class CORS(http.server.SimpleHTTPRequestHandler):
+        def end_headers(self): self.send_header('Access-Control-Allow-Origin', '*'); super().end_headers()
+        def log_message(self, *a): pass
+    host = http.server.ThreadingHTTPServer(('127.0.0.1', 8798), functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(SITE / 'host')))
+    cdn = http.server.ThreadingHTTPServer(('127.0.0.1', 8797), functools.partial(CORS, directory=str(SITE)))
+    for x in (host, cdn): threading.Thread(target=x.serve_forever, daemon=True).start()
+    async def loader():
+        async with async_playwright() as p:
+            for eng in ['chromium', 'webkit']:
+                b = await getattr(p, eng).launch(); ctx = await b.new_context(**p.devices['iPhone 13' if eng == 'webkit' else 'Pixel 7']); pg = await ctx.new_page(); errs = []
+                pg.on('pageerror', lambda e: errs.append(str(e)))
+                await pg.goto('http://127.0.0.1:8798/?src=http://127.0.0.1:8797/index.html'); await pg.wait_for_timeout(1800)
+                check(f'{eng}: tiny host loads the full app', await pg.evaluate("!!window.Foxboard && !!document.querySelector('#bExport')"))
+                check(f'{eng}: host has home-screen icon', await pg.evaluate("!!document.querySelector('link[rel=apple-touch-icon]')"))
+                check(f'{eng}: host loader no page errors', not errs, errs)
+                await b.close()
+    asyncio.run(main()); asyncio.run(loader()); srv.shutdown(); host.shutdown(); cdn.shutdown()
 print(f'\n{sum(res)}/{len(res)} passed'); sys.exit(0 if res and all(res) else 1)

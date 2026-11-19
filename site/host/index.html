@@ -1,0 +1,17 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b0c12"><title>Foxboard</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="https://cdn.jsdelivr.net/gh/duffpowell-commits/Foxboard@main/site/icon-32.png">
+<link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/gh/duffpowell-commits/Foxboard@main/site/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Foxboard">
+</head><body style="margin:0;background:#0b0c12;color:#dae0e5;font:16px system-ui;display:flex;align-items:center;justify-content:center;height:100vh">
+<div id="ld">🦊 Loading Foxboard…</div>
+<script>
+(function(){ var U=(new URLSearchParams(location.search).get('src'))||'https://cdn.jsdelivr.net/gh/duffpowell-commits/Foxboard@main/site/index.html';
+ fetch(U,{cache:'no-cache'}).then(function(r){ if(!r.ok) throw 0; return r.text(); }).then(function(t){ document.open(); document.write(t); document.close(); })
+ .catch(function(){ document.getElementById('ld').textContent='Foxboard needs the internet the first time. Check your connection and reopen.'; }); })();
+</script></body></html>
