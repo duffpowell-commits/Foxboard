@@ -346,7 +346,7 @@ function drawObj(c,o){
   }
   else if(o.type==='image'){ const s=srcOf(o); if(s){ const r=cropRect(o,s);
     if(o.mask&&o.mask!=='none'){ maskPath(c,o.mask,w,h); if(o.shadow){ c.fillStyle='#000'; c.fill(); c.shadowColor='transparent'; } c.clip(); }
-    const f=filterOf(o); if(f!=='none') c.filter=f; c.drawImage(s,r.sx,r.sy,r.sw,r.sh,-w/2,-h/2,w,h); } }
+    const f=filterOf(o); if(f!=='none') c.filter=f; if(o.px) c.imageSmoothingEnabled=false; c.drawImage(s,r.sx,r.sy,r.sw,r.sh,-w/2,-h/2,w,h); } }
   c.restore();
 }
 function renderPage(c,pi,scale,jpg,d){
@@ -1041,7 +1041,16 @@ function openProps(focusText){
       b.append(row('Shape',ch));
       b.append(row('Magic eraser',h('button',{class:'acc',onclick:()=>startMagic(o)},'🪄 Magic eraser'),h('button',{onclick:()=>startMagicEdit(o)},'🖌 Magic edit (AI)')));
       b.append(row('Expand',h('button',{onclick:()=>expandPreset(o,'all')},'+10%'),h('button',{onclick:()=>expandPreset(o,'wide')},'Wide'),h('button',{onclick:()=>expandPreset(o,'tall')},'Tall'),h('button',{onclick:()=>expandPreset(o,'square')},'Square')));
-      b.append(row('AI',h('button',{onclick:()=>forgeTool(o,'expand')},'🔥 AI expand'),h('button',{onclick:()=>forgeTool(o,'upscale')},'🔥 Upscale 4×')));
+      b.append(row('AI',h('button',{onclick:()=>forgeTool(o,'expand')},'🔥 AI expand'),h('button',{onclick:()=>forgeTool(o,'upscale')},'🔥 Upscale 4×'),h('button',{onclick:()=>openNewBackground(o)},'🌄 New background')));
+      const tryT=fn=>()=>{ try{ fn(); }catch(e){ toast(e.message||String(e),3500); } };
+      { const pxs=h('select',{'aria-label':'Pixel size'}); [16,24,32,48,64,96,128].forEach(v=>{ const op=h('option',{value:v},v+' px'); if(v===32) op.selected=true; pxs.append(op); });
+        const g0=gameById(activeGame), pcs=h('select',{'aria-label':'Colors'}); [...(g0?[['game',g0.name+' palette']]:[]),['16','Auto 16 colors'],['8','Auto 8 colors'],['keep','Keep colors']].forEach(([v,l])=>pcs.append(h('option',{value:v},l)));
+        let ol=true; const olb=h('button',{class:'on'},'Outline'); olb.onclick=()=>{ ol=!ol; olb.classList.toggle('on',ol); };
+        b.append(row('Pixelate',pxs,pcs,olb,h('button',{class:'acc',onclick:tryT(()=>pixelate(o,{size:+pxs.value,colors:pcs.value==='game'?'game':pcs.value==='keep'?'keep':'auto',n:+pcs.value||16,outline:ol}))},'👾 Pixelate'))); }
+      b.append(row('Tile',h('button',{onclick:tryT(()=>makeTileable(o))},'🧩 Make seamless'),h('button',{onclick:tryT(()=>tilePreview(o))},'▦ Preview 3×3')));
+      { const stc=h('input',{type:'color',value:'#ffffff','aria-label':'Outline color'});
+        b.append(row('Sticker',h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?1:0.02,color:stc.value}))},'Thin outline'),h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?2:0.045,color:stc.value}))},'Thick outline'),stc)); }
+      if(O().indexOf(o)>0) b.append(row('Compare',h('button',{onclick:tryT(()=>compareBelow(o))},'◐ Before / after with the layer below')));
       b.append(h('div',{class:'hint'},'Expand grows the picture and fills the new edges from it (instant, on the phone — best for skies, walls, ground). 🔥 AI expand / Upscale / Magic edit run on Forge (free, ~5–15 min, public).'));
       b.append(h('div',{class:'hint'},'Brush over a thing (or a watermark, a stray shadow), tap Erase: it disappears and the gap is filled from the picture around it. Runs on your phone, free, no waiting. Best on small or medium things (poles, stray marks, watermarks, a sprite\'s extra bits); a big person in a busy photo comes out smeared.'));
       b.append(h('div',{class:'hint'},'Removes the solid color touching the edges (great for AI art on plain backgrounds). Raise tolerance if bits are left; undo if it eats too much. For fine cleanup use Draw › 🧽 on this image.'));
@@ -1233,7 +1242,7 @@ function forgeLoadLocal(){ try{ const a=JSON.parse(localStorage.getItem(FORGE_LS
 function forgeSaveLocal(){ try{ localStorage.setItem(FORGE_LS,JSON.stringify(forgeJobs.slice(0,30))); }catch(e){} }
 forgeLoadLocal();
 function keyName(hx){ return /^#?ff00ff$/i.test(hx)?'magenta (#FF00FF)':/^#?00ff00$/i.test(hx)?'pure green (#00FF00)':hx; }
-function forgeEta(j){ const per=(FORGE_SIZES.find(z=>z[1]===j.w&&z[2]===j.h)||[0,0,0,15])[3]; return (per+5)*60000; }
+function forgeEta(j){ const per=(FORGE_SIZES.find(z=>z[1]===j.w&&z[2]===j.h)||[0,0,0,15])[3]; return (per*(j.mode==='sketch'?1.4:1)+5)*60000; }
 function forgeText(res){
   const parts=[]; for(const c of (res&&res.content)||[]){ if(c.type==='text') parts.push(c.text); else if(c.resource){ if(c.resource.text) parts.push(c.resource.text); else if(c.resource.blob){ try{ parts.push(atob(c.resource.blob)); }catch(e){} } } }
   if(typeof res?.payload==='string') parts.push(res.payload);
@@ -1273,34 +1282,85 @@ async function forgeAdd(u,name,j){
   if(j&&j.box&&(j.page===undefined||j.page===doc.cur)){ Object.assign(o,j.box); }
   addObj(o); toast(j&&j.box?'Added on top of the original — hide or delete the old layer':'Added to the canvas');
 }
+function forgePromptOf(j){ return j.prompt||String(j.label||'').replace(/^(Sketch|Edit|Subtle|Strong): /,''); }
+async function forgeVary(j,k,how){
+  const u=await forgeImgFor(j,k); if(!u) throw new Error('That take didn\'t load — try again');
+  const subtle=how!=='strong';
+  return forgeQueue({mode:'sketch',initSrc:u,prompt:forgePromptOf(j),strength:subtle?0.35:0.6,n:2,key:j.key||null,tile:!!j.tile,
+    seed:j.seed!=null?j.seed+k:undefined,box:j.box||null,page:j.page,label:(subtle?'Subtle: ':'Strong: ')+String(forgePromptOf(j)).slice(0,60)});
+}
+function forgeFav(j,k,on){ const f=new Set(j.fav||[]); if(on===undefined) on=!f.has(k); if(on) f.add(k); else f.delete(k); j.fav=[...f]; forgeSaveLocal(); return on; }
+function forgeTakes(){ const t=[]; for(const j of forgeJobs) for(const k of (j.got||[])) t.push({j,k,fav:(j.fav||[]).includes(k)}); return t; }
+async function boostPrompt(text){
+  if(!sampleFn) throw new Error('Prompt boost needs Foxboard inside the Claude app');
+  const t=String(text||'').trim(); if(!t) throw new Error('Type an idea first');
+  const r=await sampleFn('You write prompts for the FLUX.1-schnell image model for an indie game artist. '+AI_RULES+'\nRewrite the idea below as ONE vivid prompt under 70 words: subject, pose or composition, setting, lighting, mood and camera view. Do not describe the art style or medium (that is added separately). No lettering or text in the image, no artist or brand names, no quotes, no lists. Reply with the prompt only.\n\nIdea: '+t.slice(0,600),{modelTier:'quick',cache:false});
+  const out=String(r&&r.text||'').trim().replace(/^prompt:\s*/i,'').replace(/^["'“]+|["'”]+$/g,'').slice(0,900);
+  if(!out) throw {code:'invalid_json'}; return out;
+}
 function buildForge(b,ta){
   ta.placeholder='Describe the picture: who/what, pose, setting, mood. e.g. a gothic bell tower at dawn, crows circling, one lit window';
   const gc=gameCharUI();
   const sz=h('select',{}); FORGE_SIZES.forEach(([l,w,hh],i)=>sz.append(h('option',{value:i},l)));
   const nv=h('select',{}); [1,2,3,4].forEach(n=>{ const o=h('option',{value:n},n+(n>1?' versions':' version')); if(n===2) o.selected=true; nv.append(o); });
   let keyBg=false; const kb=h('button',{},'Flat key background (sprites to import)'); kb.onclick=()=>{ keyBg=!keyBg; kb.classList.toggle('on',keyBg); };
+  let tile=false; const tb=h('button',{},'🧩 Seamless tile'); tb.onclick=()=>{ tile=!tile; tb.classList.toggle('on',tile); };
+  // start from: nothing, my sketch (this frame), or the selected image
+  const so=sel(); let from='new';
+  const fromBtns=[['new','New picture'],['frame','My sketch (this frame)'],...(so&&so.type==='image'?[['layer','Selected image']]:[])].map(([k,l])=>{ const bt=h('button',{class:k===from?'on':''},l); bt.dataset.k=k; bt.onclick=()=>{ from=k; upd(); }; return bt; });
+  const follow=rangeIn(5,80,1,35,()=>{},v=>v<25?'loose':v<55?'medium':'close');
+  const followRow=row('Follow sketch',...follow); const sizeRow=row('Size',sz);
+  const seedIn=h('input',{type:'text',inputmode:'numeric',placeholder:'random',style:'width:120px'}); seedIn.setAttribute('aria-label','Seed');
+  const boost=h('button',{},'✨ Boost prompt'); let before=null; const undoB=h('button',{class:'hidden'},'↩ Undo boost');
+  boost.onclick=async()=>{ boost.disabled=true; boost.textContent='Boosting…'; try{ const t=await boostPrompt(ta.value); before=ta.value; ta.value=t; undoB.classList.remove('hidden'); }catch(e){ toast(e&&e.message?e.message:aiErr(e),3000); } boost.disabled=false; boost.textContent='✨ Boost prompt'; };
+  undoB.onclick=()=>{ if(before!==null) ta.value=before; before=null; undoB.classList.add('hidden'); };
+  function upd(){ fromBtns.forEach(x=>x.classList.toggle('on',x.dataset.k===from)); followRow.classList.toggle('hidden',from==='new'); sizeRow.classList.toggle('hidden',from!=='new'); }
   const out=h('div',{class:'out hidden'}); const go=h('button',{class:'acc'},'🔥 Queue it');
-  b.append(ta,...gc.rows,row('Size',sz),row('Versions',nv),row('',kb),row('',go),out);
-  b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo.'));
-  const list=h('div',{}); b.append(h('h4',{style:'margin:12px 0 4px'},'Your Forge jobs'),list);
+  b.append(ta,row('',...(sampleFn?[boost,undoB]:[])),row('Start from',...fromBtns),followRow,...gc.rows,sizeRow,row('Versions',nv),row('',kb,tb),row('🔒 Seed',seedIn,h('span',{class:'hint'},'same seed + prompt = same picture')),row('',go),out);
+  upd();
+  b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo. My sketch: scribble shapes and colors on the canvas, FLUX paints it — Follow sets how closely.'));
+  let view='jobs', pick=null;
+  const views=[['jobs','Jobs'],['all','All takes'],['fav','⭐ Favorites']].map(([k,l])=>{ const bt=h('button',{},l); bt.dataset.k=k; bt.onclick=()=>{ view=k; pick=null; render(); }; return bt; });
+  const list=h('div',{}); b.append(h('h4',{style:'margin:12px 0 4px'},'Your Forge results'),h('div',{class:'tabs'},...views),list);
+  function thumb(j,k){
+    const im=h('img',{alt:''}); im.style.cssText='width:84px;height:84px;object-fit:cover;border-radius:8px;background:#3b3650;cursor:pointer';
+    if(pick&&pick.j===j&&pick.k===k) im.style.outline='3px solid var(--amber)';
+    const u=forgeImgs.get(j.id+'/'+k); if(u) im.src=u; else forgeImgFor(j,k).then(x=>{ if(x) im.src=x; }).catch(()=>{});
+    im.onclick=()=>{ pick=pick&&pick.j===j&&pick.k===k?null:{j,k}; render(); };
+    return im;
+  }
+  function actions(j,k){
+    const busy=fn=>async ev=>{ const bt=ev.currentTarget; bt.disabled=true; try{ await fn(); }catch(e){ toast(e&&e.message?e.message:ghErr(e),4000); } bt.disabled=false; };
+    const fav=(j.fav||[]).includes(k);
+    const r=h('div',{class:'chips',style:'margin:6px 0'});
+    r.append(h('button',{class:'acc',onclick:busy(async()=>{ const x=await forgeImgFor(j,k); if(x) forgeAdd(x,j.label||'image',j); })},'➕ Add'),
+      h('button',{onclick:busy(async()=>{ await forgeVary(j,k,'subtle'); toast('Subtle variations queued ✓',3000); render(); })},'🔁 Subtle'),
+      h('button',{onclick:busy(async()=>{ await forgeVary(j,k,'strong'); toast('Strong variations queued ✓',3000); render(); })},'🎲 Strong'),
+      h('button',{class:fav?'on':'',onclick:()=>{ forgeFav(j,k); render(); }},fav?'⭐ Saved':'☆ Favorite'),
+      h('button',{onclick:()=>{ ta.value=forgePromptOf(j); if(j.seed!=null) seedIn.value=String(j.seed+k); ta.scrollIntoView({block:'center'}); toast('Prompt + seed loaded — change a detail and queue'); }},'♻ Reuse'));
+    if(j.seed!=null) r.append(h('span',{class:'hint'},'seed '+(j.seed+k)));
+    return r;
+  }
   function render(){
-    list.innerHTML='';
+    list.innerHTML=''; views.forEach(x=>x.classList.toggle('on',x.dataset.k===view));
+    if(view!=='jobs'){
+      const ts=forgeTakes().filter(t=>view==='all'||t.fav).slice(0,24);
+      if(!ts.length){ list.append(h('div',{class:'hint'},view==='fav'?'No favorites yet — tap a take, then ☆ Favorite.':'No finished takes yet.')); return; }
+      if(pick) list.append(h('div',{class:'hint',style:'margin:2px 4px'},String(pick.j.label||'').slice(0,80)),actions(pick.j,pick.k));
+      const strip=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap'}); ts.forEach(t=>strip.append(thumb(t.j,t.k))); list.append(strip); return;
+    }
     if(!forgeJobs.length){ list.append(h('div',{class:'hint'},'Nothing queued yet.')); return; }
     forgeJobs.slice(0,10).forEach(j=>{
       const box=h('div',{class:'layer',style:'flex-direction:column;align-items:stretch'});
       const left=Math.max(0,Math.ceil((j.at+forgeEta(j)-Date.now())/60000));
       const st=j.state==='done'?`✅ ${(j.got||[]).length}/${j.n} ready`+((j.failed||[]).length?` · ❌ ${(j.failed||[]).length} failed`:''):`⏳ ${(j.got||[]).length}/${j.n} ready · ${left?'~'+left+' min left':'any minute now'}`;
-      box.append(h('div',{class:'nm',style:'white-space:normal'},`${String(j.label||'').slice(0,80)} · ${j.w}×${j.h}`),h('div',{class:'hint',style:'margin:2px 4px'},st));
+      box.append(h('div',{class:'nm',style:'white-space:normal'},`${String(j.label||'').slice(0,80)} · ${j.w}×${j.h}${j.tile?' · 🧩':''}`),h('div',{class:'hint',style:'margin:2px 4px'},st));
       const strip=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap'});
-      (j.got||[]).forEach(k=>{
-        const im=h('img',{alt:''}); im.style.cssText='width:84px;height:84px;object-fit:cover;border-radius:8px;background:#3b3650;cursor:pointer';
-        const u=forgeImgs.get(j.id+'/'+k); if(u) im.src=u; else forgeImgFor(j,k).then(x=>{ if(x) im.src=x; }).catch(()=>{});
-        im.onclick=async()=>{ try{ const x=await forgeImgFor(j,k); if(x) forgeAdd(x,j.label||'image',j); }catch(e){ toast('Could not load it — try again'); } };
-        strip.append(im);
-      });
+      (j.got||[]).forEach(k=>strip.append(thumb(j,k)));
       box.append(strip);
+      if(pick&&pick.j===j) box.append(actions(j,pick.k));
       if(j.state!=='done'){ const cb=h('button',{style:'align-self:flex-start;margin-top:4px'},'↻ Check now'); cb.onclick=async()=>{ cb.disabled=true; try{ await forgeCheck(j); }catch(e){ toast(ghErr(e)); } render(); }; box.append(cb); }
-      if((j.got||[]).length) box.append(h('div',{class:'hint',style:'margin:2px 4px'},'Tap a picture to add it as a layer.'));
+      if((j.got||[]).length&&!(pick&&pick.j===j)) box.append(h('div',{class:'hint',style:'margin:2px 4px'},'Tap a picture: add it, vary it, favorite it, or reuse its prompt + seed.'));
       list.append(box);
     });
   }
@@ -1314,16 +1374,15 @@ function buildForge(b,ta){
     if(!txt&&!C){ out.classList.remove('hidden'); out.textContent='Describe what you want first.'; return; }
     const [,w,hh]=FORGE_SIZES[+sz.value], n=+nv.value;
     const key=keyBg?((G&&G.key)||'#FF00FF'):null;
-    const prompt=[txt||(C?C.name:''), C?('Character details (keep exactly): '+C.look):'', G?('Art style: '+(doc.pixel?G.sprite:G.hd)):'', key?`Plain flat solid ${keyName(key)} background, nothing else behind the subject, no floor shadow.`:''].filter(Boolean).join(' ');
-    const id=Date.now().toString(36)+uid();
-    const job={prompt:prompt.slice(0,1500),n,w,h:hh,seed:Math.floor(Math.random()*1e9),key,at:Date.now()};
+    const prompt=[txt||(C?C.name:''), C?('Character details (keep exactly): '+C.look):'', G?('Art style: '+(doc.pixel?G.sprite:G.hd)):'', tile?'Seamless tileable texture, even lighting, no vignette, no single centered subject.':'', key?`Plain flat solid ${keyName(key)} background, nothing else behind the subject, no floor shadow.`:''].filter(Boolean).join(' ');
+    const opts={mode:from==='new'?'new':'sketch',prompt,n,w,h:hh,key,tile,seed:seedIn.value.trim()||undefined,label:(from==='new'?'':'Sketch: ')+(txt||(C?C.name:'image'))};
+    if(from!=='new'){ opts.strength=1-(+follow[0].value)/100; if(from==='layer'&&so) opts.id=so.id; }
     go.disabled=true; out.classList.remove('hidden'); out.textContent='Queuing on GitHub… (first time asks you to Allow)';
     try{
-      await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path:`forge/jobs/${id}.json`,content:JSON.stringify(job,null,1),message:`Forge job ${id}: ${n}x ${w}x${hh}`});
-      forgeJobs.unshift({id,label:txt||(C?C.name:'image'),n,w,h:hh,at:job.at,state:'rendering',got:[],failed:[]}); forgeSaveLocal();
-      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta({w,h:hh})/60000)} min. Keep working — come back to ✨AI › Forge and tap Check now.`;
-      render();
-    }catch(e){ out.textContent=ghErr(e); }
+      await forgeQueue(opts); const j=forgeJobs[0];
+      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working — come back to ✨AI › Forge and tap Check now.`;
+      view='jobs'; pick=null; render();
+    }catch(e){ out.textContent=e&&e.message?e.message:ghErr(e); }
     finally{ go.disabled=false; }
   };
 }
@@ -2392,14 +2451,29 @@ function encSmall(c){ // PNG when it has see-through pixels, else JPEG (keeps up
 function snap64(v){ return Math.max(256,Math.min(1024,Math.round(v/64)*64)); }
 async function forgePut(path,content,msg){ await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path,content,message:msg}); }
 function forgeBuild(opts){
+  if(opts.mode==='bg'){ const o=apiObj(opts.id); const p=String(opts.prompt||'').trim(); if(!p) throw new Error('Describe the new background');
+    opts={...opts,mode:'edit',maskCanvas:bgMask(o),prompt:'Background scene: '+p+'. The subject in front stays exactly as it is, lit to match.',label:'New background: '+p}; }
   const mode=opts.mode||'new', jid=opts.jid||(Date.now().toString(36)+uid()), n=Math.max(1,Math.min(4,opts.n||(mode==='upscale'?1:2)));
-  const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:opts.seed??Math.floor(Math.random()*1e9),at:Date.now()};
-  const files={}; let box=null, label=opts.prompt||mode;
+  const sd=parseInt(opts.seed,10);
+  const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:Number.isFinite(sd)&&sd>=0?sd:Math.floor(Math.random()*1e9),at:Date.now()};
+  if(opts.tile) job.tile=true;
+  const files={}; let box=opts.box||null, label=opts.label||opts.prompt||mode;
   if(mode==='new'){ job.w=opts.w||768; job.h=opts.h||768; job.key=opts.key||null; if(!job.prompt) throw new Error('Describe the picture'); }
   else {
-    const o=apiObj(opts.id); if(o.type!=='image') throw new Error('Pick an image layer');
-    const D=imageData(o); let init=D.c, mask=null;
-    if(mode==='edit'){
+    let o=null, D=null, init=null, mask=null;
+    if(mode==='sketch'){
+      // sketch -> art: start from a canvas you pass (a Forge take), a selected image layer, or the whole frame
+      if(opts.initCanvas) init=opts.initCanvas;
+      else if(opts.id){ o=apiObj(opts.id); if(o.type!=='image') throw new Error('Pick an image layer'); init=imageData(o).c; box=box||{x:o.x,y:o.y,w:o.w,h:o.h}; }
+      else { init=renderToCanvas(Math.min(16,768/Math.max(doc.w,doc.h)),false); box=box||{x:0,y:0,w:doc.w,h:doc.h}; }
+      init=flattenOn(init,opts.key||'#ffffff');
+      if(!job.prompt) throw new Error('Say what your sketch should become');
+      job.strength=Math.round(Math.max(0.2,Math.min(0.95,+(opts.strength??0.65)))*100)/100;
+      if(opts.key) job.key=opts.key;
+      if(!opts.label) label='Sketch: '+job.prompt;
+    } else { o=apiObj(opts.id); if(o.type!=='image') throw new Error('Pick an image layer'); D=imageData(o); init=D.c; }
+    if(mode==='sketch'){}
+    else if(mode==='edit'){
       mask=document.createElement('canvas'); mask.width=D.W; mask.height=D.H; const g=mask.getContext('2d'); g.fillStyle='#000'; g.fillRect(0,0,D.W,D.H);
       if(opts.maskCanvas) g.drawImage(opts.maskCanvas,0,0,D.W,D.H);
       const sp=opts.mask||{}; g.fillStyle='#fff'; const k=o.crop||{}, sx=D.W*(1-(k.l||0)-(k.r||0))/o.w, sy=D.H*(1-(k.t||0)-(k.b||0))/o.h;
@@ -2421,18 +2495,21 @@ function forgeBuild(opts){
       mask=document.createElement('canvas'); mask.width=c.width; mask.height=c.height; const g=mask.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.fillStyle='#000'; g.fillRect(L2+2,T2+2,W2-4,H2-4);
       const kx=o.w/D.W, ky=o.h/D.H; box={x:o.x-L*kx,y:o.y-T*ky,w:(D.W+L+R)*kx,h:(D.H+T+B)*ky};
     } else if(mode==='upscale'){ job.scale=4; box={x:o.x,y:o.y,w:o.w,h:o.h}; }
-    else throw new Error('mode: new | edit | expand | upscale');
+    else throw new Error('mode: new | sketch | edit | expand | upscale');
     const big=mode==='upscale'?512:1024; init=capCanvas(init,big); if(mask) mask=capCanvas(mask,big);
     if(mode!=='upscale'){ job.w=snap64(init.width); job.h=snap64(init.height); } else { job.w=init.width; job.h=init.height; }
     job.init=`forge/jobs/${jid}.init.b64`; files[job.init]=encSmall(init);
     if(mask){ job.mask=`forge/jobs/${jid}.mask.b64`; files[job.mask]='png:'+mask.toDataURL('image/png').split(',')[1]; }
-    label=(mode==='upscale'?'Upscale ':mode==='expand'?'Expand ':'Edit: ')+(job.prompt||o.name||'image');
+    if(mode!=='sketch'&&!opts.label) label=(mode==='upscale'?'Upscale ':mode==='expand'?'Expand ':'Edit: ')+(job.prompt||o.name||'image');
   }
   files[`forge/jobs/${jid}.json`]=JSON.stringify(job,null,1);
-  return {jid,job,files,local:{id:jid,label,mode,n,w:job.w,h:job.h,at:job.at,state:'rendering',got:[],failed:[],box,page:doc.cur}};
+  return {jid,job,files,local:{id:jid,label,mode,n,w:job.w,h:job.h,at:job.at,state:'rendering',got:[],failed:[],box,page:opts.page??doc.cur,prompt:job.prompt,seed:job.seed,key:job.key||null,tile:!!job.tile}};
 }
+function flattenOn(c,bg){ const d=document.createElement('canvas'); d.width=c.width; d.height=c.height; const g=d.getContext('2d'); g.fillStyle=bg; g.fillRect(0,0,d.width,d.height); g.drawImage(c,0,0); return d; }
+async function srcCanvas(src){ const im=await loadSrc(src); const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); return c; }
 async function forgeQueue(opts){
   if(!mcpCap) throw new Error('Forge needs Foxboard open inside the Claude app with the GitHub connector on');
+  if(opts.initSrc&&!opts.initCanvas) opts={...opts,initCanvas:await srcCanvas(opts.initSrc)};
   const B=forgeBuild(opts);
   for(const [path,content] of Object.entries(B.files)) await forgePut(path,content,`Forge ${B.job.mode} ${B.jid}: ${path.split('/').pop()}`);
   forgeJobs.unshift(B.local); forgeSaveLocal(); return B.jid;
@@ -2462,8 +2539,16 @@ const API_DOC={
   addPage:'addPage(copy=true) -> new frame after the current one', goPage:'goPage(i)', delPage:'delPage(i)', setFps:'setFps(n)',
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
-  forge:'forge({prompt, mode:"new"|"edit"|"expand"|"upscale", id?, mask?, w,h,n}) -> Promise<jobId>. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
+  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.2-0.95, lower = closer to the sketch. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
   forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local} — the job files without sending (Claude commits them with git)',
+  vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
+  takes:'takes() -> [{job, k, seed, prompt, fav}] every finished Forge take on this phone', favorite:'favorite(jobId, k, on?) -> bool',
+  boostPrompt:'boostPrompt(text) -> Promise<string>. Claude rewrites a short idea into a full FLUX prompt (style is added from the bible separately)',
+  pixelate:'pixelate(id, {size:32, colors:"auto"|"game"|"keep", n:16, palette:[hex], outline:true, outlineColor}) -> turns an illustration into a crisp sprite',
+  makeTileable:'makeTileable(id) -> edges wrap seamlessly (fills the seam from the picture)', tilePreview:'tilePreview(id, reps=3) -> PNG data URL of the image repeated reps×reps',
+  sticker:'sticker(id, {width, color}) -> outline around a cut-out. width: px for pixel art, else fraction of the image (0.03)',
+  newBackground:'newBackground(id, {prompt, n}) -> Promise<jobId>. Forge paints a new scene behind a cut-out, subject kept exactly',
+  compare:'compare(id) -> opens a before/after slider: the frame without vs with this layer',
   forgeTrack:'forgeTrack(local) -> show a job queued elsewhere in this phone\'s ✨AI › Forge list',
   undo:'undo()', redo:'redo()'
 };
@@ -2539,6 +2624,13 @@ const Foxboard={
     if(kind==='video') return await makeVideo(s,o.loops||3);
     throw new Error('kind: png | jpg | gif | sheet | pdf | video'); },
   async forge(opts){ return await forgeQueue(opts||{}); },
+  async vary(jid,k,how){ const j=forgeJobs.find(x=>x.id===jid); if(!j) throw new Error('No Forge job '+jid+' on this phone'); return await forgeVary(j,k|0,how); },
+  takes(){ return forgeTakes().map(t=>({job:t.j.id,k:t.k,seed:t.j.seed!=null?t.j.seed+t.k:null,prompt:forgePromptOf(t.j),fav:t.fav})); },
+  favorite(jid,k,on){ const j=forgeJobs.find(x=>x.id===jid); if(!j) throw new Error('No Forge job '+jid); return forgeFav(j,k|0,on); },
+  async boostPrompt(t){ return await boostPrompt(t); },
+  pixelate(id,o){ pixelate(apiObj(id),o); return true; }, makeTileable(id){ makeTileable(apiObj(id)); return true; },
+  tilePreview(id,r){ return tileCanvas(apiObj(id),r||3).toDataURL('image/png'); }, sticker(id,o){ sticker(apiObj(id),o); return true; },
+  async newBackground(id,o){ return await newBackground(apiObj(id),o); }, compare(id){ return compareBelow(apiObj(id)); },
   forgeFiles(opts){ const B=forgeBuild(opts||{}); return {jid:B.jid,files:B.files,local:B.local}; },
   forgeTrack(local){ forgeJobs.unshift(local); forgeSaveLocal(); return true; },
   undo(){ undo(); return true; }, redo(){ redo(); return true; }
@@ -2561,6 +2653,94 @@ function forgeTool(o,mode){
     b.append(ta,row('Shape',...ks),row('',h('button',{class:'acc',onclick:async()=>{ const e=expandAmounts(o,kind); if(!(e.l||e.r||e.t||e.b)){ toast('Already that shape'); return; } closeSheet(); await forgeSend({mode:'expand',id:o.id,expand:e,prompt:ta.value.trim()},'AI expand queued ✓ (~10 min) — ✨AI › Forge shows it'); }},'🔥 Queue it')));
     b.append(h('div',{class:'hint'},'FLUX paints the new edges to match the picture. Free on GitHub machines, about 10 minutes, public. The result lands on top of your image, already lined up. For instant results use Expand (on the phone) instead.'));
   });
+}
+/* ---------- image tools: seamless tile, pixelate, sticker outline, new background, compare ---------- */
+function setImgSrc(o,c,box){ const src=c.toDataURL('image/png'); live.set(o.id,{src,canvas:c}); getImg(src);
+  edit(()=>{ o.src=src; o.natW=c.width; o.natH=c.height; if(box) Object.assign(o,box); }); refreshUI(); }
+function makeTileable(o){
+  if(o.crop&&(o.crop.l||o.crop.r||o.crop.t||o.crop.b)) throw new Error('Reset the crop first');
+  // shift by half so the old edges meet in the middle, then fill that cross from the picture: edges now wrap
+  const D=imageData(o), W=D.W, H=D.H; if(W<8||H<8) throw new Error('Too small to tile');
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  const hx=Math.floor(W/2), hy=Math.floor(H/2);
+  g.drawImage(D.c,hx,hy); g.drawImage(D.c,hx-W,hy); g.drawImage(D.c,hx,hy-H); g.drawImage(D.c,hx-W,hy-H);
+  const id=g.getImageData(0,0,W,H), m=new Uint8Array(W*H), bw=Math.max(1,Math.round(Math.min(W,H)*(doc.pixel?0.04:0.06)));
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(Math.abs(x-hx+0.5)<bw||Math.abs(y-hy+0.5)<bw) m[y*W+x]=1;
+  id.data.set(inpaint(id.data,W,H,m,{dilate:0})); g.putImageData(id,0,0);
+  setImgSrc(o,c); toast('Seamless ✓ — ▦ Preview to check the repeat');
+}
+function tileCanvas(o,reps){ const D=imageData(o), r=reps||3, c=document.createElement('canvas'); const k=Math.max(1,Math.floor(512/Math.max(D.W,D.H)));
+  c.width=D.W*k*r; c.height=D.H*k*r; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  for(let y=0;y<r;y++) for(let x=0;x<r;x++) g.drawImage(D.c,x*D.W*k,y*D.H*k,D.W*k,D.H*k); return c; }
+function tilePreview(o){ showImage(tileCanvas(o,3),'png'); }
+function kmeans(px,k){ // px: array of [r,g,b]; returns k centers
+  const uniq=[...new Map(px.map(p=>[p.join(),p])).values()]; if(uniq.length<=k) return uniq;
+  let C=[]; for(let i=0;i<k;i++) C.push(uniq[Math.floor(i*uniq.length/k)].slice());
+  for(let it=0;it<10;it++){ const s=C.map(()=>[0,0,0,0]);
+    for(const p of px){ let b=0,bd=1e9; C.forEach((c,j)=>{ const d=(c[0]-p[0])**2*2+(c[1]-p[1])**2*4+(c[2]-p[2])**2*3; if(d<bd){bd=d;b=j;} }); const t=s[b]; t[0]+=p[0]; t[1]+=p[1]; t[2]+=p[2]; t[3]++; }
+    C=C.map((c,j)=>s[j][3]?[s[j][0]/s[j][3],s[j][1]/s[j][3],s[j][2]/s[j][3]].map(Math.round):c); }
+  return C; }
+function pixelate(o,opt){
+  if(o.crop&&(o.crop.l||o.crop.r||o.crop.t||o.crop.b)) throw new Error('Reset the crop first');
+  opt=opt||{}; const size=Math.max(8,Math.min(256,opt.size|0||32)); const D=imageData(o), W=D.W, H=D.H, sd=D.id.data;
+  const k=size/Math.max(W,H); if(k>=1) throw new Error('Already '+Math.max(W,H)+' px or smaller');
+  const tw=Math.max(1,Math.round(W*k)), th=Math.max(1,Math.round(H*k)), P=opt.outline?1:0, ow=tw+2*P, oh=th+2*P;
+  const out=new Uint8ClampedArray(ow*oh*4), solid=[];
+  for(let y=0;y<th;y++) for(let x=0;x<tw;x++){ const x0=Math.floor(x*W/tw), x1=Math.max(x0+1,Math.floor((x+1)*W/tw)), y0=Math.floor(y*H/th), y1=Math.max(y0+1,Math.floor((y+1)*H/th));
+    let a=0,r=0,gg=0,bb=0,n=0; for(let yy=y0;yy<y1;yy++) for(let xx=x0;xx<x1;xx++){ const i=(yy*W+xx)*4, al=sd[i+3]; a+=al; r+=sd[i]*al; gg+=sd[i+1]*al; bb+=sd[i+2]*al; n++; }
+    if(a/(n*255)<0.5) continue; const i=((y+P)*ow+x+P)*4; out[i]=r/a; out[i+1]=gg/a; out[i+2]=bb/a; out[i+3]=255; solid.push(i); }
+  let pal=null; const G=gameById(activeGame);
+  if(opt.colors==='game'&&G) pal=G.palette.map(hexToRGBA); else if(Array.isArray(opt.palette)) pal=opt.palette.map(hexToRGBA);
+  else if(opt.colors!=='keep') pal=kmeans(solid.map(i=>[out[i],out[i+1],out[i+2]]),Math.max(2,Math.min(32,opt.n|0||16)));
+  if(pal&&pal.length) for(const i of solid){ let b=0,bd=1e9; pal.forEach((p,j)=>{ const d=(p[0]-out[i])**2*2+(p[1]-out[i+1])**2*4+(p[2]-out[i+2])**2*3; if(d<bd){bd=d;b=j;} }); out[i]=pal[b][0]; out[i+1]=pal[b][1]; out[i+2]=pal[b][2]; }
+  if(P){ const oc=hexToRGBA(opt.outlineColor||'#14101c'), add=[];
+    for(let y=0;y<oh;y++) for(let x=0;x<ow;x++){ const i=(y*ow+x)*4; if(out[i+3]) continue;
+      if((x>0&&out[i-1])||(x<ow-1&&out[i+7])||(y>0&&out[i-ow*4+3])||(y<oh-1&&out[i+ow*4+3])) add.push(i); }
+    for(const i of add){ out[i]=oc[0]; out[i+1]=oc[1]; out[i+2]=oc[2]; out[i+3]=255; } }
+  const c=document.createElement('canvas'); c.width=ow; c.height=oh; c.getContext('2d').putImageData(new ImageData(out,ow,oh),0,0);
+  const ux=o.w/tw, uy=o.h/th; let box={x:o.x-P*ux,y:o.y-P*uy,w:ow*ux,h:oh*uy,px:true};
+  if(doc.pixel){ const ct=center(o); box={x:Math.round(ct.x-ow/2),y:Math.round(ct.y-oh/2),w:ow,h:oh,px:true}; }
+  setImgSrc(o,c,box); toast(`Pixelated to ${tw}×${th}${pal?' · '+pal.length+' colors':''}`);
+}
+function sticker(o,opt){
+  if(o.crop&&(o.crop.l||o.crop.r||o.crop.t||o.crop.b)) throw new Error('Reset the crop first');
+  opt=opt||{}; const D=imageData(o), W=D.W, H=D.H; let hasA=false; for(let i=3;i<D.id.data.length;i+=4) if(D.id.data[i]<200){ hasA=true; break; }
+  if(!hasA) throw new Error('Cut it out first (✂ Remove background), then add the outline');
+  const crisp=doc.pixel||o.px, p=crisp?Math.max(1,opt.width|0||1):Math.max(1,Math.round(Math.max(W,H)*(opt.width||0.03)));
+  const s=document.createElement('canvas'); s.width=W; s.height=H; const sg=s.getContext('2d'); sg.drawImage(D.c,0,0); sg.globalCompositeOperation='source-in'; sg.fillStyle=opt.color||'#ffffff'; sg.fillRect(0,0,W,H);
+  const c=document.createElement('canvas'); c.width=W+2*p; c.height=H+2*p; const g=c.getContext('2d'); g.imageSmoothingEnabled=!crisp;
+  if(crisp){ for(let dy=-p;dy<=p;dy++) for(let dx=-p;dx<=p;dx++) if(Math.abs(dx)+Math.abs(dy)<=p) g.drawImage(s,p+dx,p+dy); }
+  else { const steps=Math.max(16,Math.round(p*3)); for(let r of [p,p*0.66,p*0.33]) for(let i=0;i<steps;i++){ const a=i/steps*Math.PI*2; g.drawImage(s,p+Math.cos(a)*r,p+Math.sin(a)*r); } }
+  if(crisp){ const id=g.getImageData(0,0,c.width,c.height); for(let i=3;i<id.data.length;i+=4) id.data[i]=id.data[i]>127?255:0; g.putImageData(id,0,0); }
+  g.drawImage(D.c,p,p);
+  const ux=o.w/W, uy=o.h/H; setImgSrc(o,c,{x:o.x-p*ux,y:o.y-p*uy,w:o.w+2*p*ux,h:o.h+2*p*uy}); toast('Sticker outline added');
+}
+function bgMask(o){ const D=imageData(o); const m=document.createElement('canvas'); m.width=D.W; m.height=D.H; const g=m.getContext('2d'); const id=g.createImageData(D.W,D.H); let n=0;
+  for(let i=0;i<id.data.length;i+=4){ const bg=D.id.data[i+3]<200; if(bg) n++; id.data[i]=id.data[i+1]=id.data[i+2]=bg?255:0; id.data[i+3]=255; }
+  if(n<D.W*D.H*0.02) throw new Error('Cut the subject out first (✂ Remove background), then paint a new background');
+  g.putImageData(id,0,0); return m; }
+async function newBackground(o,opt){ opt=opt||{}; return forgeQueue({mode:'bg',id:o.id,prompt:opt.prompt,n:opt.n||2}); }
+function openNewBackground(o){
+  try{ bgMask(o); }catch(e){ toast(e.message,3500); return; }
+  openSheet('🌄 New background','aiexpand',b=>{
+    const ta=h('textarea',{placeholder:'e.g. a misty pine forest at dusk, lanterns in the distance'});
+    b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const p=ta.value.trim(); if(!p){ toast('Describe the new background'); return; } closeSheet(); await forgeSend({mode:'bg',id:o.id,prompt:p},'New background queued ✓ (~15 min) — ✨AI › Forge shows it'); }},'🔥 Queue it')));
+    b.append(h('div',{class:'hint'},'Keeps your cut-out subject pixel-for-pixel and paints a new scene behind it on Forge (free, ~15 min, public). The result lands on top, lined up.'));
+  });
+}
+function compareBelow(o){
+  const i=O().indexOf(o); if(i<1) throw new Error('Nothing under this layer to compare with');
+  const was=o.hidden; o.hidden=true; const A=renderToCanvas(Math.min(4,900/Math.max(doc.w,doc.h)),false); o.hidden=was;
+  const B=renderToCanvas(Math.min(4,900/Math.max(doc.w,doc.h)),false);
+  const ov=h('div',{class:'overlay open',id:'compare'}); const cv2=h('canvas',{}); cv2.width=A.width; cv2.height=A.height; cv2.style.cssText='max-width:100%;max-height:62vh;touch-action:none';
+  const rg=h('input',{type:'range',min:0,max:100,value:50,style:'width:min(90vw,420px)'}); rg.setAttribute('aria-label','Before / after');
+  const g=cv2.getContext('2d'); g.imageSmoothingEnabled=!doc.pixel;
+  const paint=()=>{ const x=Math.round(A.width*rg.value/100); g.clearRect(0,0,A.width,A.height); g.drawImage(A,0,0); g.save(); g.beginPath(); g.rect(x,0,A.width-x,A.height); g.clip(); g.drawImage(B,0,0); g.restore(); g.fillStyle='#f0a040'; g.fillRect(x-1,0,2,A.height); };
+  const drag=e=>{ const r=cv2.getBoundingClientRect(); rg.value=Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)); paint(); };
+  cv2.addEventListener('pointerdown',e=>{ drag(e); cv2.setPointerCapture(e.pointerId); }); cv2.addEventListener('pointermove',e=>{ if(e.buttons||e.pointerType==='touch') drag(e); });
+  rg.oninput=paint; paint();
+  const close=h('button',{},'Close'); close.onclick=()=>ov.remove();
+  ov.append(h('div',{class:'hint'},'◀ before (without this layer) · after ▶ — drag across'),cv2,rg,close); document.body.append(ov); return true;
 }
 function startMagicEdit(o){ startMagic(o); if(!magic) return; magic.edit=true; $('#mgErase').textContent='🔥 AI fill'; toast('Brush the area to change, then tap 🔥 AI fill',2600); }
 

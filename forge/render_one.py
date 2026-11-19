@@ -18,13 +18,18 @@ def b64file(rel, dst):
 base = [os.environ["SD"], "-t", str(os.cpu_count()), "-o", str(png)]
 flux = ["--diffusion-model", env.get("DIFF", ""), "--vae", env.get("VAE", ""), "--clip_l", env.get("CLIP", ""), "--t5xxl", env.get("T5GGUF", env.get("T5FP16", "")),
         "--cfg-scale", "1.0", "--sampling-method", "euler", "--seed", str(seed)]
+if job.get("tile"): flux += ["--circular"]  # seamless: wraps left/right and top/bottom
+def strength(default):
+    try: return max(0.2, min(0.98, float(job.get("strength", default))))
+    except Exception: return default
 init = mask = None
-if mode in ("edit", "expand", "upscale"):
+if mode in ("edit", "expand", "upscale", "sketch"):
     init = b64file(job["init"], "init.png")
     if job.get("mask"): mask = b64file(job["mask"], "mask.png")
 if mode == "edit":
     # magic edit: FLUX.2 klein repaints a zoomed crop around the brushed area; only masked pixels change
     import magic_edit
+    if os.environ.get("FORGE_DRY"): print(json.dumps(["magic_edit", "klein", int(job.get("side", 512))])); sys.exit(0)
     t0 = time.time(); ok, log = magic_edit.run(os.environ["SD"], env, init, mask, prompt, seed, str(png), side=int(job.get("side", 512)))
     mins = (time.time() - t0) / 60
     r = subprocess.CompletedProcess([], 0 if ok else 1, log, "")
@@ -36,8 +41,14 @@ elif mode == "expand":
     Image.open(mask).convert("L").resize((W, H), Image.NEAREST).save("mask_s.png")
     if not prompt.strip(): prompt = " "  # words here get painted as text, so no default caption
     cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--mask", "mask_s.png", "--strength", "0.78" if mode == "expand" else "0.92"]  # expand: init edges are already filled on the phone, FLUX adds detail
+elif mode == "sketch":
+    # sketch -> art (also "vary" a take): img2img from the whole init, no mask. Lower strength = closer to the sketch.
+    Image.open(init).convert("RGB").resize((W, H), Image.LANCZOS).save("init_s.png")
+    cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--strength", f"{strength(0.7):.2f}"]
 else:
     cmd = base + flux + ["-p", prompt, "--steps", "4", "-W", str(W), "-H", str(H)]
+if os.environ.get("FORGE_DRY") and mode != "edit":  # tests: show the command, render nothing
+    print(json.dumps(cmd)); sys.exit(0)
 if mode != "edit":
     t0 = time.time(); r = subprocess.run(cmd, capture_output=True, text=True); mins = (time.time() - t0) / 60
 if mode == "upscale" and (r.returncode != 0 or not png.exists()):

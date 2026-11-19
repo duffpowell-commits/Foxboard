@@ -60,7 +60,7 @@ async def main():
         b = await getattr(p, os.environ.get('BROWSER','chromium')).launch()
         pg = await b.new_page(viewport={'width': 390, 'height': 820})
         errs = []
-        pg.on('pageerror', lambda e: errs.append(str(e)))
+        pg.on('pageerror', lambda e: errs.append(str(e)) if 'access control checks' not in str(e) else None)  # WebKit flags the file:// template fetch
         await pg.add_init_script(MOCK)
         await pg.goto(APP); await pg.wait_for_timeout(900)
         ev = pg.evaluate
@@ -176,7 +176,8 @@ async def main():
             got = await ev("__fb.forgeJobs[0].got")
             check('check pulls both finished versions', got == [0, 1], got)
             n0 = await ev("__fb.doc.pages[__fb.doc.cur].objects.length")
-            await pg.click('#shBody img >> nth=0'); await pg.wait_for_timeout(700)
+            await pg.click('#shBody img >> nth=0'); await pg.wait_for_timeout(200)
+            await pg.click('#shBody button:has-text("➕ Add")'); await pg.wait_for_timeout(700)
             n1 = await ev("__fb.doc.pages[__fb.doc.cur].objects.length")
             px = await ev("""(async()=>{ const o=__fb.doc.pages[__fb.doc.cur].objects.slice(-1)[0]; const im=new Image(); im.src=o.src; await im.decode(); const c=document.createElement('canvas'); c.width=im.width; c.height=im.height; const g=c.getContext('2d'); g.drawImage(im,0,0); return [o.name, Array.from(g.getImageData(20,20,1,1).data)]; })()""")
             check('tapping a result adds it as a layer', n1 == n0 + 1 and px[0].startswith('Forge') and px[1][:3] == [18, 52, 86], [n0, n1, px])
