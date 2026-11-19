@@ -2285,6 +2285,10 @@ function delSel(){ const ids=new Set(selObjs().map(o=>o.id)); if(!ids.size) retu
 
 /* Forge job queue (any mode) — used by the AI studio tools and Foxboard.forge() */
 function capCanvas(c,max){ const k=Math.min(1,max/Math.max(c.width,c.height)); if(k===1) return c; const d=document.createElement('canvas'); d.width=Math.round(c.width*k); d.height=Math.round(c.height*k); const g=d.getContext('2d'); g.imageSmoothingEnabled=true; g.drawImage(c,0,0,d.width,d.height); return d; }
+function encSmall(c){ // PNG when it has see-through pixels, else JPEG (keeps uploads small for the connector)
+  const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let alpha=false; for(let i=3;i<d.length;i+=4) if(d[i]<255){ alpha=true; break; }
+  if(alpha) return 'png:'+c.toDataURL('image/png').split(',')[1];
+  return 'jpg:'+c.toDataURL('image/jpeg',0.93).split(',')[1]; }
 function snap64(v){ return Math.max(256,Math.min(1024,Math.round(v/64)*64)); }
 async function forgePut(path,content,msg){ await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path,content,message:msg}); }
 function forgeBuild(opts){
@@ -2307,14 +2311,14 @@ function forgeBuild(opts){
     } else if(mode==='expand'){
       const e=typeof opts.expand==='string'?expandAmounts(o,opts.expand):(opts.expand||{}); const L=Math.round(e.l||0),R=Math.round(e.r||0),T=Math.round(e.t||0),B=Math.round(e.b||0);
       if(!(L||R||T||B)) throw new Error('Nothing to expand');
-      const c=document.createElement('canvas'); c.width=D.W+L+R; c.height=D.H+T+B; c.getContext('2d').drawImage(D.c,L,T); init=c;
+      const c=document.createElement('canvas'); c.width=D.W+L+R; c.height=D.H+T+B; const cg=c.getContext('2d'); cg.filter='blur('+Math.round(Math.max(c.width,c.height)/40)+'px)'; cg.drawImage(D.c,0,0,c.width,c.height); cg.filter='none'; cg.drawImage(D.c,L,T); init=c;
       mask=document.createElement('canvas'); mask.width=c.width; mask.height=c.height; const g=mask.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.fillStyle='#000'; g.fillRect(L+2,T+2,D.W-4,D.H-4);
       const kx=o.w/D.W, ky=o.h/D.H; box={x:o.x-L*kx,y:o.y-T*ky,w:c.width*kx,h:c.height*ky};
     } else if(mode==='upscale'){ job.scale=4; box={x:o.x,y:o.y,w:o.w,h:o.h}; }
     else throw new Error('mode: new | edit | expand | upscale');
     const big=mode==='upscale'?512:1024; init=capCanvas(init,big); if(mask) mask=capCanvas(mask,big);
     if(mode!=='upscale'){ job.w=snap64(init.width); job.h=snap64(init.height); } else { job.w=init.width; job.h=init.height; }
-    job.init=`forge/jobs/${jid}.init.b64`; files[job.init]='png:'+init.toDataURL('image/png').split(',')[1];
+    job.init=`forge/jobs/${jid}.init.b64`; files[job.init]=encSmall(init);
     if(mask){ job.mask=`forge/jobs/${jid}.mask.b64`; files[job.mask]='png:'+mask.toDataURL('image/png').split(',')[1]; }
     label=(mode==='upscale'?'Upscale ':mode==='expand'?'Expand ':'Edit: ')+(job.prompt||o.name||'image');
   }

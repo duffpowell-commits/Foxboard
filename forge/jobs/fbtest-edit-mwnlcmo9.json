@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "empty sunlit city street, warm golden hour light, long shadows on the asphalt",
+ "n": 1,
+ "seed": 477307349,
+ "at": 1795095228106,
+ "w": 1024,
+ "h": 576,
+ "init": "forge/jobs/fbtest-edit-mwnlcmo9.init.b64",
+ "mask": "forge/jobs/fbtest-edit-mwnlcmo9.mask.b64"
+}

@@ -1,0 +1,11 @@
+{
+ "mode": "upscale",
+ "prompt": "",
+ "n": 1,
+ "seed": 263835045,
+ "at": 1795095228199,
+ "scale": 4,
+ "w": 512,
+ "h": 288,
+ "init": "forge/jobs/fbtest-up-mwnlcmqv.init.b64"
+}

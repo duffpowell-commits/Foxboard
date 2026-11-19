@@ -1,0 +1,11 @@
+{
+ "mode": "expand",
+ "prompt": "",
+ "n": 1,
+ "seed": 10882219,
+ "at": 1795095228134,
+ "w": 1024,
+ "h": 576,
+ "init": "forge/jobs/fbtest-expand-mwnlcmp2.init.b64",
+ "mask": "forge/jobs/fbtest-expand-mwnlcmp2.mask.b64"
+}
