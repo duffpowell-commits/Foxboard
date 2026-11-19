@@ -1,0 +1,2 @@
+nproc 4 models {'DIFF': '/home/runner/work/Foxboard/Foxboard/models/flux1-schnell-q4_k.gguf', 'CLIP': '/home/runner/work/Foxboard/Foxboard/models/clip_l.safetensors', 'T5GGUF': '/home/runner/work/Foxboard/Foxboard/models/t5-v1_1-xxl-encoder-Q8_0.gguf', 'T5FP16': '/home/runner/work/Foxboard/Foxboard/models/t5xxl_fp16.safetensors', 'VAE': '/home/runner/work/Foxboard/Foxboard/models/ae.safetensors'}
+OK lethemoor_bearer 768x768 15.0 min config=t5gguf
