@@ -73,7 +73,7 @@ textarea{width:100%;min-height:70px;resize:vertical}
 .hint{color:var(--dim);font-size:13px;margin:6px 0}
 .out{white-space:pre-wrap;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;margin:8px 0;font-size:14px;max-height:30vh;overflow:auto}
 .swatches{display:flex;flex-wrap:wrap;gap:5px}
-.swatches i{width:28px;height:28px;border-radius:7px;border:1px solid #0006;display:block;cursor:pointer}
+.swatches i{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;width:36px;height:36px;border-radius:7px;border:1px solid #0006;display:block;cursor:pointer}
 #scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19;display:none}
 #scrim.open{display:block}
 #toast{position:fixed;left:50%;top:calc(60px + env(safe-area-inset-top));transform:translateX(-50%);background:#000d;color:#fff;padding:8px 14px;border-radius:12px;z-index:50;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
@@ -553,13 +553,15 @@ stage.addEventListener('pointerdown',e=>{
   const p=local(e); ptrs.set(e.pointerId,p);
   if(ptrs.size===2){
     if(act && act.kind==='stroke'){ const c=live.get(act.o.id).canvas; c.getContext('2d').putImageData(act.before,0,0); if(act.created){ /* keep empty layer */ } }
+    if(act && act.maskBefore && magic && (act.kind==='mask'||Date.now()-act.at<400)){ try{ magic.mask.getContext('2d').putImageData(act.maskBefore,0,0); }catch(_){} }
     endEdit(); startPinch(); draw(); return;
   }
   if(ptrs.size>2) return;
   const d=s2d(p.x,p.y);
   if(magic){ if(!magicObj()){ endMagic(); return; } const lp=natPt(magic.o,magic.mask.width,magic.mask.height,d);
-    if(magic.tap){ try{ const D=imageData(magic.o); const w=wandMask(D.id.data,D.W,D.H,lp.x,lp.y,doc.pixel?8:45); const g=magic.mask.getContext('2d'), md=g.getImageData(0,0,D.W,D.H); let n=0; for(let i=0;i<w.length;i++) if(w[i]){ md.data[i*4]=255; md.data[i*4+1]=45; md.data[i*4+2]=85; md.data[i*4+3]=255; n++; } g.putImageData(md,0,0); toast(n?'Selected — tap more, or 🪄 Erase':'Nothing there'); }catch(e){ toast(e.message); } act={kind:'none'}; draw(); return; }
-    act={kind:'mask',last:lp}; magicStamp(lp,lp); draw(); return; }
+    let maskBefore=null; try{ maskBefore=magic.mask.getContext('2d').getImageData(0,0,magic.mask.width,magic.mask.height); }catch(_){}
+    if(magic.tap){ try{ const D=imageData(magic.o); const w=wandMask(D.id.data,D.W,D.H,lp.x,lp.y,doc.pixel?8:45); const g=magic.mask.getContext('2d'), md=g.getImageData(0,0,D.W,D.H); let n=0; for(let i=0;i<w.length;i++) if(w[i]){ md.data[i*4]=255; md.data[i*4+1]=45; md.data[i*4+2]=85; md.data[i*4+3]=255; n++; } g.putImageData(md,0,0); toast(n?'Selected — tap more, or 🪄 Erase':'Nothing there'); }catch(e){ toast(e.message); } act={kind:'none',maskBefore,at:Date.now()}; draw(); return; }
+    act={kind:'mask',last:lp,maskBefore}; magicStamp(lp,lp); draw(); return; }
   if(drawMode){
     if(tool==='pick'){ pickColor(d); act={kind:'none'}; return; }
     beginEdit();
@@ -991,9 +993,13 @@ $('#plClose').onclick=()=>{ clearTimeout(playT); $('#player').classList.remove('
 function openSheet(title,kind,build){ curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML='';
   if(!window.claude&&['ai','aiexpand','magicedit','library','send'].includes(kind)) b.append(h('div',{class:'cloudnote'},'🦊 This part runs on Claude, so it works when Foxboard is opened inside the Claude app. Everything else (drawing, layers, elements, magic eraser, expand, export) works right here.'));
   build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
-function closeSheet(){ endEdit(); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
+function closeSheet(){ endEdit(); if(curSheet==='bible'&&pendingBible) applyBible(pendingBible); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
 $('#shClose').onclick=closeSheet; $('#scrim').onclick=closeSheet;
 function h(tag,attrs,...kids){ const el=document.createElement(tag); for(const k in attrs||{}){ if(k.startsWith('on')) el.addEventListener(k.slice(2),attrs[k]); else el.setAttribute(k,attrs[k]); } for(const c of kids) el.append(c); return el; }
+function longPress(el,fn,ms){ let t=null; const stop=()=>clearTimeout(t);
+  el.addEventListener('pointerdown',()=>{ el._lp=false; stop(); t=setTimeout(()=>{ el._lp=true; fn(); },ms||550); });
+  ['pointerup','pointercancel','pointerleave','pointermove'].forEach(k=>el.addEventListener(k,e=>{ if(k!=='pointermove'||Math.abs(e.movementX)+Math.abs(e.movementY)>6) stop(); }));
+  el.addEventListener('contextmenu',e=>e.preventDefault()); }
 function row(label,...kids){ return h('div',{class:'row'},h('label',{},label),...kids); }
 function colorIn(val,on){ const i=h('input',{type:'color',value:toHex(val)}); i.addEventListener('input',()=>{ beginEdit(); on(i.value); draw(); }); i.addEventListener('change',()=>endEdit()); return i; }
 function rangeIn(min,max,step,val,on,fmt){ const v=h('span',{class:'val'},fmt?fmt(val):String(val)); const i=h('input',{type:'range',min,max,step,value:val}); i.addEventListener('input',()=>{ beginEdit(); on(+i.value); v.textContent=fmt?fmt(+i.value):i.value; draw(); }); i.addEventListener('change',()=>{ endEdit(); }); return [i,v]; }
@@ -1116,8 +1122,8 @@ function openNew(){
     const mg=h('div',{class:'grid2'});
     myTemplates.forEach(t=>{ let d; try{ d=migrate(JSON.parse(JSON.stringify(t.doc))); }catch(e){ return; }
       for(const pg of d.pages) for(const o of pg.objects) if(o.type==='image') getImg(o.src);
-      const del=h('button',{class:'danger',style:'min-height:32px;padding:2px 8px;align-self:flex-end'},'🗑');
-      del.onclick=async ev=>{ ev.stopPropagation(); myTemplates=myTemplates.filter(x=>x.id!==t.id); await persistTemplates(); openNew(); toast('Template deleted'); };
+      const del=h('button',{class:'danger',style:'min-height:40px;min-width:44px;padding:2px 8px;align-self:flex-end','aria-label':'Delete template'},'🗑');
+      del.onclick=async ev=>{ ev.stopPropagation(); if(!del.dataset.arm){ del.dataset.arm='1'; del.textContent='Delete?'; toast('Tap again to delete "'+String(t.name).slice(0,30)+'" for everyone'); setTimeout(()=>{ delete del.dataset.arm; del.textContent='🗑'; },3000); return; } tplDeleted.add(t.id); myTemplates=myTemplates.filter(x=>x.id!==t.id); const w=await persistTemplates(); openNew(); toast(w==='cloud'||w==='local'?'Template deleted':'Deleted on this phone only — couldn\'t reach the cloud list ('+w+')',2600); };
       const bt=h('button',{class:'preset',onclick:()=>useTemplate(d)},pageThumb(0,120,d),t.name,h('small',{},`${d.w}×${d.h}`),del); bt.querySelector('canvas').style.cssText='width:100%;height:auto;border-radius:8px;margin-bottom:4px'; mg.append(bt); });
     b.append(mg);
     b.append(h('h4',{style:'margin:14px 0 4px'},'Blank'));
@@ -1234,14 +1240,19 @@ function forgeText(res){
   return parts.join('\n');
 }
 async function forgeFetch(path){ return forgeText(await mcpCap.callTool('github','get_file_contents',{...FORGE_REPO,path},{cache:false})); }
+const forgeBusy=new Set();
 async function forgeCheck(j){
+  if(forgeBusy.has(j.id)) return false; forgeBusy.add(j.id);
+  try{ return await forgeCheckInner(j); } finally{ forgeBusy.delete(j.id); }
+}
+async function forgeCheckInner(j){
   let changed=false;
   for(let k=0;k<j.n;k++){
     if((j.got||[]).includes(k)||(j.failed||[]).includes(k)) continue;
     try{
       const t=await forgeFetch(`forge/results/${j.id}/${k}.b64`);
       const m=t.match(/(png|webp):([A-Za-z0-9+/=]{200,})/);
-      if(m){ forgeImgs.set(j.id+'/'+k,`data:image/${m[1]};base64,${m[2]}`); j.got=[...(j.got||[]),k]; changed=true; }
+      if(m){ forgeImgs.set(j.id+'/'+k,`data:image/${m[1]};base64,${m[2]}`); if(!(j.got||[]).includes(k)) j.got=[...(j.got||[]),k]; changed=true; }
     }catch(e){ if(e&&e.code!=='tool_error') throw e; }
   }
   if((j.got||[]).length<j.n && Date.now()-j.at>forgeEta(j)){
@@ -1500,19 +1511,27 @@ function makeGIF(scale){
 }
 
 /* ---------- templates (our own library) ---------- */
-let artifactCap=null, myTemplates=[];
+let artifactCap=null, myTemplates=[]; const tplDeleted=new Set();
 const TPL_PATH='templates/library.json', TPL_LS='foxboard.templates';
 (async()=>{ try{ if(window.claude&&window.claude.use) artifactCap=await window.claude.use('artifact'); }catch(e){ artifactCap=null; } })();
+// Cloud list: array when read, [] when the file doesn't exist yet (404), null when it couldn't be read.
+async function fetchCloudTemplates(){
+  try{ const r=await fetch(TPL_PATH,{cache:'no-store'}); if(r.status===404) return []; if(!r.ok) return null; const j=await r.json(); return Array.isArray(j)?j:null; }catch(e){ return null; }
+}
 async function loadTemplates(){
-  let list=null;
-  if(window.claude) try{ const r=await fetch(TPL_PATH,{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(Array.isArray(j)) list=j; } }catch(e){}
+  let list=window.claude?await fetchCloudTemplates():null;
   if(!list){ try{ list=JSON.parse(localStorage.getItem(TPL_LS)||'[]'); }catch(e){ list=[]; } }
   myTemplates=list.filter(t=>t&&t.doc&&t.name);
 }
 async function persistTemplates(){
   try{ localStorage.setItem(TPL_LS,JSON.stringify(myTemplates)); }catch(e){}
   if(artifactCap){
-    try{ await artifactCap.publish({[TPL_PATH]:{content:JSON.stringify(myTemplates),contentType:'application/json'}}); return 'cloud'; }
+    // Never publish a list we haven't merged with the current cloud copy: a failed read must not wipe it.
+    const cloud=await fetchCloudTemplates();
+    if(!cloud) return 'offline';
+    const mine=new Set(myTemplates.map(t=>t.id));
+    const merged=[...myTemplates,...cloud.filter(t=>t&&t.doc&&t.name&&!mine.has(t.id)&&!tplDeleted.has(t.id))];
+    try{ await artifactCap.publish({[TPL_PATH]:{content:JSON.stringify(merged),contentType:'application/json'}}); myTemplates=merged; try{ localStorage.setItem(TPL_LS,JSON.stringify(merged)); }catch(e){} return 'cloud'; }
     catch(e){ return e&&e.code||'error'; }
   }
   return 'local';
@@ -1608,9 +1627,10 @@ function openSaveTemplate(){
     go.onclick=async()=>{
       endEdit(); go.disabled=true;
       const t={id:uid(),name:ni.value.trim()||'My template',w:doc.w,h:doc.h,saved:new Date().toISOString(),doc:JSON.parse(JSON.stringify({...doc,cur:0}))};
+      myTemplates.filter(x=>x.name===t.name).forEach(x=>tplDeleted.add(x.id));
       myTemplates=[t,...myTemplates.filter(x=>x.name!==t.name)];
       const where=await persistTemplates(); go.disabled=false;
-      toast(where==='cloud'?'Template saved to Foxboard':where==='local'?'Template saved on this phone':'Saved on this phone (cloud save: '+where+')',2600);
+      toast(where==='cloud'?'Template saved to Foxboard':where==='local'?'Template saved on this phone':where==='offline'?'Saved on this phone — couldn\'t reach the cloud list, so it wasn\'t touched. Try again later.':'Saved on this phone (cloud save: '+where+')',2600);
       closeSheet();
     };
     b.append(row('',go));
@@ -1638,6 +1658,8 @@ function gameById(id){ return bible.games.find(g=>g.id===id)||null; }
 function setActiveGame(id){ activeGame=id||''; try{ localStorage.setItem(GAME_LS,activeGame); }catch(e){} }
 function validBible(b){ return b&&Array.isArray(b.games)&&Array.isArray(b.characters); }
 try{ const s=localStorage.getItem(BIBLE_LS); if(s){ const b=JSON.parse(s); if(validBible(b)){ bible=b; bibleSrc='local'; } } }catch(e){}
+let bibleDirty=false, pendingBible=null, bibleGid=null;
+function applyBible(nb){ bible=nb; bibleSrc='shared'; bibleDirty=false; pendingBible=null; }
 async function saveBible(){
   try{ localStorage.setItem(BIBLE_LS,JSON.stringify(bible)); }catch(e){}
   if(dbCap){ try{ await dbCap.doc('bible/main').set({games:bible.games,characters:bible.characters,at:Date.now()}); return 'shared'; }catch(e){ return 'local'; } }
@@ -1665,7 +1687,7 @@ function gamePicker(onChange,withNone){
   s.onchange=()=>{ setActiveGame(s.value); onChange&&onChange(s.value); }; return s;
 }
 function openBible(gid){
-  gid=gid||activeGame||(bible.games[0]&&bible.games[0].id);
+  gid=gid||activeGame||(bible.games[0]&&bible.games[0].id); bibleGid=gid;
   const canEditBible=!userCap||userIsOwner||bibleSrc!=='shared';
   openSheet('📖 Style bible','bible',b=>{
     const tabs=h('div',{class:'tabs'});
@@ -1675,32 +1697,33 @@ function openBible(gid){
     b.append(h('div',{class:'hint'},bibleSrc==='shared'?'Shared with everyone on Foxboard. AI, palettes and Send to game all read this.':'AI, palettes and Send to game all read this.'));
     b.append(row('Use it',h('button',{class:g.id===activeGame?'on':'',onclick:()=>{ setActiveGame(g.id===activeGame?'':g.id); openBible(gid); }},g.id===activeGame?'✓ Active game':'Make active')));
     const sw=h('div',{class:'swatches'});
-    g.palette.forEach((c,i)=>{ const it=h('i',{title:c}); it.style.background=c; it.onclick=()=>{ setColor(c); toast('Draw color '+c); }; if(canEditBible) it.oncontextmenu=e=>{ e.preventDefault(); g.palette.splice(i,1); openBible(gid); }; sw.append(it); });
+    g.palette.forEach((c,i)=>{ const it=h('i',{title:c}); it.style.background=c; it.onclick=()=>{ setColor(c); toast('Draw color '+c); }; if(canEditBible){ const o=it.onclick; it.onclick=()=>{ if(it._lp){ it._lp=false; return; } o(); }; longPress(it,()=>{ g.palette.splice(i,1); bibleDirty=true; openBible(gid); toast('Removed '+c+' — Save to keep'); }); } sw.append(it); });
     b.append(h('div',{class:'hint'},'Palette — tap = draw with it'+(canEditBible?' · long-press = remove':'')));
     b.append(sw);
-    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ const c=$('#drawColor').value; if(!g.palette.includes(c)) g.palette.push(c); openBible(gid); }},'＋ Add current draw color')));
+    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ const c=$('#drawColor').value; if(!g.palette.includes(c)){ g.palette.push(c); bibleDirty=true; } openBible(gid); }},'＋ Add current draw color')));
     const sp=h('textarea',{}); sp.value=g.sprite; const hd=h('textarea',{}); hd.value=g.hd;
     if(!canEditBible){ sp.readOnly=true; hd.readOnly=true; }
+    sp.oninput=()=>{ g.sprite=sp.value; bibleDirty=true; }; hd.oninput=()=>{ g.hd=hd.value; bibleDirty=true; };
     b.append(h('div',{class:'hint'},'Pixel sprite style'),sp,h('div',{class:'hint'},'Illustration / card style'),hd);
-    const keyIn=h('input',{type:'color',value:g.key||'#FF00FF'}); keyIn.disabled=!canEditBible;
+    const keyIn=h('input',{type:'color',value:g.key||'#FF00FF'}); keyIn.disabled=!canEditBible; keyIn.addEventListener('input',()=>{ g.key=keyIn.value; bibleDirty=true; });
     b.append(row('Key color',keyIn,h('span',{class:'hint'},'flat background the game\'s importer cuts out')));
     b.append(row('Repo',h('span',{},g.repo+' › '+g.inbox+'/')));
     const decB=h('button',{class:g.decoder===false?'':'on'},g.decoder===false?'Inbox decoder: not installed':'Inbox decoder: installed ✓'); decB.disabled=!canEditBible;
-    decB.onclick=()=>{ g.decoder=g.decoder===false; openBible(gid); toast('Save the bible to keep this'); };
+    decB.onclick=()=>{ g.decoder=g.decoder===false; bibleDirty=true; openBible(gid); toast('Save the bible to keep this'); };
     const dirB=h('button',{class:g.direct?'on':''},g.direct?'Send: direct via GitHub connector':'Send: outbox + sweep'); dirB.disabled=!canEditBible;
-    dirB.onclick=()=>{ g.direct=!g.direct; openBible(gid); toast('Save the bible to keep this'); };
+    dirB.onclick=()=>{ g.direct=!g.direct; bibleDirty=true; openBible(gid); toast('Save the bible to keep this'); };
     b.append(row('Send to game',dirB),row('',decB));
     b.append(h('h4',{style:'margin:12px 0 4px'},'Characters'));
     bible.characters.filter(c=>c.game===gid).forEach(c=>{
-      const ta=h('textarea',{}); ta.value=c.look; ta.readOnly=!canEditBible; ta.oninput=()=>{ c.look=ta.value; };
-      const nm=h('input',{type:'text',value:c.name}); nm.readOnly=!canEditBible; nm.oninput=()=>{ c.name=nm.value; }; nm.style.flex='1';
-      b.append(row('',nm,canEditBible?h('button',{class:'danger',onclick:()=>{ bible.characters=bible.characters.filter(x=>x!==c); openBible(gid); }},'🗑'):''),ta);
+      const ta=h('textarea',{}); ta.value=c.look; ta.readOnly=!canEditBible; ta.oninput=()=>{ c.look=ta.value; bibleDirty=true; };
+      const nm=h('input',{type:'text',value:c.name}); nm.readOnly=!canEditBible; nm.oninput=()=>{ c.name=nm.value; bibleDirty=true; }; nm.style.flex='1';
+      b.append(row('',nm,canEditBible?h('button',{class:'danger',onclick:()=>{ bible.characters=bible.characters.filter(x=>x!==c); bibleDirty=true; openBible(gid); }},'🗑'):''),ta);
     });
-    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ bible.characters.push({id:uid(),name:'New character',game:gid,look:'Describe how they look: build, hair, face, clothes, marks.'}); openBible(gid); }},'＋ Add character')));
+    if(canEditBible) b.append(row('',h('button',{onclick:()=>{ bible.characters.push({id:uid(),name:'New character',game:gid,look:'Describe how they look: build, hair, face, clothes, marks.'}); bibleDirty=true; openBible(gid); }},'＋ Add character')));
     if(canEditBible){
       const sv=h('button',{class:'acc'},'💾 Save bible');
-      sv.onclick=async()=>{ g.sprite=sp.value; g.hd=hd.value; g.key=keyIn.value; sv.disabled=true; const w=await saveBible(); sv.disabled=false; toast(w==='shared'?'Bible saved for everyone':'Bible saved on this phone'); };
-      b.append(row('',sv,h('button',{onclick:()=>{ bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)); openBible(gid); toast('Reset to defaults — Save to keep'); }},'Reset to defaults')));
+      sv.onclick=async()=>{ g.sprite=sp.value; g.hd=hd.value; g.key=keyIn.value; sv.disabled=true; const w=await saveBible(); sv.disabled=false; if(w==='shared'||!dbCap){ bibleDirty=false; pendingBible=null; } toast(w==='shared'?'Bible saved for everyone':'Bible saved on this phone'); };
+      b.append(row('',sv,h('button',{onclick:()=>{ bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)); bibleDirty=true; openBible(gid); toast('Reset to defaults — Save to keep'); }},'Reset to defaults')));
     } else b.append(h('div',{class:'hint'},'Only Duff can edit the bible.'));
   });
 }
@@ -1729,15 +1752,25 @@ async function queueOutbox(g,name,ext,blob,dir,file){
   const b64=await blobToB64(blob); const CH=180000;
   if(b64.length>CH*40) throw {code:'too_big'};
   const id=Date.now().toString(36)+uid(); const n=Math.ceil(b64.length/CH);
-  for(let i=0;i<n;i++) await dbCap.doc(`outboxchunks/${id}_${i}`).set({item:id,n:i,data:b64.slice(i*CH,(i+1)*CH)});
-  await dbCap.doc(`outbox/${id}`).set({game:g.id,gameName:g.name,repo:g.repo,dir,file,ext,name,bytes:blob.size,sha256:await sha256hex(blob),chunks:n,by:myUserId||'',at:Date.now(),status:'queued'});
+  // Meta first (as 'uploading', which the sweep ignores), then chunks, then flip to 'queued'.
+  // A failure part-way removes what it wrote, so no orphan chunks are left eating the quota.
+  await dbCap.doc(`outbox/${id}`).set({game:g.id,gameName:g.name,repo:g.repo,dir,file,ext,name,bytes:blob.size,sha256:await sha256hex(blob),chunks:n,by:myUserId||'',at:Date.now(),status:'uploading'});
+  let wrote=0;
+  try{
+    for(let i=0;i<n;i++){ await dbCap.doc(`outboxchunks/${id}_${i}`).set({item:id,n:i,data:b64.slice(i*CH,(i+1)*CH)}); wrote=i+1; }
+    await dbCap.doc(`outbox/${id}`).update({status:'queued'});
+  }catch(e){
+    let clean=true; for(let i=0;i<wrote;i++){ try{ await dbCap.doc(`outboxchunks/${id}_${i}`).delete(); }catch(_){ clean=false; } }
+    try{ if(clean) await dbCap.doc(`outbox/${id}`).delete(); else throw 0; }catch(_){ try{ await dbCap.doc(`outbox/${id}`).update({status:'error',error:'upload failed part-way'}); }catch(__){} }
+    throw e;
+  }
   return id;
 }
 function outboxLine(it){
-  const st=it.status==='delivered'?'✅':it.status==='error'?'❌':'⏳';
+  const st=it.status==='delivered'?'✅':it.status==='error'?'❌':it.status==='uploading'?'⚠️':'⏳';
   const d=h('div',{class:'hint'}); d.append(`${st} ${it.name}.${it.ext} → ${it.gameName||it.game} · ${fmtDate(it.at)} · `);
   if(it.status==='delivered'&&it.path) d.append(h('a',{href:`https://github.com/${it.repo}/blob/main/${it.path}`,target:'_blank',rel:'noopener'},'in repo'));
-  else d.append(it.status==='error'?String(it.error||'failed').slice(0,120):'waiting for the next sweep');
+  else d.append(it.status==='error'?String(it.error||'failed').slice(0,120):it.status==='uploading'?'upload didn\'t finish — send it again':'waiting for the next sweep');
   return d;
 }
 function openSendToGame(){
@@ -1768,7 +1801,7 @@ function openSendToGame(){
     go.onclick=async()=>{
       const g=gameById(gs.value)||games[0]; const [owner,repo]=g.repo.split('/');
       const name=(ni.value||'art').trim().replace(/[^a-z0-9_-]+/gi,'_').slice(0,60)||'art'; let lastSend=null;
-      if(!g.direct){
+      if(!g.direct||!mcpCap){
         if(!dbCap){ out.classList.remove('hidden'); out.textContent='Sending needs Foxboard open inside the Claude app. Use Export here.'; return; }
         go.disabled=true; out.classList.remove('hidden'); out.textContent='Rendering…';
         try{
@@ -1827,18 +1860,23 @@ function who(id){ return id&&id===myUserId?'you':(names.get(id)||'Someone'); }
   if(userCap){ try{ userIsOwner=!!userCap.isOwner(); }catch(e){} try{ myUserId=await userCap.id(); }catch(e){} try{ canWriteShared=await userCap.can('data.write'); }catch(e){ canWriteShared=null; } }
   if(!dbCap){ libState='off'; return; }
   const t=setTimeout(()=>{ if(libState==='loading') libState='slow'; },10000);
-  dbCap.doc('bible/main').onSnapshot(s=>{ if(s.exists){ const b=s.data(); if(validBible(b)){ bible={games:JSON.parse(JSON.stringify(b.games)),characters:JSON.parse(JSON.stringify(b.characters))}; bibleSrc='shared'; } } },()=>{});
+  dbCap.doc('bible/main').onSnapshot(s=>{ if(!s.exists) return; const b=s.data(); if(!validBible(b)) return;
+    const nb={games:JSON.parse(JSON.stringify(b.games)),characters:JSON.parse(JSON.stringify(b.characters))};
+    if(JSON.stringify(nb)===JSON.stringify({games:bible.games,characters:bible.characters})){ bibleSrc='shared'; pendingBible=null; return; }
+    // Never swap the bible out from under an open, edited bible sheet: its controls hold the current objects.
+    if(sheetIs('bible')&&bibleDirty){ pendingBible=nb; return; }
+    applyBible(nb); if(sheetIs('bible')) openBible(bibleGid); },()=>{});
   dbCap.collection('library').orderBy('at','desc').limit(200).onSnapshot(s=>{
     clearTimeout(t); libState='ok'; libItems=s.docs.map(d=>({id:d.id,...d.data()}));
-    nameOf(libItems.map(i=>i.by)).then(()=>{ if(sheetIs('library')) openLibrary(); });
+    nameOf(libItems.map(i=>i.by)).then(()=>{ if(sheetIs('library')){ const sb=$('#shBody'), y=sb.scrollTop; openLibrary(); sb.scrollTop=y; } else if(sheetIs('libitem')&&!libItems.some(x=>x.id===curLibItem)) openLibrary(); });
   },e=>{ clearTimeout(t); libState='error:'+(e&&e.code); });
   dbCap.collection('outbox').orderBy('at','desc').limit(20).onSnapshot(s=>{ outboxItems=s.docs.map(d=>({id:d.id,...d.data()})); },()=>{});
   dbCap.collection('libnotes').orderBy('at','desc').limit(500).onSnapshot(s=>{
     libNotes=s.docs.map(d=>({id:d.id,...d.data()}));
-    nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')) openLibItem(curLibItem); });
+    nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')&&libItemRefresh) libItemRefresh(); });
   },()=>{});
 })();
-let curSheet=null, curLibItem=null;
+let curSheet=null, curLibItem=null, libItemRefresh=null;
 function sheetIs(k){ return curSheet===k && $('#sheet').classList.contains('open'); }
 const CHUNK=180000;
 async function shareCanvas(btn){
@@ -1847,12 +1885,13 @@ async function shareCanvas(btn){
   if(json.length>CHUNK*20){ toast('Too big to share (big images) — export it instead',2600); return; }
   btn.disabled=true; btn.textContent='Sharing…';
   const id=uid()+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
+  let wrote=0;
   try{
-    for(let n=0;n<parts.length;n++) await dbCap.doc(`libchunks/${id}_${n}`).set({item:id,n,data:parts[n]});
+    for(let n=0;n<parts.length;n++){ await dbCap.doc(`libchunks/${id}_${n}`).set({item:id,n,data:parts[n]}); wrote=n+1; }
     const th=pageThumb(0,128).toDataURL('image/png');
     await dbCap.doc(`library/${id}`).set({name:doc.name||'Untitled',w:doc.w,h:doc.h,frames:doc.pages.length,pixel:!!doc.pixel,by:myUserId||'',at:Date.now(),thumb:th,chunks:parts.length});
     toast('Shared with everyone on Foxboard');
-  }catch(e){ toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
+  }catch(e){ for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`libchunks/${id}_${n}`).delete(); }catch(_){} } toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
   btn.disabled=false; btn.textContent='⬆ Share this canvas';
 }
 async function openLibCanvas(it){
@@ -1866,8 +1905,10 @@ async function openLibCanvas(it){
   }catch(e){ toast('Could not open that one'); }
 }
 async function deleteLibItem(it){
-  try{ await dbCap.doc(`library/${it.id}`).delete(); for(let n=0;n<(it.chunks||0);n++) await dbCap.doc(`libchunks/${it.id}_${n}`).delete();
-    for(const nt of libNotes.filter(x=>x.item===it.id)) await dbCap.doc(`libnotes/${nt.id}`).delete(); toast('Deleted'); }
+  // Children first, the library row last: if anything fails the item stays listed and Delete can be tapped again.
+  try{ for(const nt of libNotes.filter(x=>x.item===it.id)) await dbCap.doc(`libnotes/${nt.id}`).delete();
+    for(let n=0;n<(it.chunks||0);n++) await dbCap.doc(`libchunks/${it.id}_${n}`).delete();
+    await dbCap.doc(`library/${it.id}`).delete(); toast('Deleted'); }
   catch(e){ toast('Delete failed ('+(e&&e.code||'error')+')'); }
 }
 function fmtDate(t){ try{ return new Date(t).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }catch(e){ return ''; } }
@@ -1904,9 +1945,14 @@ function openLibItem(id){
     acts.push(h('button',{onclick:openLibrary},'← Back'));
     b.append(row('',...acts));
     b.append(h('h4',{style:'margin:12px 0 4px'},'Notes'));
-    const ns=libNotes.filter(n=>n.item===it.id).sort((a,b)=>a.at-b.at);
-    if(!ns.length) b.append(h('div',{class:'hint'},'No notes yet. Testers: say what reads wrong.'));
-    ns.forEach(n=>{ const d=h('div',{class:'out'}); d.append(h('b',{},who(n.by)+': '),document.createTextNode(String(n.text||'').slice(0,1000))); if(n.by===myUserId||userIsOwner){ const x=h('button',{style:'min-height:28px;padding:2px 8px;margin-left:6px'},'✕'); x.onclick=async()=>{ try{ await dbCap.doc('libnotes/'+n.id).delete(); }catch(e){ toast('Could not delete'); } }; d.append(x); } b.append(d); });
+    const notesBox=h('div',{}); b.append(notesBox);
+    // Live note updates redraw only this list, so a note being typed below is never wiped.
+    libItemRefresh=()=>{ notesBox.innerHTML='';
+      const ns=libNotes.filter(n=>n.item===it.id).sort((a,b)=>a.at-b.at);
+      if(!ns.length) notesBox.append(h('div',{class:'hint'},'No notes yet. Testers: say what reads wrong.'));
+      ns.forEach(n=>{ const d=h('div',{class:'out'}); d.append(h('b',{},who(n.by)+': '),document.createTextNode(String(n.text||'').slice(0,1000))); if(n.by===myUserId||userIsOwner){ const x=h('button',{style:'min-height:40px;min-width:40px;padding:2px 8px;margin-left:6px','aria-label':'Delete note'},'✕'); x.onclick=async()=>{ try{ await dbCap.doc('libnotes/'+n.id).delete(); }catch(e){ toast('Could not delete'); } }; d.append(x); } notesBox.append(d); });
+    };
+    libItemRefresh();
     if(canWriteShared!==false){
       const ta=h('textarea',{placeholder:'Leave a note on this art…'});
       const send=h('button',{class:'acc'},'💬 Add note');
@@ -2547,7 +2593,9 @@ for(const p of doc.pages) for(const o of p.objects) if(o.type==='image') getImg(
 refreshUI(); updUndo(); resize(); fit(); renderPages(); updDrawbar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const p of doc.pages) for(const o of p.objects) if(o.type==='text') fitText(o); draw(); thumbsSoon(); });
 if(!doc.pages.some(p=>p.objects.length)) setTimeout(()=>toast('Tap Text, Shape, Image, Draw or ✨AI to start',2600),400);
-window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,forgeCheck,get forgeJobs(){return forgeJobs;},setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,inpaint,magicMaskCount,startMagic,openProps,get view(){return view;}};
+window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,forgeCheck,get forgeJobs(){return forgeJobs;},setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,inpaint,magicMaskCount,startMagic,openProps,get view(){return view;},
+  // test hooks (tests/test_audit_fixes.py)
+  t:{get bible(){return bible;},get bibleGid(){return bibleGid;},gameById,closeSheet,queueOutbox,openLibItem,openNew,persistTemplates,get dbCap(){return dbCap;},get magic(){return magic;},set myTemplates(v){myTemplates=v;},get myTemplates(){return myTemplates;}}};
 })();
 </script>
 </body>
