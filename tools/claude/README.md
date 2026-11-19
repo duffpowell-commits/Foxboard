@@ -43,3 +43,13 @@ python3 tools/claude/art_loop.py cut    lm-sky-c-20261119/1 pick.png --height 64
 watermarks/stray marks, cropped head or sides, floating feet, off-palette, baked glow, seams on
 textures. It writes `forge/out/<id>_sheet.png`. `cut` turns the pick into a game-ready PNG: key to transparent, crop, resize, and despill (green/magenta cast pulled out of the 3 px edge band only, so moss inside stays green). It's a pre-filter: still look at the sheet
 (it can't see faces, and the faceless rule is the one that matters most). Test: `tests/test_art_loop.py`.
+
+## 6. Duff → Claude and back (Send to Claude, drafts, problem log)
+- **Inbox:** `ArtifactData query` collection `toclaude` (newest first, `status == "sent"`), with `out_dir`; then read `toclaudechunks` for that item and run `python3 tools/claude/fbx.py inbox <id> <db_dir> OUTDIR` → `doc.json`, `snapshot.png` (Read it), `info.json` (note, layers, selection, game). Reply by updating the row: `{status:"seen", reply:"..."}`.
+- **Draft back:** edit `doc.json` with `fb.js`, render a preview, `fbx.py push-draft doc.json preview.png OUTDIR --title "..." --note "..."`, then send each `writes.json` batch. Duff gets an Open banner; it loads as plain data and undo returns his version.
+- **Problems:** `ArtifactData query` collection `diag` — each row has kind (`forge`, `send`, `share`, `ai`, `crash`, `promise`…), msg, code, stack, ua, ver, where (`claude` or `site`).
+
+## 7. Checks and waits
+- `tools/claude/check.sh` — every test in Chromium, then WebKit (iPhone), then screenshots of the key screens in `/tmp/foxboard-shots` (Read them). `--quick` = Chromium only.
+- `python3 tools/claude/shots.py DIR` — just the screenshots.
+- `python3 tools/claude/forge_wait.py <job>...` with Bash run_in_background — you get woken when the takes land.

@@ -1187,6 +1187,7 @@ function openMenu(){
     g.append(h('button',{onclick:()=>openBible()},'📖 Style bible'));
     g.append(h('button',{onclick:openLibrary},'📚 Shared library'));
     g.append(h('button',{onclick:openSendToGame},'🎮 Send to game'));
+    g.append(h('button',{onclick:openClaudeLink},'📨 Send to Claude'));
     b.append(g);
     b.append(h('div',{class:'hint'},'Autosave lives in this browser and can get wiped. Save a project file (.json) to keep it for real — reopens with every layer and frame editable.'));
     b.append(h('div',{class:'hint'},'Gestures: drag to move · pinch to zoom · drag empty space to pan · tap empty space to deselect · ↻ rotates (snaps 15°). In Draw mode two fingers zoom instead of painting.'));
@@ -1198,7 +1199,7 @@ let sampleFn=null, aiReady=false, aiCtl=null;
 (async()=>{ try{ if(window.claude&&window.claude.use) sampleFn=await window.claude.use('sample'); }catch(e){ sampleFn=null; } aiReady=true; })();
 const AI_RULES='Make ORIGINAL designs only — never copy an existing copyrighted or trademarked character, logo or artwork; if asked for one, make an original character with a similar mood instead.';
 function aiErr(e){
-  const c=e&&e.code;
+  const c=e&&e.code; if(c!=='cancelled') report('ai',e);
   if(c==='cancelled') return 'Stopped.';
   if(c==='not_granted'||c==='sampling_disabled'||c==='not_declared'||c==='capability_disabled') return 'AI is switched off for this page. Reopen Foxboard inside the Claude app and tap Allow when asked.';
   if(c==='rate_limited') return 'Claude usage limit or too many requests — wait a bit and try again.';
@@ -1390,7 +1391,7 @@ function buildForge(b,ta){
       await forgeQueue(opts); const j=forgeJobs[0];
       out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working — come back to ✨AI › Forge and tap Check now.`;
       view='jobs'; pick=null; render();
-    }catch(e){ out.textContent=e&&e.message?e.message:ghErr(e); }
+    }catch(e){ report('forge',e,opts.mode); out.textContent=e&&e.message?e.message:ghErr(e); }
     finally{ go.disabled=false; }
   };
 }
@@ -1696,7 +1697,7 @@ function openSaveTemplate(){
       const t={id:uid(),name:ni.value.trim()||'My template',w:doc.w,h:doc.h,saved:new Date().toISOString(),doc:JSON.parse(JSON.stringify({...doc,cur:0}))};
       myTemplates.filter(x=>x.name===t.name).forEach(x=>tplDeleted.add(x.id));
       myTemplates=[t,...myTemplates.filter(x=>x.name!==t.name)];
-      const where=await persistTemplates(); go.disabled=false;
+      const where=await persistTemplates(); go.disabled=false; if(where!=='cloud'&&where!=='local') report('templates',where);
       toast(where==='cloud'?'Template saved to Foxboard':where==='local'?'Template saved on this phone':where==='offline'?'Saved on this phone — couldn\'t reach the cloud list, so it wasn\'t touched. Try again later.':'Saved on this phone (cloud save: '+where+')',2600);
       closeSheet();
     };
@@ -1729,7 +1730,7 @@ let bibleDirty=false, pendingBible=null, bibleGid=null;
 function applyBible(nb){ bible=nb; bibleSrc='shared'; bibleDirty=false; pendingBible=null; }
 async function saveBible(){
   try{ localStorage.setItem(BIBLE_LS,JSON.stringify(bible)); }catch(e){}
-  if(dbCap){ try{ await dbCap.doc('bible/main').set({games:bible.games,characters:bible.characters,at:Date.now()}); return 'shared'; }catch(e){ return 'local'; } }
+  if(dbCap){ try{ await dbCap.doc('bible/main').set({games:bible.games,characters:bible.characters,at:Date.now()}); return 'shared'; }catch(e){ if(userIsOwner) report('bible',e); return 'local'; } }
   return 'local';
 }
 function snapToPalette(o,pal){
@@ -1881,7 +1882,7 @@ function openSendToGame(){
           await queueOutbox(g,name,ext,blob,`${g.inbox}/${ymd(now)}-foxboard`,`${name}-${stamp}.${ext}`);
           out.textContent=`Queued ✓ ${name}.${ext} for ${g.name}. The Foxboard sweep drops it into ${g.inbox}/ on its next run (every few hours), or say "sweep the Foxboard outbox" in any Claude chat to do it now.`;
           toast('Queued for '+g.name);
-        }catch(e){ out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':e&&e.code==='invalid_argument'?'You can\'t send yet — Duff has to make you an Editor.':e&&e.code==='quota_exceeded'?'Outbox is full — wait for the sweep to clear it.':'Couldn\'t queue it ('+(e&&e.code||'error')+').'; }
+        }catch(e){ report('send',e,'outbox'); out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':e&&e.code==='invalid_argument'?'You can\'t send yet — Duff has to make you an Editor.':e&&e.code==='quota_exceeded'?'Outbox is full — wait for the sweep to clear it.':'Couldn\'t queue it ('+(e&&e.code||'error')+').'; }
         finally{ go.disabled=false; }
         return;
       }
@@ -1906,7 +1907,7 @@ function openSendToGame(){
       }catch(e){
         const blocked=e&&(e.code==='server_not_connected'||e.code==='needs_reauth'||(e.code==='tool_error'&&/\b404\b|Not Found/i.test(String(e.message||''))));
         if(blocked&&dbCap&&lastSend){ try{ await queueOutbox(g,lastSend.name,lastSend.ext,lastSend.blob,lastSend.dir,lastSend.file); out.textContent='GitHub connector can\'t reach that repo, so it went to the outbox instead ✓ The Foxboard sweep delivers it.'; return; }catch(_){} }
-        out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
+        report('send',e,'direct'); out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
       finally{ go.disabled=false; }
     };
     b.append(row('',go),out);
@@ -1938,6 +1939,8 @@ function who(id){ return id&&id===myUserId?'you':(names.get(id)||'Someone'); }
     nameOf(libItems.map(i=>i.by)).then(()=>{ if(sheetIs('library')){ const sb=$('#shBody'), y=sb.scrollTop; openLibrary(); sb.scrollTop=y; } else if(sheetIs('libitem')&&!libItems.some(x=>x.id===curLibItem)) openLibrary(); });
   },e=>{ clearTimeout(t); libState='error:'+(e&&e.code); });
   dbCap.collection('outbox').orderBy('at','desc').limit(20).onSnapshot(s=>{ outboxItems=s.docs.map(d=>({id:d.id,...d.data()})); },()=>{});
+  dbCap.collection('fromclaude').orderBy('at','desc').limit(10).onSnapshot(s=>{ fromClaude=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.status!=='draft-uploading'); draftBanner(); },()=>{});
+  if(userIsOwner) dbCap.collection('toclaude').orderBy('at','desc').limit(10).onSnapshot(s=>{ toClaudeItems=s.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.by===myUserId||!myUserId); if(sheetIs('toclaude')) openClaudeLink(); },()=>{});
   dbCap.collection('libnotes').orderBy('at','desc').limit(500).onSnapshot(s=>{
     libNotes=s.docs.map(d=>({id:d.id,...d.data()}));
     nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')&&libItemRefresh) libItemRefresh(); });
@@ -1958,7 +1961,7 @@ async function shareCanvas(btn){
     const th=pageThumb(0,128).toDataURL('image/png');
     await dbCap.doc(`library/${id}`).set({name:doc.name||'Untitled',w:doc.w,h:doc.h,frames:doc.pages.length,pixel:!!doc.pixel,by:myUserId||'',at:Date.now(),thumb:th,chunks:parts.length});
     toast('Shared with everyone on Foxboard');
-  }catch(e){ for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`libchunks/${id}_${n}`).delete(); }catch(_){} } toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
+  }catch(e){ report('share',e); for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`libchunks/${id}_${n}`).delete(); }catch(_){} } toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
   btn.disabled=false; btn.textContent='⬆ Share this canvas';
 }
 async function openLibCanvas(it){
@@ -2030,6 +2033,82 @@ function openLibItem(id){
   curSheet='libitem';
 }
 
+/* ---------- Claude link: send to Claude, drafts from Claude, problem log ---------- */
+const DIAG_LS='foxboard.diag', DRAFT_SEEN_LS='foxboard.draftseen', TOCLAUDE_LS='foxboard.toclaude', APP_VER='2026-11-19b';
+let diagSent=0, fromClaude=[], toClaudeItems=[]; const diagRecent=new Map();
+function diagLocal(){ try{ const a=JSON.parse(localStorage.getItem(DIAG_LS)||'[]'); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+// Problems are kept on this phone (last 50) and, inside the Claude app, written to db `diag` (only Duff + Claude read it).
+function report(kind,e,extra){
+  try{
+    const msg=String((e&&(e.message||e.code))||e||'').slice(0,500); if(!msg||msg==='cancelled') return;
+    const ent={at:Date.now(),kind:String(kind||'error').slice(0,40),msg,code:e&&e.code?String(e.code).slice(0,60):'',stack:String(e&&e.stack||'').slice(0,1200),extra:extra?String(extra).slice(0,300):'',ua:navigator.userAgent.slice(0,160),ver:APP_VER,where:window.claude?'claude':'site'};
+    const L=diagLocal(); L.unshift(ent); try{ localStorage.setItem(DIAG_LS,JSON.stringify(L.slice(0,50))); }catch(_){}
+    const k=ent.kind+'|'+msg; if(Date.now()-(diagRecent.get(k)||0)<60000) return; diagRecent.set(k,Date.now());
+    if(dbCap&&diagSent<20){ diagSent++; dbCap.collection('diag').add({...ent,by:myUserId||''}).catch(()=>{}); }
+  }catch(_){}
+}
+window.addEventListener('error',ev=>{ if(ev&&ev.error) report('crash',ev.error); else if(ev&&ev.message) report('crash',ev.message); });
+window.addEventListener('unhandledrejection',ev=>report('promise',ev&&ev.reason));
+function snapshotPNG(){ const m=Math.max(doc.w,doc.h); const sc=doc.pixel?Math.max(1,Math.min(8,Math.floor(512/m))):Math.min(1,512/m);
+  let u=renderToCanvas(sc,false).toDataURL('image/png'); if(u.length>200000) u=renderToCanvas(Math.min(sc,384/m),true).toDataURL('image/jpeg',0.82); return u; }
+async function sendToClaude(note){
+  if(!dbCap) throw new Error('Send to Claude works when Foxboard is open inside the Claude app');
+  endEdit(); note=String(note||'').trim().slice(0,2000);
+  const json=JSON.stringify(doc); if(json.length>CHUNK*30) throw new Error('Too big to send — save a project file instead');
+  const id=Date.now().toString(36)+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
+  const layers=O().slice(-60).map(o=>({id:o.id,type:o.type,name:o.name||'',text:o.type==='text'?String(o.text||'').slice(0,80):undefined,x:Math.round(o.x),y:Math.round(o.y),w:Math.round(o.w),h:Math.round(o.h),hidden:!!o.hidden}));
+  await dbCap.doc(`toclaude/${id}`).set({note,by:myUserId||'',at:Date.now(),name:doc.name||'Untitled',w:doc.w,h:doc.h,pixel:!!doc.pixel,frames:doc.pages.length,cur:doc.cur,sel:selId||'',game:activeGame||'',layers:JSON.stringify(layers).slice(0,20000),png:snapshotPNG(),chunks:parts.length,ver:APP_VER,status:'uploading'});
+  let wrote=0;
+  try{ for(let n=0;n<parts.length;n++){ await dbCap.doc(`toclaudechunks/${id}_${n}`).set({item:id,n,data:parts[n]}); wrote=n+1; }
+    await dbCap.doc(`toclaude/${id}`).update({status:'sent'}); }
+  catch(e){ for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`toclaudechunks/${id}_${n}`).delete(); }catch(_){} } try{ await dbCap.doc(`toclaude/${id}`).delete(); }catch(_){} throw e; }
+  try{ const L=JSON.parse(localStorage.getItem(TOCLAUDE_LS)||'[]'); L.unshift({id,at:Date.now(),note:note.slice(0,120)}); localStorage.setItem(TOCLAUDE_LS,JSON.stringify(L.slice(0,20))); }catch(_){}
+  return id;
+}
+function draftSeen(){ try{ return new Set(JSON.parse(localStorage.getItem(DRAFT_SEEN_LS)||'[]')); }catch(e){ return new Set(); } }
+function markDraftSeen(id){ const s=draftSeen(); s.add(id); try{ localStorage.setItem(DRAFT_SEEN_LS,JSON.stringify([...s].slice(-100))); }catch(_){} }
+async function openDraft(id){
+  if(!dbCap) throw new Error('Drafts open inside the Claude app');
+  const it=fromClaude.find(x=>x.id===id); if(!it) throw new Error('No draft '+id);
+  const s=await dbCap.collection('fromclaudechunks').where('item','==',id).get();
+  const parts=s.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n); if(parts.length!==it.chunks) throw new Error('Draft is still arriving — try again in a moment');
+  const d=migrate(JSON.parse(parts.map(p=>p.data).join(''))); // data only: a doc, never code
+  useTemplate(d); markDraftSeen(id); draftBanner(); toast('Opened Claude\'s draft — undo goes back to yours',3000); return true;
+}
+function draftBanner(){
+  let el=$('#draftbar'); const seen=draftSeen(), d=fromClaude.find(x=>!seen.has(x.id));
+  if(!d){ if(el) el.remove(); return; }
+  if(!el){ el=h('div',{id:'draftbar',class:'cloudnote',style:'position:fixed;left:8px;right:8px;top:calc(56px + env(safe-area-inset-top));z-index:30;display:flex;gap:8px;align-items:center;box-shadow:0 6px 24px rgba(0,0,0,.45);background:rgba(18,26,42,.97)'}); document.body.append(el); }
+  el.innerHTML=''; const t=h('div',{style:'flex:1;min-width:0'}); t.append(h('b',{},'🦊 Claude sent a draft: '),document.createTextNode(String(d.title||'Untitled').slice(0,60)));
+  if(d.note) t.append(h('div',{class:'hint',style:'margin:2px 0 0'},String(d.note).slice(0,160)));
+  el.append(t,h('button',{class:'acc',onclick:async()=>{ try{ await openDraft(d.id); }catch(e){ toast(e.message||'Could not open it',3000); report('draft',e); } }},'Open'),h('button',{'aria-label':'Dismiss draft',onclick:()=>{ markDraftSeen(d.id); draftBanner(); }},'✕'));
+}
+function openClaudeLink(){
+  openSheet('📨 Send to Claude','toclaude',b=>{
+    if(!dbCap) b.append(h('div',{class:'cloudnote'},'Sending works when Foxboard is open inside the Claude app. The problem log below still works — copy it and paste it to Duff.'));
+    else {
+      const ta=h('textarea',{placeholder:'What should Claude look at? e.g. "make the knight read better at 32px" or "Forge keeps eating his shield"'});
+      const out=h('div',{class:'out hidden'}), go=h('button',{class:'acc'},'📨 Send this canvas');
+      go.onclick=async()=>{ go.disabled=true; out.classList.remove('hidden'); out.textContent='Sending…';
+        try{ await sendToClaude(ta.value); ta.value=''; out.textContent='Sent ✓ Claude sees the canvas, every layer and your note. Say "check my Foxboard inbox" in any Claude chat.'; }
+        catch(e){ report('toclaude',e); out.textContent=e&&e.code==='invalid_argument'?'Duff has to make you an Editor first.':e&&e.code==='quota_exceeded'?'Inbox is full — ask Claude to clear it.':(e.message||'Couldn\'t send ('+(e&&e.code||'error')+')'); }
+        go.disabled=false; };
+      b.append(ta,row('',go),out);
+      const mine=toClaudeItems.slice(0,6);
+      if(mine.length){ b.append(h('h4',{style:'margin:12px 0 4px'},'Sent')); mine.forEach(it=>{ const d=h('div',{class:'out'}); d.append(h('b',{},fmtDate(it.at)+': '),document.createTextNode(String(it.note||'(no note)').slice(0,160)));
+        if(it.reply) d.append(h('div',{style:'margin-top:6px;color:var(--amber)'},'Claude: '+String(it.reply).slice(0,600))); else d.append(h('div',{class:'hint'},it.status==='seen'?'Claude has it':'waiting for Claude')); b.append(d); }); }
+      if(fromClaude.length){ b.append(h('h4',{style:'margin:12px 0 4px'},'From Claude')); fromClaude.slice(0,6).forEach(d=>b.append(row('',h('span',{style:'flex:1'},String(d.title||'Untitled').slice(0,50)),h('button',{onclick:async()=>{ try{ await openDraft(d.id); closeSheet(); }catch(e){ toast(e.message,3000); } }},'Open')))); }
+    }
+    const L=diagLocal();
+    b.append(h('h4',{style:'margin:12px 0 4px'},'Problem log (this phone)'));
+    if(!L.length) b.append(h('div',{class:'hint'},'No problems logged. 🎉'));
+    else { L.slice(0,8).forEach(x=>b.append(h('div',{class:'hint'},`${fmtDate(x.at)} · ${x.kind}: ${x.msg.slice(0,140)}`)));
+      b.append(row('',h('button',{onclick:async()=>{ const t=L.slice(0,20).map(x=>`${new Date(x.at).toISOString()} ${x.kind} ${x.code} ${x.msg} | ${x.ua}`).join('\n'); try{ await navigator.clipboard.writeText(t); toast('Copied — paste it to Duff or Claude'); }catch(e){ showText(t); } }},'📋 Copy log'),
+        h('button',{onclick:()=>{ try{ localStorage.removeItem(DIAG_LS); }catch(_){} openClaudeLink(); }},'Clear'))); }
+    b.append(h('div',{class:'hint'},'Inside the Claude app problems also reach Claude automatically (only Duff and Claude can read them).'));
+  });
+}
+function showText(t){ openSheet('Problem log','log',b=>{ const ta=h('textarea',{style:'min-height:40vh'}); ta.value=t; ta.readOnly=true; b.append(ta,h('div',{class:'hint'},'Long-press › Select all › Copy.')); }); }
 /* ---------- export ---------- */
 let downloads=null;
 (async()=>{ try{ if(window.claude&&window.claude.use) downloads=await window.claude.use('downloads'); }catch(e){ downloads=null; } })();
@@ -2557,6 +2636,9 @@ const API_DOC={
   sticker:'sticker(id, {width, color}) -> outline around a cut-out. width: px for pixel art, else fraction of the image (0.03)',
   newBackground:'newBackground(id, {prompt, n}) -> Promise<jobId>. Forge paints a new scene behind a cut-out, subject kept exactly',
   compare:'compare(id) -> opens a before/after slider: the frame without vs with this layer',
+  sendToClaude:'sendToClaude(note) -> Promise<id>. Canvas (doc + PNG + layer list) and a note into db toclaude/ for Claude',
+  drafts:'drafts() -> drafts Claude sent (db fromclaude/), newest first', openDraft:'openDraft(id) -> opens a Claude draft as the canvas (undoable)',
+  problems:'problems() -> this phone\'s problem log (last 50)', report:'report(kind, message) -> adds to the problem log (and db diag/ inside Claude)',
   forgeTrack:'forgeTrack(local) -> show a job queued elsewhere in this phone\'s ✨AI › Forge list',
   undo:'undo()', redo:'redo()'
 };
@@ -2633,6 +2715,8 @@ const Foxboard={
     throw new Error('kind: png | jpg | gif | sheet | pdf | video'); },
   async forge(opts){ return await forgeQueue(opts||{}); },
   async vary(jid,k,how){ const j=forgeJobs.find(x=>x.id===jid); if(!j) throw new Error('No Forge job '+jid+' on this phone'); return await forgeVary(j,k|0,how); },
+  async sendToClaude(n){ return await sendToClaude(n); }, drafts(){ return fromClaude.map(d=>({id:d.id,title:d.title,note:d.note,at:d.at,seen:draftSeen().has(d.id)})); },
+  async openDraft(id){ return await openDraft(id); }, problems(){ return diagLocal(); }, report(k,m){ report(k,m); return true; },
   takes(){ return forgeTakes().map(t=>({job:t.j.id,k:t.k,seed:t.j.seed!=null?t.j.seed+t.k:null,prompt:forgePromptOf(t.j),fav:t.fav})); },
   favorite(jid,k,on){ const j=forgeJobs.find(x=>x.id===jid); if(!j) throw new Error('No Forge job '+jid); return forgeFav(j,k|0,on); },
   async boostPrompt(t){ return await boostPrompt(t); },
@@ -2651,7 +2735,7 @@ function expandAmounts(o,kind){ const W=o.natW,H=o.natH; let l=0,r=0,t=0,b=0;
   return {l,r,t,b}; }
 async function forgeSend(opts,okMsg){
   try{ toast('Sending to Forge… (first time asks you to Allow)',6000); const id=await forgeQueue(opts); toast(okMsg||'Queued ✓ — results show in ✨AI › Forge',4000); return id; }
-  catch(e){ toast(e&&e.message?e.message:ghErr(e),5000); return null; }
+  catch(e){ report('forge',e,opts&&opts.mode); toast(e&&e.message?e.message:ghErr(e),5000); return null; }
 }
 function forgeTool(o,mode){
   if(mode==='upscale'){ forgeSend({mode:'upscale',id:o.id},'Upscale queued ✓ (~5 min) — ✨AI › Forge shows it'); return; }

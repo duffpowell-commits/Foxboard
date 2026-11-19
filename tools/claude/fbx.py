@@ -4,6 +4,8 @@
   fbx.py push-image art.png "Game – Piece" OUTDIR [--title T] [--sub S] [--font CSS] [--color HEX] [--pixel] [--cut-key HEX] [--max PX]
   fbx.py push-doc doc.json preview.png OUTDIR
   fbx.py pull <id> <db_dir> doc.json
+  fbx.py push-draft doc.json preview.png OUTDIR --title T [--note N]   (Claude -> Duff: shows an "open it?" banner)
+  fbx.py inbox <id> <db_dir> OUTDIR                                     (Duff -> Claude: unpacks a Send to Claude item)
 
 push-* writes one JSON file per db document into OUTDIR plus OUTDIR/writes.json:
   {"id": ..., "batches": [[{op, collection, doc_id, file_path}, ...], ...]}
@@ -50,19 +52,21 @@ def cut_key(im, key):
     return im
 
 
-def write_out(doc, preview, out):
+def write_out(doc, preview, out, kind="library", title=None, note=None):
     out = pathlib.Path(out).resolve(); out.mkdir(parents=True, exist_ok=True)
     iid = uid() + uid()
+    meta_coll, chunk_coll = ("library", "libchunks") if kind == "library" else ("fromclaude", "fromclaudechunks")
     body = json.dumps({**doc, "cur": 0}, separators=(",", ":"))
     parts = [body[i:i + CHUNK] for i in range(0, len(body), CHUNK)]
     writes = []
     for n, p in enumerate(parts):
-        f = out / f"libchunks_{iid}_{n}.json"; f.write_text(json.dumps({"item": iid, "n": n, "data": p}))
-        writes.append({"op": "set", "collection": "libchunks", "doc_id": f"{iid}_{n}", "file_path": str(f)})
+        f = out / f"{chunk_coll}_{iid}_{n}.json"; f.write_text(json.dumps({"item": iid, "n": n, "data": p}))
+        writes.append({"op": "set", "collection": chunk_coll, "doc_id": f"{iid}_{n}", "file_path": str(f)})
     meta = {"name": doc.get("name") or "Untitled", "w": doc["w"], "h": doc["h"], "frames": len(doc["pages"]), "pixel": bool(doc.get("pixel")),
             "by": "", "at": int(time.time() * 1000), "thumb": thumb_url(preview), "chunks": len(parts)}
-    f = out / f"library_{iid}.json"; f.write_text(json.dumps(meta))
-    writes.append({"op": "set", "collection": "library", "doc_id": iid, "file_path": str(f)})
+    if kind != "library": meta.update({"title": (title or doc.get("name") or "Untitled")[:80], "note": (note or "")[:300]})
+    f = out / f"{meta_coll}_{iid}.json"; f.write_text(json.dumps(meta))
+    writes.append({"op": "set", "collection": meta_coll, "doc_id": iid, "file_path": str(f)})
     batches, cur, size = [], [], 0
     for w in writes:
         s = pathlib.Path(w["file_path"]).stat().st_size + 300
@@ -100,6 +104,26 @@ def push_doc(a):
     write_out(doc, Image.open(a.preview), a.out)
 
 
+def push_draft(a):
+    doc = json.loads(pathlib.Path(a.doc).read_text())
+    assert doc.get("w", 0) > 0 and doc.get("h", 0) > 0 and doc.get("pages"), "doc needs w, h and pages"
+    write_out(doc, Image.open(a.preview), a.out, kind="draft", title=a.title, note=a.note)
+
+
+def inbox(a):
+    """Unpack a Send to Claude item read with ArtifactData out_dir=<db_dir> (toclaude/<id>.json + toclaudechunks/<id>_<n>.json)."""
+    db = pathlib.Path(a.db_dir); out = pathlib.Path(a.out); out.mkdir(parents=True, exist_ok=True)
+    meta = read_db(db / "toclaude" / f"{a.id}.json")
+    parts = sorted((c for c in (read_db(f) for f in (db / "toclaudechunks").glob("*.json")) if c.get("item") == a.id), key=lambda c: c["n"])
+    if len(parts) != meta.get("chunks"): sys.exit(f"have {len(parts)} chunks, meta says {meta.get('chunks')}: read every toclaudechunks row for {a.id}")
+    doc = json.loads("".join(c["data"] for c in parts)); (out / "doc.json").write_text(json.dumps(doc))
+    png = str(meta.get("png", "")); ext = "jpg" if png.startswith("data:image/jpeg") else "png"
+    if "," in png: (out / f"snapshot.{ext}").write_bytes(base64.b64decode(png.split(",", 1)[1]))
+    info = {k: meta.get(k) for k in ("note", "name", "w", "h", "pixel", "frames", "cur", "sel", "game", "status", "at", "ver")}
+    info["layers"] = json.loads(meta.get("layers") or "[]"); info["doc"] = str(out / "doc.json"); info["snapshot"] = str(out / f"snapshot.{ext}")
+    (out / "info.json").write_text(json.dumps(info, indent=1)); print(json.dumps({k: info[k] for k in ("note", "name", "w", "h", "frames", "doc", "snapshot")}))
+
+
 def read_db(p):
     j = json.loads(pathlib.Path(p).read_text())
     return j["data"] if isinstance(j, dict) and isinstance(j.get("data"), dict) else j
@@ -126,4 +150,6 @@ p.add_argument("--pixel", action="store_true"); p.add_argument("--cut-key"); p.a
 p.set_defaults(fn=push_image)
 p = sp.add_parser("push-doc"); p.add_argument("doc"); p.add_argument("preview"); p.add_argument("out"); p.set_defaults(fn=push_doc)
 p = sp.add_parser("pull"); p.add_argument("id"); p.add_argument("db_dir"); p.add_argument("doc"); p.set_defaults(fn=pull)
+p = sp.add_parser("push-draft"); p.add_argument("doc"); p.add_argument("preview"); p.add_argument("out"); p.add_argument("--title"); p.add_argument("--note"); p.set_defaults(fn=push_draft)
+p = sp.add_parser("inbox"); p.add_argument("id"); p.add_argument("db_dir"); p.add_argument("out"); p.set_defaults(fn=inbox)
 a = ap.parse_args(); a.fn(a)
