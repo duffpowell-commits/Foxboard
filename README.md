@@ -27,6 +27,7 @@ pip install playwright pillow && python -m playwright install chromium
 python tests/test_features.py
 python tests/test_gif_templates.py
 python tests/test_pipeline.py
+python tests/test_forge_key.py
 ```
 `test_gif_templates.py` decodes the exported GIF with Pillow, an independent decoder, and checks frames, loop, timing and transparency.
 

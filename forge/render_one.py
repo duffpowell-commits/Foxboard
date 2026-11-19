@@ -1,6 +1,8 @@
 """Render one version of one Forge job with FLUX.1-schnell (stable-diffusion.cpp, CPU) and commit it."""
 import base64, io, json, os, pathlib, re, subprocess, sys, time
 from PIL import Image
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from keyfix import keyfix
 jid, k = sys.argv[1], int(sys.argv[2])
 job = json.loads(pathlib.Path(f"forge/jobs/{jid}.json").read_text())
 env = dict(l.strip().split("=", 1) for l in open("models.env") if "=" in l)
@@ -18,19 +20,7 @@ if r.returncode != 0 or not png.exists():
 else:
     key = job.get("key")
     if key and re.fullmatch(r"#[0-9A-Fa-f]{6}", key):
-        # make the flat background EXACTLY the key colour so game importers cut it cleanly
-        im = Image.open(png).convert("RGB"); px = im.load(); w, h = im.size
-        border = [px[x, 0] for x in range(w)] + [px[x, h - 1] for x in range(w)] + [px[0, y] for y in range(h)] + [px[w - 1, y] for y in range(h)]
-        ref = tuple(sorted(c[i] for c in border)[len(border) // 2] for i in range(3))
-        kc = tuple(int(key[i:i + 2], 16) for i in (1, 3, 5)); tol = 60
-        near = lambda c: sum((c[i] - ref[i]) ** 2 for i in range(3)) <= tol * tol
-        seen = set(); stack = [(x, 0) for x in range(w)] + [(x, h - 1) for x in range(w)] + [(0, y) for y in range(h)] + [(w - 1, y) for y in range(h)]
-        while stack:
-            x, y = stack.pop()
-            if (x, y) in seen or not (0 <= x < w and 0 <= y < h): continue
-            seen.add((x, y))
-            if not near(px[x, y]): continue
-            px[x, y] = kc; stack += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        im = keyfix(Image.open(png), key)
         im.save(png)
     raw = png.read_bytes()
     if len(raw) > 700_000:  # the GitHub connector reads files up to ~1 MB; ship a smaller copy for the app
