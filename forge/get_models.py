@@ -13,7 +13,17 @@ def pick(repo, wants):
 def get(repo, f):
     print("GET", repo, f, flush=True)
     return hf_hub_download(repo, f, local_dir="models")
+import json, pathlib, urllib.request
 out = {}
+mode = "new"
+if len(sys.argv) > 1:
+    try: mode = json.loads(pathlib.Path(f"forge/jobs/{sys.argv[1]}.json").read_text()).get("mode", "new")
+    except Exception: pass
+if mode == "upscale":
+    dst = "models/RealESRGAN_x4plus_anime_6B.pth"
+    urllib.request.urlretrieve("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth", dst)
+    with open("models.env", "w") as fh: fh.write(f"ESRGAN={dst}\n")
+    print({"ESRGAN": dst}); sys.exit(0)
 f = pick("leejet/FLUX.1-schnell-gguf", [("q4_k",), ("q4_0",), ("q5",)])
 if not f: sys.exit("no flux gguf")
 out["DIFF"] = get("leejet/FLUX.1-schnell-gguf", f)

@@ -54,7 +54,7 @@ jobs:
       - name: Models
         run: |
           pip install -q huggingface_hub hf_transfer pillow
-          HF_HUB_ENABLE_HF_TRANSFER=1 python forge/get_models.py
+          HF_HUB_ENABLE_HF_TRANSFER=1 python forge/get_models.py "${{ matrix.item.job }}"
       - name: Render
         run: |
           git config user.name "github-actions[bot]"
