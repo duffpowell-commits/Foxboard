@@ -5,7 +5,8 @@ so Claude gets pinged the moment results land instead of polling by hand.
   python3 tools/claude/forge_wait.py <job-id> [<job-id> ...] [--timeout-min 60] [--repo .] [--every 60]
 
 Sleeps until each job's ETA (from its size and mode), then fetches main every --every seconds. Exits 0 when every job has
-done.json (prints ok/failed per job and which takes landed), 2 when one looks stuck (2x ETA, no files at all), 3 on timeout.
+done.json (prints ok/failed per job and which takes landed), 2 when one looks stuck (2x ETA, none of its files, and Forge idle
+for 30 min), 3 on timeout.
 GitHub itself can't wake a Claude session; this is the in-session ping. Across sessions keep using send_later."""
 import argparse, json, subprocess, sys, time
 ap = argparse.ArgumentParser(); ap.add_argument("jobs", nargs="+"); ap.add_argument("--timeout-min", type=float, default=60)
@@ -31,7 +32,10 @@ while left:
         if d:
             f = files(jid); print(json.dumps({"job": jid, "done": json.loads(d), "takes": sorted(x for x in f if x.endswith(".png"))}), flush=True); left.discard(jid); continue
         m, at = etas[jid]
-        if time.time() - at > 2 * m * 60 and not files(jid): print(json.dumps({"job": jid, "stuck": True, "minutes": round((time.time() - at) / 60)}), flush=True); sys.exit(2)
+        # stuck = way past ETA, nothing of ours landed, and Forge delivered nothing for anyone in 30 min (a busy queue isn't stuck)
+        last = git("log", "-1", "--format=%ct", a.ref, "--", "forge/results").stdout.strip()
+        idle = not last or time.time() - int(last) > 30 * 60
+        if time.time() - at > 2 * m * 60 and not files(jid) and idle: print(json.dumps({"job": jid, "stuck": True, "minutes": round((time.time() - at) / 60)}), flush=True); sys.exit(2)
     if not left: break
     if time.time() - start > a.timeout_min * 60: print(json.dumps({"timeout": sorted(left)}), flush=True); sys.exit(3)
     time.sleep(a.every)

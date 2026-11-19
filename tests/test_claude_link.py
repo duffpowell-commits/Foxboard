@@ -133,8 +133,19 @@ with tempfile.TemporaryDirectory() as td:
     try: out, _ = pw.communicate(timeout=30)
     except Exception: pw.kill(); out = 'timeout'
     check('forge_wait: exits 0 with the takes when done.json lands', pw.returncode == 0 and '"ok": [0]' in out and '0.png' in out, out[-200:])
+    # Forge delivered something minutes ago (busy queue): a late job is NOT stuck -> times out instead (exit 3)
+    pr = subprocess.run([sys.executable, str(ROOT / 'tools/claude/forge_wait.py'), 'st1', '--repo', str(td / 'me'), '--every', '1', '--timeout-min', '0.05'], capture_output=True, text=True, timeout=60)
+    check('forge_wait: a busy queue is not "stuck"', pr.returncode == 3, pr.stdout[-200:])
+    # Forge idle for an hour: now it is stuck
+    old = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(time.time() - 3600)) + 'Z'
+    (wk / 'forge/results/zz').mkdir(parents=True); (wk / 'forge/results/zz/x').write_text('x')
+    subprocess.run(['git', 'add', '-A'], cwd=wk); subprocess.run(['git', 'commit', '-qm', 'old'], cwd=wk, env=dict(os.environ, GIT_COMMITTER_DATE=old, GIT_AUTHOR_DATE=old))
+    subprocess.run(['git', 'rm', '-rq', 'forge/results'], cwd=wk); subprocess.run(['git', 'commit', '-qm', 'rm'], cwd=wk, env=dict(os.environ, GIT_COMMITTER_DATE=old, GIT_AUTHOR_DATE=old))
+    (wk / 'forge/results/zz').mkdir(parents=True); (wk / 'forge/results/zz/x').write_text('x')
+    subprocess.run(['git', 'add', '-A'], cwd=wk); subprocess.run(['git', 'commit', '-qm', 'old2'], cwd=wk, env=dict(os.environ, GIT_COMMITTER_DATE=old, GIT_AUTHOR_DATE=old))
+    sh('git', 'push', '-q', 'origin', 'HEAD:main', cwd=wk)
     pr = subprocess.run([sys.executable, str(ROOT / 'tools/claude/forge_wait.py'), 'st1', '--repo', str(td / 'me'), '--every', '1', '--timeout-min', '1'], capture_output=True, text=True, timeout=60)
-    check('forge_wait: flags a stuck job (exit 2)', pr.returncode == 2 and 'stuck' in pr.stdout, pr.stdout[-200:])
+    check('forge_wait: flags a stuck job when Forge is idle (exit 2)', pr.returncode == 2 and 'stuck' in pr.stdout, pr.stdout[-200:])
 
 check('check.sh is executable and valid bash', os.access(ROOT / 'tools/claude/check.sh', os.X_OK) and subprocess.run(['bash', '-n', str(ROOT / 'tools/claude/check.sh')]).returncode == 0)
 print(f'\n{sum(res)}/{len(res)} passed'); sys.exit(0 if res and all(res) else 1)
