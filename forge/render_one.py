@@ -28,8 +28,8 @@ elif mode in ("edit", "expand"):
     im = Image.open(init).convert("RGB"); ow, oh = im.size
     im.resize((W, H), Image.LANCZOS).save("init_s.png")
     Image.open(mask).convert("L").resize((W, H), Image.NEAREST).save("mask_s.png")
-    if not prompt.strip(): prompt = "seamless continuation of the same scene, same style, same lighting, same colors"
-    cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--mask", "mask_s.png", "--strength", "1.0" if mode == "expand" else "0.92"]
+    if not prompt.strip(): prompt = " "  # words here get painted as text, so no default caption
+    cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--mask", "mask_s.png", "--strength", "0.78" if mode == "expand" else "0.92"]  # expand: init edges are already filled on the phone, FLUX adds detail
 else:
     cmd = base + flux + ["-p", prompt, "--steps", "4", "-W", str(W), "-H", str(H)]
 t0 = time.time(); r = subprocess.run(cmd, capture_output=True, text=True); mins = (time.time() - t0) / 60
