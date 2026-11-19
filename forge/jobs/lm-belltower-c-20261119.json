@@ -1,0 +1,12 @@
+{
+ "mode": "edit",
+ "prompt": "The top of a soot-blackened gothic stone bell tower: a broken slate spire that leans hard to one side, its tip snapped off halfway up so the top ends in a jagged stump of splintered timber beams and torn slates, with a bent iron weathervane dangling from the break on a rusted rod. Missing slates leave dark holes in the spire and grime streaks run down it. Painted in a dark Victorian oil painting style with soft blended shading in near-black blue and charcoal tones, lit dimly and evenly. Plain flat solid bright green background around the spire, nothing else behind it.",
+ "n": 2,
+ "seed": 1189102694,
+ "at": 1795110857266,
+ "w": 512,
+ "h": 1024,
+ "key": "#00FF00",
+ "init": "forge/jobs/lm-belltower-c-20261119.init.b64",
+ "mask": "forge/jobs/lm-belltower-c-20261119.mask.b64"
+}
