@@ -904,6 +904,11 @@ function removeBg(o,tol){
     if(d[i+3]>=16 && dist(i)>tol) continue;
     const dd=dist(i); d[i+3]=dd>tol*0.6?Math.round(d[i+3]*Math.min(1,(dd-tol*0.6)/(tol*0.4+1e-6))):0; cleared++;
     const x=p%W,y=(p/W)|0; if(x>0) st.push(p-1); if(x<W-1) st.push(p+1); if(y>0) st.push(p-W); if(y<H-1) st.push(p+W); }
+  // A flat key background (pure magenta / green / blue from Forge) also sits in enclosed gaps — between legs, inside
+  // arms — that the edge flood can't reach. For a key colour only, clear every pixel of it, wherever it is.
+  const isKey=Math.max(...ref)-Math.min(...ref)>170&&((ref[0]>170&&ref[2]>170&&ref[1]<90)||(ref[1]>170&&ref[0]<90&&ref[2]<90)||(ref[2]>170&&ref[0]<90&&ref[1]<90));
+  if(isKey) for(let p=0;p<W*H;p++){ if(seen[p]) continue; const i=p*4; if(d[i+3]<16) continue; const dd=dist(i); if(dd>tol) continue;
+    d[i+3]=dd>tol*0.6?Math.round(d[i+3]*Math.min(1,(dd-tol*0.6)/(tol*0.4+1e-6))):0; cleared++; }
   g.putImageData(id,0,0);
   const src=c.toDataURL('image/png');
   edit(()=>{ o.src=src; o.natW=W; o.natH=H; });
@@ -1285,6 +1290,7 @@ async function forgeAdd(u,name,j){
 }
 function forgePromptOf(j){ return j.prompt||String(j.label||'').replace(/^(Sketch|Edit|Subtle|Strong): /,''); }
 async function forgeVary(j,k,how){
+  if(!mcpCap) throw new Error('Variations need Foxboard open inside the Claude app with the GitHub connector on');
   const u=await forgeImgFor(j,k); if(!u) throw new Error('That take didn\'t load — try again');
   const subtle=how!=='strong';
   return forgeQueue({mode:'sketch',initSrc:u,prompt:forgePromptOf(j),strength:subtle?0.35:0.6, /* runner A/B Nov 19: 0.35 keeps the layout, 0.45 starts carving symbols, 0.6 reworks details, 0.8 is a new picture */n:2,key:j.key||null,tile:!!j.tile,
@@ -2615,7 +2621,7 @@ const API_DOC={
   group:'group([ids]) -> gid', ungroup:'ungroup(gid | id)',
   align:'align([ids], left|center|right|top|middle|bottom, toCanvas?)', distribute:'distribute([ids], "h"|"v") -> equal gaps (3+)',
   crop:'crop(id, {l,t,r,b}) fractions 0..0.95 of the image cut from each side', mask:'mask(id, none|circle|rounded|hex|star|heart|diamond|arch|blob|tri)',
-  removeBg:'removeBg(id, tolerance=40)', magicErase:'magicErase(id, {rects:[[x,y,w,h]], circles:[[cx,cy,r]], tap:[[x,y,tol]]}) canvas coords; fills from the picture',
+  removeBg:'removeBg(id, tolerance=40) -> clears the edge colour; a key colour (pure magenta/green/blue) is cleared everywhere, enclosed gaps too', magicErase:'magicErase(id, {rects:[[x,y,w,h]], circles:[[cx,cy,r]], tap:[[x,y,tol]]}) canvas coords; fills from the picture',
   expand:'expand(id, {l,t,r,b}) image pixels to add per side, filled from the picture (local); or expand(id,"wide"|"tall"|"square"|"all")',
   adjust:'adjust(id, {b,c,s,h,g,blur}) brightness/contrast/saturation % , hue deg, grayscale %, blur px',
   snapPalette:'snapPalette(id, ["#hex",...]?) -> recolor to a palette (default retro 16)',

@@ -167,6 +167,15 @@ async def main():
             const ov=document.getElementById('compare'); const ok=!!(ov&&ov.querySelector('canvas')&&ov.querySelector('input[type=range]')); if(ov) ov.remove(); return ok; })()""")
         check('compare: before/after slider opens', r is True, r)
 
+        # remove background on a real Forge sprite: the magenta key between the legs is enclosed, not touching the edge
+        thr = 'data:image/png;base64,' + base64.b64encode((ROOT / 'forge/results/lm-thrall-fierce-20261119/0.png').read_bytes()).decode() if (ROOT / 'forge/results/lm-thrall-fierce-20261119/0.png').exists() else ''
+        if thr:
+            r = await ev("""(async()=>{ Foxboard.newDoc({w:256,h:512,bg:'transparent'}); const id=Foxboard.add('image',{src:%s,x:0,y:0,w:256,h:512}); await new Promise(r=>setTimeout(r,400));
+                Foxboard.removeBg(id,40); await new Promise(r=>setTimeout(r,300));
+                const c=Foxboard.renderCanvas(1); const d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let mag=0, solid=0;
+                for(let i=0;i<d.length;i+=4){ if(d[i+3]>200){ solid++; if(d[i]>200&&d[i+2]>200&&d[i+1]<80) mag++; } }
+                return {mag, solid}; })()""" % json.dumps(thr))
+            check('remove background: enclosed key-colour gaps cleared too (real sprite)', isinstance(r, dict) and g(r, 'mag') < 50 and (g(r, 'solid') or 0) > 20000, r)
         # image panel shows the new tools
         await ev("__fb.sel=Foxboard.list()[0].id; __fb.openProps()"); await pg.wait_for_timeout(250)
         body = await pg.inner_text('#shBody')
@@ -187,6 +196,9 @@ async def main():
             __fb.openAI('forge'); await new Promise(r=>setTimeout(r,200)); return {boost:[...document.querySelectorAll('#shBody button')].some(b=>/Boost/.test(b.textContent))}; })()""")
         except Exception as e: r = {'error': str(e)[:120]}
         check('no Claude: seamless + pixelate work, boost hidden', g(r,'boost') is False, r)
+        try: r = await pg.evaluate("""(async()=>{ Foxboard.forgeTrack({id:'trk1',label:'x',n:1,w:512,h:512,at:Date.now(),state:'done',got:[0],failed:[]}); try{ await Foxboard.vary('trk1',0,'subtle'); return 'no error'; }catch(e){ return e.message; } })()""")
+        except Exception as e: r = str(e)[:120]
+        check('no Claude: Vary says what it needs (no raw JS error)', isinstance(r, str) and 'Claude app' in r and 'Cannot read' not in r, r)
         check('no page errors (no Claude)', not errs, errs)
         await b.close()
 
