@@ -50,7 +50,16 @@ else:
 if os.environ.get("FORGE_DRY") and mode != "edit":  # tests: show the command, render nothing
     print(json.dumps(cmd)); sys.exit(0)
 if mode != "edit":
-    t0 = time.time(); r = subprocess.run(cmd, capture_output=True, text=True); mins = (time.time() - t0) / 60
+    # one hung render must not hold the whole queue (Nov 19: a stuck take blocked every session's jobs for 90 min):
+    # cap at 3x the expected time (min 25 min); a timeout becomes a failed take, the job still finishes
+    base_min = {(768, 768): 15, (512, 512): 7, (1024, 1024): 27, (576, 1024): 16, (1024, 576): 16}.get((W, H), 15) * (1.4 if mode == "sketch" else 1)
+    cap = float(os.environ.get("FORGE_TIMEOUT_MIN") or max(25, 3 * base_min))
+    t0 = time.time()
+    try: r = subprocess.run(cmd, capture_output=True, text=True, timeout=cap * 60)
+    except subprocess.TimeoutExpired as te:
+        r = subprocess.CompletedProcess(cmd, 124, "", f"timed out after {cap:.1f} min (render cap)\n" + str(te.stderr or "")[-1000:])
+        if png.exists(): png.unlink()
+    mins = (time.time() - t0) / 60
 if mode == "upscale" and (r.returncode != 0 or not png.exists()):
     # fallback so an upscale never comes back empty: Lanczos 4x + light sharpen
     from PIL import ImageFilter

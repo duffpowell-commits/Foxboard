@@ -25,7 +25,7 @@ jobs:
     needs: plan
     if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120  # backstop only: render_one.py caps each render at 3x its expected time
     strategy:
       fail-fast: false
       max-parallel: 8

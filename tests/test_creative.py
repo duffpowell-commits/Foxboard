@@ -1,7 +1,7 @@
 """Creative features (Nov 19): sketch -> art, variations + seed lock, seamless tiles, pixelate, prompt boost,
 new background, take gallery/favorites, sticker outline, before/after compare. Browser checks run the page with a
 mocked Claude (GitHub connector + sample); the Forge render command is checked with render_one.py's dry run."""
-import base64, io, json, os, pathlib, subprocess, sys, tempfile, asyncio
+import base64, io, json, os, pathlib, subprocess, sys, tempfile, asyncio, time
 from playwright.async_api import async_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 APP = os.environ.get('APP_URL') or (ROOT / 'index.html').as_uri()
@@ -211,5 +211,11 @@ with tempfile.TemporaryDirectory() as td:
     check('render: sketch runs img2img (--init-img, --strength 0.55, no mask)', isinstance(sk, list) and '--init-img' in sk and sk[sk.index('--strength') + 1] == '0.55' and '--mask' not in sk, sk)
     check('render: tile job adds --circular', isinstance(sk, list) and '--circular' in sk)
     check('render: plain job has no --circular', isinstance(out['nw1'], list) and '--circular' not in out['nw1'], out['nw1'])
+    # a hung renderer becomes a failed take after the cap instead of blocking the queue
+    fake = td / 'hang.sh'; fake.write_text('#!/bin/sh\nsleep 60\n'); fake.chmod(0o755)
+    env2 = dict(os.environ, SD=str(fake), FORGE_TIMEOUT_MIN='0.03'); env2.pop('FORGE_DRY', None)
+    t0 = time.time(); pr = subprocess.run([sys.executable, str(ROOT / 'forge/render_one.py'), 'nw1', '0'], cwd=td, env=env2, capture_output=True, text=True, timeout=300)
+    err = td / 'forge/results/nw1/0.error.txt'
+    check('render: a hung render times out into a failed take (queue keeps moving)', err.exists() and 'timed out' in err.read_text(), (round(time.time() - t0), pr.stderr[-200:]))
 
 print(f'\n{sum(res)}/{len(res)} passed'); sys.exit(0 if res and all(res) else 1)
