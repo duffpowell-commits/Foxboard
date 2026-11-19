@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "a rusty iron drain grate set into the stones",
+ "n": 1,
+ "seed": 33,
+ "at": 1795122621037,
+ "w": 256,
+ "h": 256,
+ "init": "forge/jobs/fb-real-edit-20261119.init.b64",
+ "mask": "forge/jobs/fb-real-edit-20261119.mask.b64"
+}

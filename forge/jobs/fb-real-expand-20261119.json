@@ -1,0 +1,11 @@
+{
+ "mode": "expand",
+ "prompt": "more mossy cobblestones",
+ "n": 1,
+ "seed": 32,
+ "at": 1795122619591,
+ "w": 448,
+ "h": 256,
+ "init": "forge/jobs/fb-real-expand-20261119.init.b64",
+ "mask": "forge/jobs/fb-real-expand-20261119.mask.b64"
+}

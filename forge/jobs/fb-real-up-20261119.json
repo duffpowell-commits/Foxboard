@@ -1,0 +1,11 @@
+{
+ "mode": "upscale",
+ "prompt": "",
+ "n": 1,
+ "seed": 404276493,
+ "at": 1795122619431,
+ "scale": 4,
+ "w": 128,
+ "h": 256,
+ "init": "forge/jobs/fb-real-up-20261119.init.b64"
+}
