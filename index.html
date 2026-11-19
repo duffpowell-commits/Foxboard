@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#15131c">
+<meta name="theme-color" content="#0b0c12">
 <title>Foxboard</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Bangers&family=Creepster&family=Cinzel:wght@400;700&family=Pirata+One&family=Permanent+Marker&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Bangers&family=Creepster&family=Cinzel:wght@400;600;700&family=Pirata+One&family=Permanent+Marker&display=swap">
 <style>
-:root{--bg:#15131c;--panel:#1f1c29;--panel2:#2a2638;--line:#3a3550;--text:#ece8f6;--dim:#9a93b3;--acc:#ff7a3d;--danger:#ff5a6e;--ai:#b98cff}
+:root{--bg:#0b0c12;--panel:#121a2a;--panel2:#1a2438;--line:#26344d;--text:#dae0e5;--dim:#8a97ab;--acc:#c2602f;--acc-ink:#fff3e4;--amber:#f0a040;--teal:#2f6e73;--danger:#e0605a;--ai:#3f8f95;--glass:rgba(16,22,36,.92)}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:15px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -26,18 +26,18 @@ button.on{background:var(--acc);color:#1a0d05;border-color:var(--acc)}
 .floatbar{position:absolute;left:6px;right:6px;bottom:6px;display:none;gap:5px;justify-content:center;flex-wrap:wrap;pointer-events:none}
 .floatbar.show{display:flex}
 .floatbar>*{pointer-events:auto}
-.floatbar button{background:rgba(31,28,41,.94);backdrop-filter:blur(6px);padding:6px 10px}
+.floatbar button{background:var(--glass);backdrop-filter:blur(6px);padding:6px 10px}
 .floatbar button.on{background:var(--acc)}
 .floatbar button.acc{background:var(--acc);color:#1a0d05}
 #drawbar input[type=color]{width:42px;height:40px}
-#drawbar .sz{display:flex;align-items:center;gap:2px;background:rgba(31,28,41,.94);border:1px solid var(--line);border-radius:10px;padding:0 2px}
+#drawbar .sz{display:flex;align-items:center;gap:2px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:0 2px}
 #drawbar .sz button{border:0;background:transparent;min-height:38px;padding:4px 8px}
 #drawbar .sz span{min-width:24px;text-align:center;font-size:13px}
-#magicbar .sz{display:flex;align-items:center;gap:2px;background:rgba(31,28,41,.94);border:1px solid var(--line);border-radius:10px;padding:0 2px}
+#magicbar .sz{display:flex;align-items:center;gap:2px;background:var(--glass);border:1px solid var(--line);border-radius:10px;padding:0 2px}
 #magicbar .sz button{border:0;background:transparent;min-height:38px;padding:4px 8px}
 #magicbar .sz span{min-width:24px;text-align:center;font-size:13px}
-#zoomlbl{position:absolute;top:8px;right:8px;background:rgba(31,28,41,.85);color:var(--dim);padding:3px 8px;border-radius:8px;font-size:12px;pointer-events:none}
-#pagebar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:#181520;border-top:1px solid var(--line);overflow-x:auto;flex:none;scrollbar-width:none}
+#zoomlbl{position:absolute;top:8px;right:8px;background:var(--glass);color:var(--dim);padding:3px 8px;border-radius:8px;font-size:12px;pointer-events:none}
+#pagebar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:#0e1422;border-top:1px solid var(--line);overflow-x:auto;flex:none;scrollbar-width:none}
 #pagebar::-webkit-scrollbar{display:none}
 #pagebar canvas{width:42px;height:42px;border-radius:7px;border:2px solid transparent;background:#0d0b12;flex:none;cursor:pointer}
 #pagebar canvas.cur{border-color:var(--acc)}
@@ -82,6 +82,52 @@ textarea{width:100%;min-height:70px;resize:vertical}
 .overlay.open{display:flex}
 .overlay img,.overlay canvas{max-width:100%;max-height:62vh;image-rendering:pixelated;background:repeating-conic-gradient(#2a2638 0 25%,#1f1c29 0 50%) 0 0/16px 16px;border-radius:8px}
 .hidden{display:none!important}
+/* ---------- Fox night-forest theme (Duff's palette: midnight, russet fox, lantern amber, moonlight) ---------- */
+body{background:radial-gradient(120% 80% at 50% 0%,#141d30 0%,#0b0c12 60%)}
+header{background:linear-gradient(180deg,#141e31,#0f1626);border-bottom:1px solid transparent;border-image:linear-gradient(90deg,transparent,rgba(240,160,64,.55),transparent) 1;padding:7px 8px}
+header .title{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.06em;font-size:16px}
+header .title::before{content:'';display:inline-block;width:9px;height:9px;margin:0 8px 1px 2px;border-radius:50%;background:var(--amber);box-shadow:0 0 10px 2px rgba(240,160,64,.55)}
+header .title{line-height:1.15}
+header .title small{display:block;font-family:system-ui,-apple-system,sans-serif;letter-spacing:0;font-size:11px;margin-left:19px;overflow:hidden;text-overflow:ellipsis}
+button{background:var(--panel2);border-color:var(--line);border-radius:12px;transition:background .15s,border-color .15s,color .15s}
+button:hover{border-color:#36507a}
+button.acc,button.on,.floatbar button.acc,.floatbar button.on{background:linear-gradient(180deg,#d0703a,#b4532a);border-color:#d97a40;color:var(--acc-ink);box-shadow:0 2px 10px rgba(180,83,42,.35)}
+button.ai{background:linear-gradient(180deg,#3f8f95,#2f6e73);border-color:#4aa0a6;color:#effbfb}
+button.danger{color:var(--danger)}
+button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+#bExport{font-family:Cinzel,Georgia,serif;letter-spacing:.04em}
+#bMenu,#bUndo,#bRedo{min-width:42px}
+nav{background:linear-gradient(0deg,#0e1422,#121a2a);border-top:1px solid #1f2b40}
+nav button{color:#a9b4c4;border-radius:12px}
+nav button span{filter:saturate(.85)}
+nav button.on{background:rgba(240,160,64,.12);color:var(--amber);border-color:rgba(240,160,64,.35)}
+#pagebar canvas.cur{border-color:var(--amber);box-shadow:0 0 0 2px rgba(240,160,64,.25)}
+#zoomlbl{color:#9fb0c6;border:1px solid #22314a}
+.floatbar button{border-color:#2b3c58;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+#sheet{background:linear-gradient(180deg,#152035,#111a2b 40%);border-top:1px solid rgba(240,160,64,.35);box-shadow:0 -14px 40px rgba(0,0,0,.6)}
+#sheet::before{content:'';display:block;width:42px;height:4px;border-radius:2px;background:#33445f;margin:7px auto 0}
+#sheet .sh-head h3{font-family:Cinzel,Georgia,serif;font-weight:700;letter-spacing:.05em;font-size:17px;color:#eef1f4}
+.sh-body h4{font-family:Cinzel,Georgia,serif;letter-spacing:.05em;color:var(--amber);font-weight:600;font-size:13px;text-transform:uppercase;border-top:1px solid #22314a;padding-top:10px}
+.row>label{color:#93a2b8}
+.row input[type=range]{accent-color:var(--amber);height:28px}
+input[type=range]{accent-color:var(--amber)}
+select{-webkit-appearance:none;appearance:none;background-color:var(--panel2);color:var(--text);padding-right:30px;
+  background-image:linear-gradient(45deg,transparent 50%,var(--amber) 50%),linear-gradient(135deg,var(--amber) 50%,transparent 50%);
+  background-position:calc(100% - 16px) 50%,calc(100% - 11px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;max-width:100%}
+select option{background:#121a2a;color:#dae0e5}
+input[type=number],input[type=text],textarea{background:#0f1726;border-color:#26344d}
+textarea::placeholder,input::placeholder{color:#62718a}
+input[type=color]{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:3px;min-height:40px;min-width:44px}
+.layer{background:#16203300;background:rgba(26,36,56,.7);border-color:#22314a}
+.layer.sel{border-color:var(--amber);box-shadow:inset 3px 0 0 var(--amber)}
+.hint{color:#7f8ea4}
+.out{background:#0f1726;border-color:#22314a}
+#toast{background:rgba(12,17,28,.94);border:1px solid rgba(240,160,64,.4);color:#eef1f4;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.tabs{-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.elgrid button{background:rgba(26,36,56,.75)}
+.overlay{background:rgba(7,8,13,.96)}
+.cloudnote{border:1px solid rgba(240,160,64,.45);background:rgba(240,160,64,.08);color:#f3dcb8;border-radius:12px;padding:10px 12px;margin:4px 0 10px;font-size:13px;line-height:1.4}
+
 .elgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .elgrid button{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;min-height:0}
 .elgrid img{width:44px;height:44px}
@@ -316,7 +362,7 @@ let checker=null;
 function checkerPat(){
   if(checker) return checker;
   const p=document.createElement('canvas'); p.width=p.height=16; const g=p.getContext('2d');
-  g.fillStyle='#3b3650'; g.fillRect(0,0,16,16); g.fillStyle='#2b2739'; g.fillRect(0,0,8,8); g.fillRect(8,8,8,8);
+  g.fillStyle='#2a3448'; g.fillRect(0,0,16,16); g.fillStyle='#1d2536'; g.fillRect(0,0,8,8); g.fillRect(8,8,8,8);
   return checker=ctx.createPattern(p,'repeat');
 }
 let raf=0;
@@ -324,7 +370,7 @@ function draw(){ if(raf) return; raf=requestAnimationFrame(()=>{ raf=0; drawNow(
 function drawNow(){
   const W=cv.width, H=cv.height;
   ctx.setTransform(1,0,0,1,0,0);
-  ctx.fillStyle='#100e16'; ctx.fillRect(0,0,W,H);
+  { const gr=ctx.createRadialGradient(W/2,H*0.45,0,W/2,H*0.45,Math.max(W,H)*0.75); gr.addColorStop(0,'#111827'); gr.addColorStop(1,'#07080d'); ctx.fillStyle=gr; } ctx.fillRect(0,0,W,H);
   const tl=d2s({x:0,y:0}), DW=doc.w*view.z, DH=doc.h*view.z;
   ctx.save(); ctx.scale(dpr,dpr);
   ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(tl.x+4,tl.y+6,DW,DH);
@@ -350,19 +396,19 @@ function drawNow(){
   for(const g of guides){ ctx.beginPath(); if(g.x!==undefined){ const s=d2s({x:g.x,y:0}); ctx.moveTo(s.x,tl.y); ctx.lineTo(s.x,tl.y+DH);} else { const s=d2s({x:0,y:g.y}); ctx.moveTo(tl.x,s.y); ctx.lineTo(tl.x+DW,s.y);} ctx.stroke(); }
   ctx.setLineDash([]);
   const o=sel(); const many=selObjs();
-  if(many.length>1){ ctx.strokeStyle='#ff7a3d'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+  if(many.length>1){ ctx.strokeStyle='#f0a040'; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
     for(const m of many){ if(m.hidden) continue; const q=[corner(m,-1,-1),corner(m,1,-1),corner(m,1,1),corner(m,-1,1)].map(d2s); ctx.beginPath(); q.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath(); ctx.stroke(); }
     ctx.setLineDash([]); }
   if(o && !o.hidden && many.length<=1){
     const cs=[corner(o,-1,-1),corner(o,1,-1),corner(o,1,1),corner(o,-1,1)].map(d2s);
-    ctx.strokeStyle=drawMode?'#29adff':o.locked?'#9a93b3':'#ff7a3d'; ctx.lineWidth=drawMode?1:2;
+    ctx.strokeStyle=drawMode?'#5fb3b8':o.locked?'#8a97ab':'#f0a040'; ctx.lineWidth=drawMode?1:2;
     if(drawMode) ctx.setLineDash([4,4]);
     ctx.beginPath(); cs.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
     if(!o.locked && !drawMode){
       const hs=handles(o);
-      ctx.strokeStyle='#ff7a3d'; ctx.lineWidth=2;
+      ctx.strokeStyle='#f0a040'; ctx.lineWidth=2;
       ctx.beginPath(); ctx.moveTo(hs.rotBase.x,hs.rotBase.y); ctx.lineTo(hs.rot.x,hs.rot.y); ctx.stroke();
-      for(const h of hs.list){ ctx.beginPath(); ctx.arc(h.x,h.y,h.k==='rot'?11:(h.k==='e'?7:9),0,Math.PI*2); ctx.fillStyle=h.k==='rot'?'#ff7a3d':'#fff'; ctx.fill(); ctx.stroke(); }
+      for(const h of hs.list){ ctx.beginPath(); ctx.arc(h.x,h.y,h.k==='rot'?11:(h.k==='e'?7:9),0,Math.PI*2); ctx.fillStyle=h.k==='rot'?'#f0a040':'#dae0e5'; ctx.fill(); ctx.stroke(); }
       ctx.fillStyle='#1a0d05'; ctx.font='bold 13px system-ui'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('↻',hs.rot.x,hs.rot.y+1);
     }
   }
@@ -942,7 +988,9 @@ $('#plFps').addEventListener('input',e=>{ doc.fps=+e.target.value; $('#plFpsLbl'
 $('#plClose').onclick=()=>{ clearTimeout(playT); $('#player').classList.remove('open'); };
 
 /* ---------- sheet ---------- */
-function openSheet(title,kind,build){ curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML=''; build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
+function openSheet(title,kind,build){ curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML='';
+  if(!window.claude&&['ai','aiexpand','magicedit','library','send'].includes(kind)) b.append(h('div',{class:'cloudnote'},'🦊 This part runs on Claude, so it works when Foxboard is opened inside the Claude app. Everything else (drawing, layers, elements, magic eraser, expand, export) works right here.'));
+  build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
 function closeSheet(){ endEdit(); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
 $('#shClose').onclick=closeSheet; $('#scrim').onclick=closeSheet;
 function h(tag,attrs,...kids){ const el=document.createElement(tag); for(const k in attrs||{}){ if(k.startsWith('on')) el.addEventListener(k.slice(2),attrs[k]); else el.setAttribute(k,attrs[k]); } for(const c of kids) el.append(c); return el; }
@@ -1457,7 +1505,7 @@ const TPL_PATH='templates/library.json', TPL_LS='foxboard.templates';
 (async()=>{ try{ if(window.claude&&window.claude.use) artifactCap=await window.claude.use('artifact'); }catch(e){ artifactCap=null; } })();
 async function loadTemplates(){
   let list=null;
-  try{ const r=await fetch(TPL_PATH,{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(Array.isArray(j)) list=j; } }catch(e){}
+  if(window.claude) try{ const r=await fetch(TPL_PATH,{cache:'no-store'}); if(r.ok){ const j=await r.json(); if(Array.isArray(j)) list=j; } }catch(e){}
   if(!list){ try{ list=JSON.parse(localStorage.getItem(TPL_LS)||'[]'); }catch(e){ list=[]; } }
   myTemplates=list.filter(t=>t&&t.doc&&t.name);
 }
@@ -1890,7 +1938,13 @@ async function deliver(blob,filename,fallback){
     try{ await downloads.save({filename,data:blob}); toast('Saved '+filename); return; }
     catch(e){ if(e&&e.code==='declined'){ toast('Cancelled'); return; } if(e&&e.code==='rate_limited'){ toast('One save at a time — try again'); return; } }
   }
-  if(fallback) fallback(); else toast('Saving files is not available here — open Foxboard in the Claude app');
+  // outside the Claude app (e.g. the home-screen copy on an iPhone): share sheet, else a normal download
+  try{
+    const file=new File([blob],filename,{type:blob.type||'application/octet-stream'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPhone|iPad|Android/i.test(navigator.userAgent)){ await navigator.share({files:[file],title:filename}); return; }
+  }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=filename; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),30000); toast('Saved '+filename); return; }catch(e){}
+  if(fallback) fallback(); else toast('Could not save here — try Preview and long-press the image');
 }
 function openExport(){
   if(drawMode) setDrawMode(false); if(magic) endMagic();

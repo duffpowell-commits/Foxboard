@@ -3,7 +3,7 @@
 Run: python tests/test_pipeline.py [path/to/index.html]
 Prints PASS/FAIL per check and exits non-zero on any failure.
 """
-import asyncio, base64, io, json, pathlib, sys
+import os, asyncio, base64, io, json, pathlib, sys
 from playwright.async_api import async_playwright
 from PIL import Image
 
@@ -57,7 +57,7 @@ def check(name, ok, info=''):
 
 async def main():
     async with async_playwright() as p:
-        b = await p.chromium.launch()
+        b = await getattr(p, os.environ.get('BROWSER','chromium')).launch()
         pg = await b.new_page(viewport={'width': 390, 'height': 820})
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)))

@@ -1,7 +1,7 @@
 """Magic eraser: brush over an object, tap Erase, it's gone and the gap is filled from the surroundings."""
-import asyncio, pathlib, sys
+import os, asyncio, pathlib, sys
 from playwright.async_api import async_playwright
-APP = (pathlib.Path(__file__).resolve().parent.parent / 'index.html').as_uri()
+APP = os.environ.get('APP_URL') or (pathlib.Path(__file__).resolve().parent.parent / 'index.html').as_uri()
 
 # 96x96 diagonal-stripe texture (period 8, two colors) with a solid red 20x20 square at (38,38)
 MAKE = """(()=>{const W=96,H=96,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
@@ -16,7 +16,7 @@ def check(name, ok, extra=''):
 
 async def main():
     async with async_playwright() as p:
-        b = await p.chromium.launch()
+        b = await getattr(p, os.environ.get('BROWSER','chromium')).launch()
         pg = await b.new_page(viewport={'width': 390, 'height': 820}, device_scale_factor=2, has_touch=True)
         errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         await pg.goto(APP); await pg.wait_for_timeout(700)
