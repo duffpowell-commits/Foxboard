@@ -24,6 +24,14 @@ if mode == "upscale":
     urllib.request.urlretrieve("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth", dst)
     with open("models.env", "w") as fh: fh.write(f"ESRGAN={dst}\n")
     print({"ESRGAN": dst}); sys.exit(0)
+if mode == "edit":
+    # FLUX.2 klein 4B (Apache-2.0): a real image-editing model; sees the picture and changes only what's asked
+    out["KLEIN"] = get("leejet/FLUX.2-klein-4B-GGUF", "flux-2-klein-4b-Q8_0.gguf")
+    out["QWEN"] = get("unsloth/Qwen3-4B-GGUF", "Qwen3-4B-Q4_K_M.gguf")
+    out["VAE2"] = get("Comfy-Org/flux2-klein-4B", "split_files/vae/flux2-vae.safetensors")
+    with open("models.env", "w") as fh:
+        for k, v in out.items(): fh.write(f"{k}={v}\n")
+    print(out); sys.exit(0)
 f = pick("leejet/FLUX.1-schnell-gguf", [("q4_k",), ("q4_0",), ("q5",)])
 if not f: sys.exit("no flux gguf")
 out["DIFF"] = get("leejet/FLUX.1-schnell-gguf", f)

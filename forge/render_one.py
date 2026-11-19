@@ -22,9 +22,15 @@ init = mask = None
 if mode in ("edit", "expand", "upscale"):
     init = b64file(job["init"], "init.png")
     if job.get("mask"): mask = b64file(job["mask"], "mask.png")
-if mode == "upscale":
+if mode == "edit":
+    # magic edit: FLUX.2 klein repaints a zoomed crop around the brushed area; only masked pixels change
+    import magic_edit
+    t0 = time.time(); ok, log = magic_edit.run(os.environ["SD"], env, init, mask, prompt, seed, str(png), side=int(job.get("side", 512)))
+    mins = (time.time() - t0) / 60
+    r = subprocess.CompletedProcess([], 0 if ok else 1, log, "")
+elif mode == "upscale":
     cmd = base + ["-M", "upscale", "--upscale-model", env.get("ESRGAN", ""), "--init-img", init]
-elif mode in ("edit", "expand"):
+elif mode == "expand":
     im = Image.open(init).convert("RGB"); ow, oh = im.size
     im.resize((W, H), Image.LANCZOS).save("init_s.png")
     Image.open(mask).convert("L").resize((W, H), Image.NEAREST).save("mask_s.png")
@@ -32,14 +38,15 @@ elif mode in ("edit", "expand"):
     cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--mask", "mask_s.png", "--strength", "0.78" if mode == "expand" else "0.92"]  # expand: init edges are already filled on the phone, FLUX adds detail
 else:
     cmd = base + flux + ["-p", prompt, "--steps", "4", "-W", str(W), "-H", str(H)]
-t0 = time.time(); r = subprocess.run(cmd, capture_output=True, text=True); mins = (time.time() - t0) / 60
+if mode != "edit":
+    t0 = time.time(); r = subprocess.run(cmd, capture_output=True, text=True); mins = (time.time() - t0) / 60
 if mode == "upscale" and (r.returncode != 0 or not png.exists()):
     # fallback so an upscale never comes back empty: Lanczos 4x + light sharpen
     from PIL import ImageFilter
     src = Image.open(init); f = int(job.get("scale", 4))
     src.resize((src.width * f, src.height * f), Image.LANCZOS).filter(ImageFilter.UnsharpMask(2, 80, 2)).save(png)
     (out / f"{k}.note.txt").write_text("ESRGAN failed, used Lanczos:\n" + (r.stdout + r.stderr)[-1500:])
-if mode in ("edit", "expand") and png.exists():
+if mode == "expand" and png.exists():
     # keep every untouched pixel exactly as it was; blend the new paint in with a soft edge
     from PIL import ImageFilter
     orig = Image.open(init).convert("RGBA"); ow, oh = orig.size
