@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "Close-up of an old brass oil lantern held by a gloved hand: the lantern's glass is fully covered by a closed hinged black iron shutter, the light hooded, only a thin sliver of dim orange light leaking at the shutter's edge, dark iron, brass frame. Realistic oil-painted game art with soft painterly edges and smooth blended shading, the look of a dark Victorian oil painting, no outlines, no comic ink, no text.",
+ "n": 2,
+ "w": 640,
+ "h": 640,
+ "seed": 1526267926,
+ "at": 1795097160264,
+ "init": "forge/jobs/lm-hand-hooded-20261119.init.b64",
+ "mask": "forge/jobs/lm-hand-hooded-20261119.mask.b64"
+}

@@ -1,0 +1,11 @@
+{
+ "mode": "edit",
+ "prompt": "Close-up of an old brass oil lantern held by a gloved hand: the lantern's wick turned up high, a tall blazing bright yellow-white flame filling the glass chimney, the glass glowing hot, brass frame. Realistic oil-painted game art with soft painterly edges and smooth blended shading, the look of a dark Victorian oil painting, no outlines, no comic ink, no text.",
+ "n": 2,
+ "w": 640,
+ "h": 640,
+ "seed": 1359686942,
+ "at": 1795097160264,
+ "init": "forge/jobs/lm-hand-bright-20261119.init.b64",
+ "mask": "forge/jobs/lm-hand-bright-20261119.mask.b64"
+}
