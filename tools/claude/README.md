@@ -30,3 +30,15 @@ Then `git add forge/jobs && git commit && git push`. The workflow renders it in 
 
 ## 4. The shared library (Duff's phone sees it)
 Use the artifact db tools on artifact `408d3d4e-8800-4a0e-9cdc-1251d2b400a7`. `library/<id>` holds each piece's meta and `libchunks/<id>_<n>` holds its body. `fbx.py push-doc` / `pull` do the packing. Never overwrite or delete what Duff made. Push new items.
+
+## 5. The art loop (`art_loop.py`)
+Render, judge, reroll, deliver, without Duff babysitting it (steps in the art-loop skill).
+```
+python3 tools/claude/art_loop.py queue  --id lm-sky-c-20261119 --prompt-file p.txt --n 4 --w 512 --h 512 [--key '#00FF00']
+python3 tools/claude/art_loop.py status lm-sky-c-20261119
+python3 tools/claude/art_loop.py score  lm-sky-c-20261119 --kind sprite|texture|scene|hud [--aspect 0.37]
+```
+`score` flags what kept going wrong by eye: key punching holes through the subject, floor shadow,
+watermarks/stray marks, cropped head or sides, floating feet, off-palette, baked glow, seams on
+textures. It writes `forge/out/<id>_sheet.png`. It's a pre-filter: still look at the sheet
+(it can't see faces, and the faceless rule is the one that matters most). Test: `tests/test_art_loop.py`.
