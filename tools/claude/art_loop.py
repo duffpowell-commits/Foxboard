@@ -6,6 +6,7 @@ Used by the art-loop skill (render -> judge -> reroll -> deliver). Run from a Fo
   python3 tools/claude/art_loop.py queue  --id lm-x-20261119 --prompt-file p.txt [--n 4 --w 512 --h 512 --seed N --key '#00FF00' --kind sprite]
   python3 tools/claude/art_loop.py status lm-x-20261119 [more ids]
   python3 tools/claude/art_loop.py score  lm-x-20261119 --game lethemoor --kind sprite|texture|scene|hud [--aspect 0.37]
+  python3 tools/claude/art_loop.py cut    lm-x-20261119/1 out.png [--height 640] [--key '#00FF00']
 
 score prints JSON (one entry per take, plus "best") and writes forge/out/<id>_sheet.png.
 The numbers are a pre-filter only; Claude still looks at the sheet before picking.
@@ -233,6 +234,65 @@ def cmd_score(a):
                       "best": best and best["file"]}, indent=1))
 
 
+# ---------- cut ----------
+def cut_image(im, key, height=None, band=3):
+    """Key colour -> transparent (soft 1-step edge), crop to the subject, optional resize,
+    then despill: pull the key's colour cast out of pixels within `band` px of the cut edge.
+    Only the edge band is touched, so real key-ish colours inside the subject (moss on a
+    green key) survive."""
+    from PIL import ImageFilter
+    im = im.convert("RGBA"); kc = hexrgb(key); w, h = im.size; px = im.load()
+    for y in range(h):
+        for x in range(w):
+            r, g, b, a = px[x, y]
+            d = ((r - kc[0]) ** 2 + (g - kc[1]) ** 2 + (b - kc[2]) ** 2) ** 0.5
+            if d < 60:
+                px[x, y] = (r, g, b, 0)
+            elif d < 120:
+                px[x, y] = (r, g, b, int(a * (d - 60) / 60))
+    bbox = im.getchannel("A").getbbox()
+    if bbox:
+        im = im.crop(bbox)
+    if height and im.height != height:
+        im = im.resize((max(1, round(im.width * height / im.height)), height), Image.LANCZOS)
+    # edge band = pixels within `band` px of transparency
+    # (the image border counts as transparency: a tight crop puts the fringe right on it)
+    from PIL import ImageOps
+    hole = ImageOps.expand(im.getchannel("A").point(lambda v: 255 if v < 250 else 0), band, fill=255)
+    near = hole.filter(ImageFilter.MaxFilter(2 * band + 1)).crop((band, band, band + im.width, band + im.height))
+    on = [c for c in range(3) if kc[c] >= 128]; off = [c for c in range(3) if kc[c] < 128]
+    px = im.load(); nb = near.load(); fixed = 0
+    for y in range(im.height):
+        for x in range(im.width):
+            if not nb[x, y]:
+                continue
+            p = list(px[x, y])
+            if p[3] == 0:
+                continue
+            spill = min(p[c] for c in on) - (max(p[c] for c in off) if off else 0)
+            if spill > 0:
+                for c in on:
+                    p[c] -= spill
+                px[x, y] = tuple(p); fixed += 1
+    return im, fixed
+
+
+def cmd_cut(a):
+    src = a.src
+    m = re.match(r"^([A-Za-z0-9_-]{4,64})/(\d+)$", src)  # "<job id>/<take>" shorthand
+    key = a.key
+    if m:
+        if not key:
+            jp = os.path.join(JOBS, m.group(1) + ".json")
+            key = json.load(open(jp)).get("key") if os.path.exists(jp) else None
+        src = os.path.join(RESULTS, m.group(1), m.group(2) + ".png")
+    if not key:
+        sys.exit("no key colour: pass --key")
+    im, fixed = cut_image(Image.open(src), key, a.height)
+    im.save(a.out, optimize=True)
+    print(json.dumps({"out": a.out, "size": list(im.size), "despilled_px": fixed, "bytes": os.path.getsize(a.out)}))
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -242,8 +302,10 @@ def main():
     s = sub.add_parser("status"); s.add_argument("ids", nargs="+")
     c = sub.add_parser("score"); c.add_argument("id"); c.add_argument("--game", default="lethemoor", choices=sorted(GAMES))
     c.add_argument("--kind", default="sprite", choices=["sprite", "texture", "scene", "hud"]); c.add_argument("--aspect", type=float)
+    k = sub.add_parser("cut"); k.add_argument("src", help="<job id>/<take> or a png path"); k.add_argument("out")
+    k.add_argument("--key"); k.add_argument("--height", type=int)
     a = p.parse_args()
-    {"queue": cmd_queue, "status": cmd_status, "score": cmd_score}[a.cmd](a)
+    {"queue": cmd_queue, "status": cmd_status, "score": cmd_score, "cut": cmd_cut}[a.cmd](a)
 
 
 if __name__ == "__main__":
