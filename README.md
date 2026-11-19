@@ -28,6 +28,7 @@ python tests/test_features.py
 python tests/test_gif_templates.py
 python tests/test_pipeline.py
 python tests/test_forge_key.py
+python tests/test_fbx.py
 ```
 `test_gif_templates.py` decodes the exported GIF with Pillow, an independent decoder, and checks frames, loop, timing and transparency.
 
@@ -39,3 +40,8 @@ queue the same jobs (art-director skill). Canva is the fallback for private or u
 Queue: commit `forge/jobs/<id>.json` (`prompt`, `n` ≤ 4, `w`/`h` multiples of 64 up to 1024, `seed`, `key` or null).
 Results: `forge/results/<id>/<k>.png` + `<k>.b64` + `done.json`. Key-colour jobs come back with an exact-key
 background (`forge/keyfix.py`). Only runs while the repo is public. Prompts and outputs here are public.
+
+## Claude → library tools
+`tools/claude/fbx.py` packs art into the shared-library db format (`push-image`, `push-doc`) and unpacks it
+(`pull`); `tools/claude/render.js` renders a doc with Foxboard's own renderer. Transport is the ArtifactData
+tool on the Foxboard artifact (see the foxboard-link skill). Verified live Nov 19.
