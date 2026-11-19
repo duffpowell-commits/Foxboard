@@ -1241,11 +1241,11 @@ function openSaveTemplate(){
 
 /* ---------- style bible (games, palettes, characters) ---------- */
 const DEFAULT_BIBLE={games:[
-  {id:'duffquest',name:'DuffQuest',repo:'duffpowell-commits/duffquest',inbox:'grok_art',key:'#FF00FF',decoder:false,
+  {id:'duffquest',name:'DuffQuest',repo:'duffpowell-commits/duffquest',inbox:'grok_art',key:'#FF00FF',decoder:false,direct:false,
    sprite:'Modern high-detail pixel art with crisp outlines, no blur, no anti-aliasing. Readable at game scale. Comedy RPG set in Omaha, warm and punchy.',
    hd:'Bold flat cartoon: thick near-black ink outlines that taper at the ends, flat solid colour fills with at most ONE hard cel-shadow tone, clean simple shapes, rubbery expressive faces. No gradients, no texture, no gloss, no airbrush. Backgrounds are flat graphics (two-tone sunburst or flat speed lines), never painted scenery.',
    palette:['#14121A','#0E1A33','#1E4A66','#E0A030','#3FF2E6','#FFFFFF']},
-  {id:'lethemoor',name:'Lethemoor',repo:'duffpowell-commits/lethemoor',inbox:'grok_art',key:'#00FF00',decoder:true,
+  {id:'lethemoor',name:'Lethemoor',repo:'duffpowell-commits/lethemoor',inbox:'grok_art',key:'#00FF00',decoder:true,direct:false,
    sprite:'HD-2D style pixel art: crisp hand-placed pixels, no anti-aliasing, no blur, no gradients. 3/4 front view, full body, idle, centered. Max 16 colors: desaturated bone, rust, moss green, ink black, ONE warm accent (lantern amber). Single warm light from a lantern, low and to the right; deep shadows, rim light. Gothic, Edgar Allan Poe, quiet dread, something slightly wrong with the anatomy. Never chibi, cute, anime gloss or 3D-render look.',
    hd:'Gothic dark illustration in the amber-and-ink palette: near-black blues, one warm lantern-amber light source, bone and blood accents, heavy shadow, quiet dread.',
    palette:['#05070c','#0b111b','#141d2b','#202d40','#33445a','#4d6078','#2a170a','#5a3414','#8f561f','#c98a2e','#f2c25a','#ffe9a8','#4a0710','#8a1020','#c81e2e','#6f6656','#a99c84','#d9cdb4']}
@@ -1309,7 +1309,9 @@ function openBible(gid){
     b.append(row('Repo',h('span',{},g.repo+' › '+g.inbox+'/')));
     const decB=h('button',{class:g.decoder===false?'':'on'},g.decoder===false?'Inbox decoder: not installed':'Inbox decoder: installed ✓'); decB.disabled=!canEditBible;
     decB.onclick=()=>{ g.decoder=g.decoder===false; openBible(gid); toast('Save the bible to keep this'); };
-    b.append(row('Send to game',decB));
+    const dirB=h('button',{class:g.direct?'on':''},g.direct?'Send: direct via GitHub connector':'Send: outbox + sweep'); dirB.disabled=!canEditBible;
+    dirB.onclick=()=>{ g.direct=!g.direct; openBible(gid); toast('Save the bible to keep this'); };
+    b.append(row('Send to game',dirB),row('',decB));
     b.append(h('h4',{style:'margin:12px 0 4px'},'Characters'));
     bible.characters.filter(c=>c.game===gid).forEach(c=>{
       const ta=h('textarea',{}); ta.value=c.look; ta.readOnly=!canEditBible; ta.oninput=()=>{ c.look=ta.value; };
@@ -1343,11 +1345,28 @@ function ghErr(e){
   if(c==='server_unavailable'||c==='upstream_error') return 'GitHub didn\'t answer — it may or may not have landed. Check the repo before sending again.';
   return 'Couldn\'t send ('+(c||'error')+').';
 }
+let outboxItems=[];
+async function sha256hex(blob){ const b=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer()); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join(''); }
+async function queueOutbox(g,name,ext,blob,dir,file){
+  const b64=await blobToB64(blob); const CH=180000;
+  if(b64.length>CH*40) throw {code:'too_big'};
+  const id=Date.now().toString(36)+uid(); const n=Math.ceil(b64.length/CH);
+  for(let i=0;i<n;i++) await dbCap.doc(`outboxchunks/${id}_${i}`).set({item:id,n:i,data:b64.slice(i*CH,(i+1)*CH)});
+  await dbCap.doc(`outbox/${id}`).set({game:g.id,gameName:g.name,repo:g.repo,dir,file,ext,name,bytes:blob.size,sha256:await sha256hex(blob),chunks:n,by:myUserId||'',at:Date.now(),status:'queued'});
+  return id;
+}
+function outboxLine(it){
+  const st=it.status==='delivered'?'✅':it.status==='error'?'❌':'⏳';
+  const d=h('div',{class:'hint'}); d.append(`${st} ${it.name}.${it.ext} → ${it.gameName||it.game} · ${fmtDate(it.at)} · `);
+  if(it.status==='delivered'&&it.path) d.append(h('a',{href:`https://github.com/${it.repo}/blob/main/${it.path}`,target:'_blank',rel:'noopener'},'in repo'));
+  else d.append(it.status==='error'?String(it.error||'failed').slice(0,120):'waiting for the next sweep');
+  return d;
+}
 function openSendToGame(){
   if(drawMode) setDrawMode(false);
   selId=null; refreshUI(); draw();
   openSheet('🎮 Send to game','send',b=>{
-    if(!mcpCap){ b.append(h('div',{class:'out'},'Send to game works when Foxboard is open inside the Claude app with the GitHub connector on. Here, use Export instead.')); return; }
+    if(!mcpCap&&!dbCap){ b.append(h('div',{class:'out'},'Send to game works when Foxboard is open inside the Claude app. Here, use Export instead.')); return; }
     const games=bible.games.filter(g=>g.repo&&g.inbox);
     if(!games.length){ b.append(h('div',{class:'hint'},'Add a game with a repo in the Style bible first.')); return; }
     let gid=gameById(activeGame)&&gameById(activeGame).repo?activeGame:games[0].id;
@@ -1363,14 +1382,31 @@ function openSendToGame(){
       const g=gameById(gs.value)||games[0];
       wb.forEach(x=>x.classList.toggle('on',x.dataset.k===what)); sb.forEach(x=>x.classList.toggle('on',+x.dataset.s===scale));
       kb.classList.toggle('on',keyBg&&what!=='gif'); kb.disabled=what==='gif'; kb.textContent=`Key-color background (${g.key})`;
-      info.textContent=`Lands in ${g.repo} › ${g.inbox}/${ymd(new Date())}-foxboard/ as ${(ni.value||'art').replace(/[^a-z0-9_-]+/gi,'_')}.${what==='gif'?'gif':'png'} — the game's art inbox. A Claude session imports it into the game from there.`;
+      info.textContent=`Lands in ${g.repo} › ${g.inbox}/${ymd(new Date())}-foxboard/ as ${(ni.value||'art').replace(/[^a-z0-9_-]+/gi,'_')}.${what==='gif'?'gif':'png'} — the game's art inbox. ${g.direct?'':' Delivered by the Foxboard sweep.'} A Claude session imports it into the game from there.`;
     }
     gs.onchange=()=>{ gid=gs.value; setActiveGame(gid); upd(); }; ni.oninput=upd;
     b.append(row('Game',gs),row('Name',ni)); if(multi) b.append(row('What',...wb)); b.append(row('Scale',...sb),row('',kb),info);
     const go=h('button',{class:'acc'},'🚀 Send');
     go.onclick=async()=>{
       const g=gameById(gs.value)||games[0]; const [owner,repo]=g.repo.split('/');
-      const name=(ni.value||'art').trim().replace(/[^a-z0-9_-]+/gi,'_').slice(0,60)||'art';
+      const name=(ni.value||'art').trim().replace(/[^a-z0-9_-]+/gi,'_').slice(0,60)||'art'; let lastSend=null;
+      if(!g.direct){
+        if(!dbCap){ out.classList.remove('hidden'); out.textContent='Sending needs Foxboard open inside the Claude app. Use Export here.'; return; }
+        go.disabled=true; out.classList.remove('hidden'); out.textContent='Rendering…';
+        try{
+          let blob, ext;
+          if(what==='gif'){ blob=makeGIF(scale); ext='gif'; }
+          else { let c=what==='sheet'?renderSheet(scale,Math.min(doc.pages.length,8),0,false):renderToCanvas(scale,false); if(keyBg) c=onKey(c,g.key); blob=await new Promise(r=>c.toBlob(r,'image/png')); ext='png'; }
+          if(!blob) throw {code:'too_big'};
+          const now=new Date(), stamp=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
+          out.textContent='Putting it in the outbox…';
+          await queueOutbox(g,name,ext,blob,`${g.inbox}/${ymd(now)}-foxboard`,`${name}-${stamp}.${ext}`);
+          out.textContent=`Queued ✓ ${name}.${ext} for ${g.name}. The Foxboard sweep drops it into ${g.inbox}/ on its next run (every few hours), or say "sweep the Foxboard outbox" in any Claude chat to do it now.`;
+          toast('Queued for '+g.name);
+        }catch(e){ out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':e&&e.code==='invalid_argument'?'You can\'t send yet — Duff has to make you an Editor.':e&&e.code==='quota_exceeded'?'Outbox is full — wait for the sweep to clear it.':'Couldn\'t queue it ('+(e&&e.code||'error')+').'; }
+        finally{ go.disabled=false; }
+        return;
+      }
       if(g.decoder===false){ out.classList.remove('hidden'); out.textContent=`${g.name}'s art inbox isn't switched on yet. Next time you open a Claude session on ${g.repo.split('/')[1]}, tell it: "apply Foxboard's integrations/duffquest-foxboard-inbox.patch, then flip the decoder on in Foxboard's bible". Until then, use Export.`; return; }
       go.disabled=true; out.classList.remove('hidden'); out.textContent='Rendering…';
       try{
@@ -1380,6 +1416,7 @@ function openSendToGame(){
         if(!blob) throw {code:'too_big'};
         const now=new Date(), stamp=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0')+String(now.getSeconds()).padStart(2,'0');
         const dir=`${g.inbox}/${ymd(now)}-foxboard`, path=`${dir}/${name}-${stamp}.${ext}.b64`;
+        lastSend={name,ext,blob,dir,file:`${name}-${stamp}.${ext}`};
         let content;
         const lt=await mcpCap.listTools().catch(()=>null);
         if(lt&&lt.fileArgs) content={$file:{data:blob,name:`${name}.${ext}`,type:ext==='gif'?'image/gif':'image/png'}};
@@ -1388,11 +1425,15 @@ function openSendToGame(){
         await mcpCap.callTool('github','create_or_update_file',{owner,repo,branch:'main',path,content,message:`Foxboard: ${name}.${ext} from Duff's phone (auto-decodes to ${ext})`});
         out.innerHTML=''; out.append(`Sent ✓ ${name}.${ext} → ${g.name}. GitHub turns it into a real .${ext} in about a minute: `, h('a',{href:`https://github.com/${g.repo}/tree/main/${dir}`,target:'_blank',rel:'noopener'},'open the folder'));
         toast('Sent to '+g.name);
-      }catch(e){ out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
+      }catch(e){
+        const blocked=e&&(e.code==='server_not_connected'||e.code==='needs_reauth'||(e.code==='tool_error'&&/\b404\b|Not Found/i.test(String(e.message||''))));
+        if(blocked&&dbCap&&lastSend){ try{ await queueOutbox(g,lastSend.name,lastSend.ext,lastSend.blob,lastSend.dir,lastSend.file); out.textContent='GitHub connector can\'t reach that repo, so it went to the outbox instead ✓ The Foxboard sweep delivers it.'; return; }catch(_){} }
+        out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
       finally{ go.disabled=false; }
     };
     b.append(row('',go),out);
     b.append(h('div',{class:'hint'},'Goes into the game\'s grok_art inbox, never straight into the game, so nothing breaks the build.'));
+    if(outboxItems.length){ b.append(h('h4',{style:'margin:12px 0 4px'},'Recent sends')); outboxItems.slice(0,8).forEach(it=>b.append(outboxLine(it))); }
     upd();
   });
 }
@@ -1413,6 +1454,7 @@ function who(id){ return id&&id===myUserId?'you':(names.get(id)||'Someone'); }
     clearTimeout(t); libState='ok'; libItems=s.docs.map(d=>({id:d.id,...d.data()}));
     nameOf(libItems.map(i=>i.by)).then(()=>{ if(sheetIs('library')) openLibrary(); });
   },e=>{ clearTimeout(t); libState='error:'+(e&&e.code); });
+  dbCap.collection('outbox').orderBy('at','desc').limit(20).onSnapshot(s=>{ outboxItems=s.docs.map(d=>({id:d.id,...d.data()})); },()=>{});
   dbCap.collection('libnotes').orderBy('at','desc').limit(500).onSnapshot(s=>{
     libNotes=s.docs.map(d=>({id:d.id,...d.data()}));
     nameOf(libNotes.map(n=>n.by)).then(()=>{ if(sheetIs('libitem')) openLibItem(curLibItem); });
@@ -1608,7 +1650,7 @@ for(const p of doc.pages) for(const o of p.objects) if(o.type==='image') getImg(
 refreshUI(); updUndo(); resize(); fit(); renderPages(); updDrawbar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const p of doc.pages) for(const o of p.objects) if(o.type==='text') fitText(o); draw(); thumbsSoon(); });
 if(!doc.pages.some(p=>p.objects.length)) setTimeout(()=>toast('Tap Text, Shape, Image, Draw or ✨AI to start',2600),400);
-window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
+window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
 })();
 </script>
 </body>

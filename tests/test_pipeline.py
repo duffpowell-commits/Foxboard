@@ -67,34 +67,42 @@ async def main():
         await ev("""(()=>{ const d=__fb.doc; d.w=16; d.h=16; d.pixel=true; d.bg='transparent'; d.name='bearer test';
           d.pages=[{id:'p',objects:[{id:'r',type:'rect',x:4,y:4,w:8,h:8,rot:0,fill:'#c98a2e',stroke:'#000',strokeW:0,opacity:1}]}]; __fb.doc=d; })()""")
 
-        # --- send to game: Lethemoor ---
+        # --- send to game: outbox (default) ---
         ok = await ev("typeof __fb.openSendToGame==='function'")
         check('send-to-game exists', ok)
         if ok:
             await ev("__fb.setActiveGame('lethemoor'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
-            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(700)
-            calls = await ev("""window.__calls.map(c=>({server:c.server,tool:c.tool,owner:c.input.owner,repo:c.input.repo,branch:c.input.branch,path:c.input.path,file:!!(c.input.content&&c.input.content.$file)}))""")
-            check('one github call', len(calls) == 1, calls)
-            if calls:
-                c = calls[0]
-                check('right repo + branch', (c['server'], c['tool'], c['owner'], c['repo'], c['branch']) == ('github', 'create_or_update_file', 'duffpowell-commits', 'lethemoor', 'main'), c)
-                check('lands in grok_art/<date>-foxboard/*.png.b64', c['path'].startswith('grok_art/') and '-foxboard/' in c['path'] and c['path'].endswith('.png.b64'), c['path'])
-                check('sends bytes as a file argument', c['file'])
-                b64 = await ev("""(async()=>{ const blob=window.__calls[0].input.content.$file.data; const buf=new Uint8Array(await blob.arrayBuffer()); let s=''; for(const x of buf) s+=String.fromCharCode(x); return btoa(s); })()""")
-                im = Image.open(io.BytesIO(base64.b64decode(b64))).convert('RGBA')
+            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(900)
+            msg = await pg.inner_text('#shBody .out')
+            ob = await ev("""(()=>{ const ks=[...window.__store.keys()].filter(k=>k.startsWith('outbox/')); return ks.map(k=>window.__store.get(k)); })()""")
+            check('queued one outbox item', len(ob) == 1 and 'Queued' in msg, [msg, ob])
+            if ob:
+                it = ob[0]
+                check('outbox item points at the lethemoor inbox', it['repo'] == 'duffpowell-commits/lethemoor' and it['dir'].startswith('grok_art/') and it['dir'].endswith('-foxboard') and it['file'].endswith('.png') and it['status'] == 'queued', it)
+                b64 = await ev("""(id=>{ const ks=[...window.__store.keys()].filter(k=>k.startsWith('outboxchunks/')).sort(); return ks.map(k=>window.__store.get(k)).filter(c=>c.item===id).sort((a,b)=>a.n-b.n).map(c=>c.data).join(''); })""" + "('" + [k for k in await ev("[...window.__store.keys()]") if k.startswith('outbox/')][0].split('/')[1] + "')")
+                raw = base64.b64decode(b64)
+                import hashlib
+                check('chunks rebuild the exact bytes (sha256)', hashlib.sha256(raw).hexdigest() == it['sha256'], (hashlib.sha256(raw).hexdigest(), it['sha256']))
+                im = Image.open(io.BytesIO(raw)).convert('RGBA')
                 check('flattened on the #00FF00 key', im.getpixel((0, 0)) == (0, 255, 0, 255), im.getpixel((0, 0)))
                 check('art kept', im.getpixel((6, 6)) == (201, 138, 46, 255), im.getpixel((6, 6)))
-            # DuffQuest blocked until its decoder is installed
-            await ev("window.__calls=[]; __fb.setActiveGame('duffquest'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
-            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(400)
-            n = await ev("window.__calls.length"); msg = await pg.inner_text('#shBody .out')
-            check('duffquest blocked until decoder installed', n == 0 and 'patch' in msg, msg)
-            # 404 explains the private-repo fix
-            await ev("window.__calls=[]; window.__fail404=true; __fb.setActiveGame('lethemoor'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
-            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(600)
+            check('no connector call on the outbox path', await ev("window.__calls.length") == 0)
+            # DuffQuest works through the outbox too (no decoder needed)
+            await ev("__fb.setActiveGame('duffquest'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
+            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(900)
+            n = await ev("[...window.__store.keys()].filter(k=>k.startsWith('outbox/')).length")
+            check('duffquest queues through the outbox', n == 2, n)
+            await pg.click('#shClose')
+            # direct mode: connector call, and a 404 falls back to the outbox
+            await ev("__fb.setDirect('lethemoor',true); window.__calls=[]; __fb.setActiveGame('lethemoor'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
+            await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(700)
+            calls = await ev("window.__calls.map(c=>({server:c.server,tool:c.tool,repo:c.input.repo,path:c.input.path,file:!!(c.input.content&&c.input.content.$file)}))")
+            check('direct mode commits through github connector', len(calls) == 1 and calls[0]['tool'] == 'create_or_update_file' and calls[0]['path'].endswith('.png.b64') and calls[0]['file'], calls)
+            await ev("window.__calls=[]; window.__fail404=true"); await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(1000)
             msg = await pg.inner_text('#shBody .out')
-            check('404 explains private repo access', 'private' in msg and 'Settings' in msg, msg)
-            await ev("window.__fail404=false"); await pg.click('#shClose')
+            n = await ev("[...window.__store.keys()].filter(k=>k.startsWith('outbox/')).length")
+            check('404 in direct mode falls back to the outbox', n == 3 and 'outbox' in msg, [n, msg])
+            await ev("window.__fail404=false; __fb.setDirect('lethemoor',false)"); await pg.click('#shClose')
 
         # --- style bible: AI prompt carries character + palette ---
         ok = await ev("typeof __fb.openBible==='function'")
