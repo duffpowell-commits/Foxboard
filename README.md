@@ -11,6 +11,7 @@ A phone-first, Canva-style art editor for game art. One self-contained `index.ht
 - Draw tools: pencil, eraser, fill bucket, eyedropper and a retro 16-color palette.
 - Frames for animation, with onion skin and play preview. Export a single frame, a sprite sheet (PNG grid) or an animated GIF.
 - Image tools: background removal, brightness/contrast/saturation/hue/grayscale/blur, flip.
+- Magic eraser (image › 🪄): brush over something, tap Erase, and the gap fills from the rest of the picture (multi-scale patch fill, runs on the phone, free, instant). Best on small/medium things; big objects in busy photos smear.
 - AI studio (runs on the viewer's own Claude plan, only inside Claude): pixel sprites, vector art, auto layouts, and art critique.
 - Templates: 7 original built-ins plus your own saved templates.
 - Style bible: per-game palette, sprite + illustration style, key color and characters (seeded from the DuffQuest/Lethemoor repos). AI prompts, the draw palette and "Snap to palette" all read it.
@@ -29,6 +30,7 @@ python tests/test_gif_templates.py
 python tests/test_pipeline.py
 python tests/test_forge_key.py
 python tests/test_fbx.py
+python tests/test_magic_eraser.py
 ```
 `test_gif_templates.py` decodes the exported GIF with Pillow, an independent decoder, and checks frames, loop, timing and transparency.
 

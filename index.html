@@ -28,10 +28,14 @@ button.on{background:var(--acc);color:#1a0d05;border-color:var(--acc)}
 .floatbar>*{pointer-events:auto}
 .floatbar button{background:rgba(31,28,41,.94);backdrop-filter:blur(6px);padding:6px 10px}
 .floatbar button.on{background:var(--acc)}
+.floatbar button.acc{background:var(--acc);color:#1a0d05}
 #drawbar input[type=color]{width:42px;height:40px}
 #drawbar .sz{display:flex;align-items:center;gap:2px;background:rgba(31,28,41,.94);border:1px solid var(--line);border-radius:10px;padding:0 2px}
 #drawbar .sz button{border:0;background:transparent;min-height:38px;padding:4px 8px}
 #drawbar .sz span{min-width:24px;text-align:center;font-size:13px}
+#magicbar .sz{display:flex;align-items:center;gap:2px;background:rgba(31,28,41,.94);border:1px solid var(--line);border-radius:10px;padding:0 2px}
+#magicbar .sz button{border:0;background:transparent;min-height:38px;padding:4px 8px}
+#magicbar .sz span{min-width:24px;text-align:center;font-size:13px}
 #zoomlbl{position:absolute;top:8px;right:8px;background:rgba(31,28,41,.85);color:var(--dim);padding:3px 8px;border-radius:8px;font-size:12px;pointer-events:none}
 #pagebar{display:flex;align-items:center;gap:6px;padding:5px 8px;background:#181520;border-top:1px solid var(--line);overflow-x:auto;flex:none;scrollbar-width:none}
 #pagebar::-webkit-scrollbar{display:none}
@@ -108,6 +112,12 @@ textarea{width:100%;min-height:70px;resize:vertical}
       <div class="sz"><button id="szDown">−</button><span id="szLbl">1</span><button id="szUp">+</button></div>
       <button id="drawPal">🎨</button>
       <button id="drawDone" class="acc">Done</button>
+    </div>
+    <div id="magicbar" class="floatbar">
+      <div class="sz"><button id="mgDown">−</button><span id="mgLbl">8</span><button id="mgUp">+</button></div>
+      <button id="mgClear">↺ Clear</button>
+      <button id="mgErase" class="acc">🪄 Erase</button>
+      <button id="mgDone">Done</button>
     </div>
   </div>
   <div id="pagebar"></div>
@@ -312,6 +322,7 @@ function drawNow(){
     ctx.restore();
   }
   renderPage(ctx,doc.cur,1,false);
+  if(magic&&magicObj()){ const mo=magic.o; ctx.save(); ctx.globalAlpha=0.5; ctx.imageSmoothingEnabled=false; ctx.drawImage(magic.mask,mo.x,mo.y,mo.w,mo.h); ctx.restore(); }
   ctx.restore();
   if(doc.grid && view.z>=6){
     ctx.beginPath(); ctx.strokeStyle='rgba(255,255,255,.12)'; ctx.lineWidth=1;
@@ -482,6 +493,7 @@ stage.addEventListener('pointerdown',e=>{
   }
   if(ptrs.size>2) return;
   const d=s2d(p.x,p.y);
+  if(magic){ if(!magicObj()){ endMagic(); return; } const lp=layerPt(magic.o,magic.mask,d); act={kind:'mask',last:lp}; magicStamp(lp,lp); draw(); return; }
   if(drawMode){
     if(tool==='pick'){ pickColor(d); act={kind:'none'}; return; }
     beginEdit();
@@ -529,6 +541,7 @@ stage.addEventListener('pointermove',e=>{
     view.z=nz; view.x=m.x-dc.x*nz; view.y=m.y-dc.y*nz; draw(); return;
   }
   const d=s2d(p.x,p.y);
+  if(act.kind==='mask'){ if(!magic){ act=null; return; } const lp=layerPt(magic.o,magic.mask,d); magicStamp(act.last,lp); act.last=lp; draw(); return; }
   if(act.kind==='stroke'){
     const lp=layerPt(act.o,act.c,d); act.g.fillStyle=$('#drawColor').value; stamp(act.g,act.o,act.c,act.last,lp); act.last=lp; draw();
   } else if(act.kind==='pan'){
@@ -576,6 +589,7 @@ function up(e){
   ptrs.delete(e.pointerId);
   if(act && act.kind==='pinch'){ if(ptrs.size===0) act=null; else { const [p]=[...ptrs.values()]; act={kind:'pan',start:p,v0:{...view},moved:true}; } return; }
   if(act && act.kind==='stroke'){ commitStroke(act.o); endEdit(); act=null; draw(); return; }
+  if(act && act.kind==='mask'){ act=null; draw(); return; }
   if(act && act.kind==='pan' && !act.moved && !drawMode){ selId=null; refreshUI(); }
   if(act && act.kind!=='pan') endEdit();
   guides=[]; act=null; draw();
@@ -587,7 +601,7 @@ stage.addEventListener('wheel',e=>{ e.preventDefault(); const p=local(e); zoomAt
 function base(type,w,hh){
   return {id:uid(),type,x:(doc.w-w)/2,y:(doc.h-hh)/2,w,h:hh,rot:0,opacity:1,fill:'#ff7a3d',stroke:'#1a0d05',strokeW:0,radius:0,hidden:false,locked:false};
 }
-function addObj(o){ if(drawMode) setDrawMode(false); edit(()=>{ snapPx(o); O().push(o); selId=o.id; }); refreshUI(); }
+function addObj(o){ if(drawMode) setDrawMode(false); if(magic) endMagic(); edit(()=>{ snapPx(o); O().push(o); selId=o.id; }); refreshUI(); }
 function makeText(props){
   const s=Math.max(8,Math.round(Math.min(doc.w,doc.h)/8));
   const o=base('text',10,10); Object.assign(o,{text:'Your text',font:FONTS[doc.pixel?4:7][1],size:doc.pixel?Math.max(8,Math.round(s/8)*8):s,bold:false,italic:false,align:'center',fill:'#ffffff',stroke:'#1a0d05',strokeW:doc.pixel?0:Math.max(0,Math.round(s/10))},props||{});
@@ -621,6 +635,173 @@ async function addImageFile(file){
   try{ const r=await readImage(file); getImg(r.src); addObj(imageObj(r.src,r.iw,r.ih,r.name)); }
   catch(e){ toast('Could not read that image'); }
 }
+
+/* ---------- magic eraser: fill engine ----------
+   Multi-scale PatchMatch fill (own implementation). src: RGBA bytes, mask: 1 = remove.
+   Returns a new Uint8ClampedArray; pixels outside the mask are untouched. */
+function inpaintOne(src,W,H,mask0,opt){
+  opt=opt||{};
+  let bx0=W,by0=H,bx1=-1,by1=-1;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(mask0[y*W+x]){ if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; }
+  const out=new Uint8ClampedArray(src);
+  if(bx1<0) return out;
+  const pad=Math.max(16,Math.round(Math.max(bx1-bx0+1,by1-by0+1)*0.9));
+  const rx0=Math.max(0,bx0-pad), ry0=Math.max(0,by0-pad), rx1=Math.min(W-1,bx1+pad), ry1=Math.min(H-1,by1+pad);
+  const rw=rx1-rx0+1, rh=ry1-ry0+1;
+  let img=new Float32Array(rw*rh*4), msk=new Uint8Array(rw*rh);
+  for(let y=0;y<rh;y++) for(let x=0;x<rw;x++){ const k=y*rw+x, s=((y+ry0)*W+x+rx0); msk[k]=mask0[s]?1:0; for(let c=0;c<4;c++) img[k*4+c]=src[s*4+c]; }
+  const dil=opt.dilate??1;
+  for(let it=0;it<dil;it++){ const m2=msk.slice(); for(let y=0;y<rh;y++) for(let x=0;x<rw;x++) if(msk[y*rw+x]){ if(x>0)m2[y*rw+x-1]=1; if(x<rw-1)m2[y*rw+x+1]=1; if(y>0)m2[(y-1)*rw+x]=1; if(y<rh-1)m2[(y+1)*rw+x]=1; } msk=m2; }
+  let known=0; for(let k=0;k<msk.length;k++) if(!msk[k]) known++;
+  if(!known) return out;
+  const r=opt.r??(Math.min(rw,rh)<48?2:3), P=2*r+1;
+  let seed=opt.seed||12345; const rnd=()=>{ seed^=seed<<13; seed^=seed>>>17; seed^=seed<<5; return (seed>>>0)/4294967296; };
+  // pyramid: coarse pixel = average of its known fine pixels; masked only if all four are masked
+  const levels=[{w:rw,h:rh,img,msk}];
+  for(;;){
+    const L=levels[levels.length-1];
+    let a=L.w,b=-1,c=L.h,d=-1; for(let y=0;y<L.h;y++) for(let x=0;x<L.w;x++) if(L.msk[y*L.w+x]){ if(x<a)a=x; if(x>b)b=x; if(y<c)c=y; if(y>d)d=y; }
+    if(b<0 || Math.max(b-a+1,d-c+1)<=P+2 || Math.min(L.w,L.h)<P*4 || levels.length>8) break;
+    const w2=Math.ceil(L.w/2), h2=Math.ceil(L.h/2), im2=new Float32Array(w2*h2*4), m2=new Uint8Array(w2*h2);
+    for(let y=0;y<h2;y++) for(let x=0;x<w2;x++){ let n=0; const acc=[0,0,0,0];
+      for(let dy=0;dy<2;dy++) for(let dx=0;dx<2;dx++){ const X=2*x+dx,Y=2*y+dy; if(X>=L.w||Y>=L.h) continue; const k=Y*L.w+X; if(L.msk[k]) continue; n++; for(let ch=0;ch<4;ch++) acc[ch]+=L.img[k*4+ch]; }
+      const k=y*w2+x; if(n){ for(let ch=0;ch<4;ch++) im2[k*4+ch]=acc[ch]/n; } else m2[k]=1; }
+    levels.push({w:w2,h:h2,img:im2,msk:m2});
+  }
+  function diffuse(L,cur){ // onion-peel: fill hole from the edge inward with neighbor averages
+    const w=L.w,h=L.h, done=new Uint8Array(w*h); let left=0;
+    for(let k=0;k<w*h;k++){ if(!L.msk[k]) done[k]=1; else left++; }
+    while(left>0){ const ring=[];
+      for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const k=y*w+x; if(done[k]) continue; const acc=[0,0,0,0]; let n=0;
+        for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++){ const X=x+dx,Y=y+dy; if(X<0||Y<0||X>=w||Y>=h) continue; const j=Y*w+X; if(!done[j]) continue; n++; for(let ch=0;ch<4;ch++) acc[ch]+=cur[j*4+ch]; }
+        if(n) ring.push(k,acc[0]/n,acc[1]/n,acc[2]/n,acc[3]/n); }
+      if(!ring.length) break;
+      for(let i=0;i<ring.length;i+=5){ const k=ring[i]; for(let ch=0;ch<4;ch++) cur[k*4+ch]=ring[i+1+ch]; done[k]=1; left--; }
+    }
+  }
+  let prev=null;
+  for(let li=levels.length-1;li>=0;li--){
+    const L=levels[li], w=L.w, h=L.h, M=L.msk, cur=L.img.slice();
+    if(prev){ for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const k=y*w+x; if(!M[k]) continue; const pk=Math.min(prev.h-1,y>>1)*prev.w+Math.min(prev.w-1,x>>1); for(let ch=0;ch<4;ch++) cur[k*4+ch]=prev.cur[pk*4+ch]; } }
+    else diffuse(L,cur);
+    // valid source centers: patch fully inside and fully known (integral image of the mask)
+    const I=new Int32Array((w+1)*(h+1));
+    for(let y=0;y<h;y++){ let row=0; for(let x=0;x<w;x++){ row+=M[y*w+x]; I[(y+1)*(w+1)+x+1]=I[y*(w+1)+x+1]+row; } }
+    const valid=new Uint8Array(w*h), vlist=[];
+    for(let y=r;y<h-r;y++) for(let x=r;x<w-r;x++){ const s=I[(y+r+1)*(w+1)+x+r+1]-I[(y-r)*(w+1)+x+r+1]-I[(y+r+1)*(w+1)+x-r]+I[(y-r)*(w+1)+x-r]; if(!s){ valid[y*w+x]=1; vlist.push(y*w+x); } }
+    if(!vlist.length){ prev={w,h,cur,nnf:null}; continue; }
+    // targets: every patch center whose patch touches the hole
+    const near=new Uint8Array(w*h), tlist=[];
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){ const s=I[(Math.min(h,y+r+1))*(w+1)+Math.min(w,x+r+1)]-I[Math.max(0,y-r)*(w+1)+Math.min(w,x+r+1)]-I[Math.min(h,y+r+1)*(w+1)+Math.max(0,x-r)]+I[Math.max(0,y-r)*(w+1)+Math.max(0,x-r)]; if(s){ near[y*w+x]=1; tlist.push(y*w+x); } }
+    const nnf=new Int32Array(w*h).fill(-1), cost=new Float32Array(w*h);
+    const lam=(opt.near??0)*P*P*Math.pow(2,li), hw=opt.holeW??0.3;
+    const dist=(t,s,best)=>{ const tx=t%w,ty=(t/w)|0,sx=s%w,sy=(s/w)|0; let sum=lam*((tx-sx)*(tx-sx)+(ty-sy)*(ty-sy));
+      for(let dy=-r;dy<=r;dy++){ const Y=ty+dy; if(Y<0||Y>=h) continue; const SY=sy+dy;
+        for(let dx=-r;dx<=r;dx++){ const X=tx+dx; if(X<0||X>=w) continue; const a=(Y*w+X)*4, b=(SY*w+sx+dx)*4;
+          const d0=cur[a]-cur[b],d1=cur[a+1]-cur[b+1],d2=cur[a+2]-cur[b+2],d3=cur[a+3]-cur[b+3]; sum+=(M[Y*w+X]?hw:1)*(d0*d0+d1*d1+d2*d2+d3*d3); }
+        if(sum>=best) return sum; }
+      return sum; };
+    for(const t of tlist){ let s=-1;
+      if(prev&&prev.nnf){ const tx=t%w,ty=(t/w)|0, pt=Math.min(prev.h-1,ty>>1)*prev.w+Math.min(prev.w-1,tx>>1), ps=prev.nnf[pt];
+        if(ps>=0){ const sx=(ps%prev.w)*2+(tx&1), sy=((ps/prev.w)|0)*2+(ty&1); if(sx<w&&sy<h&&valid[sy*w+sx]) s=sy*w+sx; } }
+      if(s<0) s=vlist[(rnd()*vlist.length)|0];
+      nnf[t]=s; }
+    const iters=prev?(li===0?2:3):5;
+    for(let it=0;it<iters;it++){
+      for(const t of tlist) cost[t]=dist(t,nnf[t],Infinity);
+      for(let pass=0;pass<2;pass++){
+        const fwd=pass%2===0, n=tlist.length;
+        for(let q=0;q<n;q++){ const t=tlist[fwd?q:n-1-q], tx=t%w, ty=(t/w)|0; let best=cost[t], bs=nnf[t];
+          const tryS=s=>{ if(s<0||s>=w*h||!valid[s]||s===bs) return; const c=dist(t,s,best); if(c<best){ best=c; bs=s; } };
+          const o=fwd?-1:1;
+          if(tx+o>=0&&tx+o<w&&near[t+o]){ const s=nnf[t+o]; if(s>=0){ const sx=(s%w)-o; if(sx>=0&&sx<w) tryS(s-o); } }
+          if(ty+o>=0&&ty+o<h&&near[t+o*w]){ const s=nnf[t+o*w]; if(s>=0) tryS(s-o*w); }
+          for(let rad=Math.max(w,h);rad>=1;rad>>=1){ const sx=(bs%w)+Math.round((rnd()*2-1)*rad), sy=((bs/w)|0)+Math.round((rnd()*2-1)*rad); if(sx>=0&&sy>=0&&sx<w&&sy<h) tryS(sy*w+sx); }
+          nnf[t]=bs; cost[t]=best; }
+      }
+      const last=li===0&&it===iters-1;
+      if(last){ // crisp: each hole pixel copies the single best-matching patch that covers it
+        const bc=new Float32Array(w*h).fill(Infinity), bsrc=new Int32Array(w*h).fill(-1);
+        for(const t of tlist){ const tx=t%w,ty=(t/w)|0,s=nnf[t],sx=s%w,sy=(s/w)|0,c=cost[t];
+          for(let dy=-r;dy<=r;dy++){ const Y=ty+dy; if(Y<0||Y>=h) continue; for(let dx=-r;dx<=r;dx++){ const X=tx+dx; if(X<0||X>=w) continue; const p=Y*w+X; if(!M[p]) continue; if(c<bc[p]){ bc[p]=c; bsrc[p]=(sy+dy)*w+sx+dx; } } } }
+        for(let p=0;p<w*h;p++) if(M[p]&&bsrc[p]>=0) for(let ch=0;ch<4;ch++) cur[p*4+ch]=cur[bsrc[p]*4+ch];
+      } else { // vote: weighted average of all overlapping patches
+        const acc=new Float32Array(w*h*4), wt=new Float32Array(w*h);
+        let mean=0; for(const t of tlist) mean+=cost[t]; mean=mean/tlist.length+1;
+        for(const t of tlist){ const tx=t%w,ty=(t/w)|0,s=nnf[t],sx=s%w,sy=(s/w)|0, k=Math.exp(-cost[t]/mean);
+          for(let dy=-r;dy<=r;dy++){ const Y=ty+dy; if(Y<0||Y>=h) continue; for(let dx=-r;dx<=r;dx++){ const X=tx+dx; if(X<0||X>=w) continue; const p=Y*w+X; if(!M[p]) continue; const q=((sy+dy)*w+sx+dx)*4; wt[p]+=k; for(let ch=0;ch<4;ch++) acc[p*4+ch]+=k*cur[q+ch]; } } }
+        for(let p=0;p<w*h;p++) if(M[p]&&wt[p]>0) for(let ch=0;ch<4;ch++) cur[p*4+ch]=acc[p*4+ch]/wt[p];
+      }
+    }
+    prev={w,h,cur,nnf};
+  }
+  const fin=prev.cur;
+  for(let y=0;y<rh;y++) for(let x=0;x<rw;x++){ const k=y*rw+x; if(!msk[k]) continue; const s=(y+ry0)*W+x+rx0; for(let c=0;c<4;c++) out[s*4+c]=Math.round(fin[k*4+c]); }
+  return out;
+}
+
+function inpaint(src,W,H,mask0,opt){
+  // fill each separate brushed area on its own (its own search window and pyramid)
+  const lab=new Int32Array(W*H); let n=0; let out=new Uint8ClampedArray(src);
+  const groups=[];
+  for(let i=0;i<W*H;i++){ if(!mask0[i]||lab[i]) continue; n++; const st=[i], px=[]; lab[i]=n;
+    while(st.length){ const p=st.pop(); px.push(p); const x=p%W,y=(p/W)|0;
+      for(let dy=-2;dy<=2;dy++) for(let dx=-2;dx<=2;dx++){ const X=x+dx,Y=y+dy; if(X<0||Y<0||X>=W||Y>=H) continue; const q=Y*W+X; if(mask0[q]&&!lab[q]){ lab[q]=n; st.push(q); } } }
+    groups.push(px); }
+  for(const px of groups){ const m=new Uint8Array(W*H); for(const p of px) m[p]=1; out=inpaintOne(out,W,H,m,opt); }
+  return out;
+}
+
+/* ---------- magic eraser: brush mode ---------- */
+let magic=null; // {o, mask: canvas at the image's natural size}
+function magicMaskCount(){ if(!magic) return 0; const c=magic.mask, d=c.getContext('2d').getImageData(0,0,c.width,c.height).data; let n=0; for(let i=3;i<d.length;i+=4) if(d[i]>127) n++; return n; }
+function startMagic(o){
+  if(!o||o.type!=='image'){ toast('Select an image first'); return; }
+  if(o.locked||o.hidden){ toast('Unlock / show the layer first'); return; }
+  if(o.rot||o.flipX||o.flipY){ toast('Straighten it first (no rotate/flip) — then Magic eraser'); return; }
+  const im=srcOf(o); if(!im){ toast('Image still loading'); return; }
+  if(drawMode) setDrawMode(false);
+  closeSheet();
+  const c=document.createElement('canvas'); c.width=o.natW||im.naturalWidth||im.width; c.height=o.natH||im.naturalHeight||im.height;
+  magic={o,mask:c,size:magic?magic.size:Math.max(doc.pixel?1:4,Math.round(Math.min(o.w,o.h)/24))};
+  $('#magicbar').classList.add('show'); $('#mgLbl').textContent=magic.size; refreshUI();
+  toast('Brush over what you want gone, then tap 🪄 Erase',2600); draw();
+}
+function magicObj(){ if(!magic) return null; const o=O().find(x=>x.id===magic.o.id); if(!o||o.hidden){ return null; } magic.o=o; return o; }
+function endMagic(){ magic=null; $('#magicbar').classList.remove('show'); refreshUI(); draw(); }
+function magicStamp(a,b){
+  const o=magic.o, c=magic.mask, g=c.getContext('2d'), k=c.width/o.w, s=magic.size;
+  g.fillStyle=g.strokeStyle='#ff2d55';
+  if(doc.pixel){ const n=Math.max(1,Math.round(s*k)), off=Math.floor((n-1)/2), steps=Math.max(1,Math.ceil(Math.hypot(b.x-a.x,b.y-a.y)));
+    for(let i=0;i<=steps;i++){ const x=Math.floor(a.x+(b.x-a.x)*i/steps), y=Math.floor(a.y+(b.y-a.y)*i/steps); g.fillRect(x-off,y-off,n,n); } }
+  else { g.lineCap='round'; g.lineJoin='round'; g.lineWidth=s*k; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x+0.01,b.y); g.stroke(); }
+}
+function runMagic(){
+  if(!magic) return; const o=magicObj(); if(!o){ toast('That image is gone'); endMagic(); return; } const mc=magic.mask, W=mc.width, H=mc.height;
+  const md=mc.getContext('2d').getImageData(0,0,W,H).data, m=new Uint8Array(W*H); let n=0;
+  for(let i=0;i<W*H;i++) if(md[i*4+3]>127){ m[i]=1; n++; }
+  if(!n){ toast('Brush over something first'); return; }
+  const im=srcOf(o); if(!im){ toast('Image still loading'); return; }
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.drawImage(im,0,0,W,H);
+  let id; try{ id=g.getImageData(0,0,W,H); }catch(e){ toast('Cannot edit this image'); return; }
+  $('#mgErase').disabled=true; toast('Erasing…',8000);
+  setTimeout(()=>{
+    try{
+      const t0=performance.now();
+      const res=inpaint(id.data,W,H,m,{dilate:doc.pixel?0:1});
+      id.data.set(res); g.putImageData(id,0,0);
+      const src=c.toDataURL('image/png'); live.set(o.id,{src,canvas:c});
+      edit(()=>{ o.src=src; o.natW=W; o.natH=H; });
+      mc.getContext('2d').clearRect(0,0,W,H);
+      toast('Erased ✓ ('+((performance.now()-t0)/1000).toFixed(1)+' s) — undo if you don\'t like it');
+    }catch(e){ toast('Erase failed: '+e.message); }
+    $('#mgErase').disabled=false; draw();
+  },60);
+}
+$('#mgDown').onclick=()=>{ if(!magic) return; magic.size=Math.max(1,magic.size-(magic.size>10?5:1)); $('#mgLbl').textContent=magic.size; };
+$('#mgUp').onclick=()=>{ if(!magic) return; magic.size=Math.min(300,magic.size+(magic.size>=10?5:1)); $('#mgLbl').textContent=magic.size; };
+$('#mgClear').onclick=()=>{ if(!magic) return; magic.mask.getContext('2d').clearRect(0,0,magic.mask.width,magic.mask.height); draw(); };
+$('#mgErase').onclick=runMagic; $('#mgDone').onclick=endMagic;
 
 /* ---------- background removal ---------- */
 function removeBg(o,tol){
@@ -764,6 +945,8 @@ function openProps(focusText){
       const tr=rangeIn(0,160,1,tol,v=>tol=v);
       tr[0].oninput=()=>{ tol=+tr[0].value; tr[1].textContent=tol; };
       b.append(row('Remove BG',h('button',{class:'acc',onclick:()=>removeBg(o,tol)},'✂ Remove background'),...tr));
+      b.append(row('Magic eraser',h('button',{class:'acc',onclick:()=>startMagic(o)},'🪄 Magic eraser')));
+      b.append(h('div',{class:'hint'},'Brush over a thing (or a watermark, a stray shadow), tap Erase: it disappears and the gap is filled from the picture around it. Runs on your phone, free, no waiting. Best on small or medium things (poles, stray marks, watermarks, a sprite\'s extra bits); a big person in a busy photo comes out smeared.'));
       b.append(h('div',{class:'hint'},'Removes the solid color touching the edges (great for AI art on plain backgrounds). Raise tolerance if bits are left; undo if it eats too much. For fine cleanup use Draw › 🧽 on this image.'));
       const pg=gameById(activeGame);
       b.append(row('Palette',pg?h('button',{onclick:()=>snapToPalette(o,pg.palette)},'🎨 Snap to '+pg.name+' palette'):h('button',{onclick:()=>snapToPalette(o,PALETTE)},'🎨 Snap to retro 16'),h('button',{onclick:()=>openBible()},'📖')));
@@ -854,7 +1037,7 @@ function openNew(){
   });
 }
 function startNew(w,hh,px,name){
-  if(drawMode) setDrawMode(false);
+  if(drawMode) setDrawMode(false); if(magic) endMagic();
   beginEdit(); doc=newDoc(w,hh,px,name); selId=null; endEdit();
   closeSheet(); refreshUI(); renderPages(); fit();
 }
@@ -1037,7 +1220,7 @@ function buildForge(b,ta){
   };
 }
 function openAI(mode){
-  if(drawMode) setDrawMode(false);
+  if(drawMode) setDrawMode(false); if(magic) endMagic();
   mode=mode||'forge';
   openSheet('✨ AI studio','ai',b=>{
     if(aiReady && !sampleFn && mode!=='forge'){
@@ -1314,7 +1497,7 @@ const BUILTIN=[
     {type:'rect',x:0,y:2100,w:1080,h:240,fill:'#07060d'}]])
 ];
 function useTemplate(d){
-  if(drawMode) setDrawMode(false);
+  if(drawMode) setDrawMode(false); if(magic) endMagic();
   beginEdit(); doc=cloneDocFresh(d); selId=null; endEdit();
   for(const p of doc.pages) for(const o of p.objects){ if(o.type==='image') getImg(o.src); if(o.type==='text') loadFont(o); }
   closeSheet(); refreshUI(); renderPages(); fit(); toast('Template loaded — make it yours');
@@ -1461,7 +1644,7 @@ function outboxLine(it){
   return d;
 }
 function openSendToGame(){
-  if(drawMode) setDrawMode(false);
+  if(drawMode) setDrawMode(false); if(magic) endMagic();
   selId=null; refreshUI(); draw();
   openSheet('🎮 Send to game','send',b=>{
     if(!mcpCap&&!dbCap){ b.append(h('div',{class:'out'},'Send to game works when Foxboard is open inside the Claude app. Here, use Export instead.')); return; }
@@ -1661,7 +1844,7 @@ async function deliver(blob,filename,fallback){
   if(fallback) fallback(); else toast('Saving files is not available here — open Foxboard in the Claude app');
 }
 function openExport(){
-  if(drawMode) setDrawMode(false);
+  if(drawMode) setDrawMode(false); if(magic) endMagic();
   selId=null; refreshUI(); draw();
   openSheet('Export','export',b=>{
     const multi=doc.pages.length>1;
@@ -1717,14 +1900,14 @@ function saveProject(){
 $('#fileProj').addEventListener('change',e=>{
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   const fr=new FileReader();
-  fr.onload=()=>{ try{ const j=JSON.parse(fr.result); const d=migrate(j.doc||j); if(drawMode) setDrawMode(false); beginEdit(); doc=d; selId=null; endEdit(); closeSheet(); refreshUI(); renderPages(); fit(); toast('Opened '+(doc.name||'project')); }catch(err){ toast('That file is not a Foxboard project'); } };
+  fr.onload=()=>{ try{ const j=JSON.parse(fr.result); const d=migrate(j.doc||j); if(drawMode) setDrawMode(false); if(magic) endMagic(); beginEdit(); doc=d; selId=null; endEdit(); closeSheet(); refreshUI(); renderPages(); fit(); toast('Opened '+(doc.name||'project')); }catch(err){ toast('That file is not a Foxboard project'); } };
   fr.readAsText(f);
 });
 
 /* ---------- wiring ---------- */
 function refreshUI(){
   const t=$('#docTitle'); t.innerHTML=''; t.append(document.createTextNode(doc.name||'Untitled'),h('small',{},`${doc.w}×${doc.h}${doc.pixel?' · px':''}`));
-  $('#ctx').classList.toggle('show',!!sel() && !drawMode);
+  $('#ctx').classList.toggle('show',!!sel() && !drawMode && !magic);
 }
 $('#bUndo').onclick=undo; $('#bRedo').onclick=redo;
 $('#bMenu').onclick=openMenu; $('#bExport').onclick=openExport;
@@ -1748,7 +1931,7 @@ for(const p of doc.pages) for(const o of p.objects) if(o.type==='image') getImg(
 refreshUI(); updUndo(); resize(); fit(); renderPages(); updDrawbar();
 if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{ for(const p of doc.pages) for(const o of p.objects) if(o.type==='text') fitText(o); draw(); thumbsSoon(); });
 if(!doc.pages.some(p=>p.objects.length)) setTimeout(()=>toast('Tap Text, Shape, Image, Draw or ✨AI to start',2600),400);
-window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,forgeCheck,get forgeJobs(){return forgeJobs;},setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,get view(){return view;}};
+window.__fb={get doc(){return doc;},set doc(d){doc=migrate(d);afterLoad();},get sel(){return selId;},set sel(v){selId=v;refreshUI();draw();},makeGIF,BUILTIN,useTemplate,openSendToGame,setActiveGame,forgeCheck,get forgeJobs(){return forgeJobs;},setDirect:(id,v)=>{ const g=gameById(id); if(g) g.direct=v; },openBible,openAI,snapToPalette,openLibrary,startNew,shareCanvas,get myTemplates(){return myTemplates;},addText,addShape,undo,redo,renderToCanvas,renderSheet,fit,parsePixels,cleanSVG,removeBg,setDrawMode,inpaint,magicMaskCount,startMagic,openProps,get view(){return view;}};
 })();
 </script>
 </body>
