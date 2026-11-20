@@ -228,6 +228,19 @@ with tempfile.TemporaryDirectory() as td:
     check('render: New background (engine flux) = masked FLUX fill at 0.92, not the klein magic edit', isinstance(bg, list) and '--mask' in bg and bg[bg.index('--strength') + 1] == '0.92', bg if not isinstance(bg, list) else '')
     ex = out['ex1']
     check('render: expand repaints its new edges at 0.90', isinstance(ex, list) and ex[ex.index('--strength') + 1] == '0.90', ex if not isinstance(ex, list) else '')
+    # the real (non-dry) path for a FLUX-engine edit, with a fake renderer that copies its input: must produce a take
+    fake = td / 'fake_sd.py'
+    fake.write_text('#!' + sys.executable + '\nimport sys, shutil\na = sys.argv\nsrc = a[a.index("--init-img") + 1] if "--init-img" in a else a[a.index("-r") + 1]\nshutil.copy(src, a[a.index("-o") + 1])\n')
+    fake.chmod(0o755)
+    env3 = dict(os.environ, SD=str(fake), FORGE_NO_GIT='1'); env3.pop('FORGE_DRY', None)
+    pr = subprocess.run([sys.executable, str(ROOT / 'forge/render_one.py'), 'bg1', '0'], cwd=td, env=env3, capture_output=True, text=True, timeout=120)
+    check('render: a FLUX-engine edit (New background) really runs and writes its take', pr.returncode == 0 and (td / 'forge/results/bg1/0.b64').exists() and not (td / 'forge/results/bg1/0.error.txt').exists(), (pr.stdout + pr.stderr)[-300:])
+    sys.path.insert(0, str(ROOT / 'forge'))
+    try:
+        from engine import uses_klein
+        ok = uses_klein({'mode': 'edit'}) and not uses_klein({'mode': 'edit', 'engine': 'flux'}) and uses_klein({'mode': 'expand', 'engine': 'klein'}) and not uses_klein({'mode': 'expand'}) and not uses_klein({'mode': 'new'})
+    except Exception as e: ok = False
+    check('engine rule: edit=klein unless engine flux; expand=flux unless engine klein (renderer and model download share it)', ok)
     check('render: plain job has no --circular', isinstance(out['nw1'], list) and '--circular' not in out['nw1'], out['nw1'])
     # a hung renderer becomes a failed take after the cap instead of blocking the queue
     fake = td / 'hang.sh'; fake.write_text('#!/bin/sh\nsleep 60\n'); fake.chmod(0o755)

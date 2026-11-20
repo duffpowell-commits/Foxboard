@@ -26,10 +26,13 @@ init = mask = None
 if mode in ("edit", "expand", "upscale", "sketch"):
     init = b64file(job["init"], "init.png")
     if job.get("mask"): mask = b64file(job["mask"], "mask.png")
-if mode == "edit" and job.get("engine") != "flux":
+from engine import uses_klein
+KLEIN = uses_klein(job)  # same rule decides which models get_models.py downloads
+if KLEIN:
     # magic edit: FLUX.2 klein repaints a zoomed crop around the brushed area; only masked pixels change
     import magic_edit
     if os.environ.get("FORGE_DRY"): print(json.dumps(["magic_edit", "klein", int(job.get("side", 512))])); sys.exit(0)
+    if mode == "expand" and not prompt.strip(): prompt = "Continue the scene into the empty border areas so it reads as one picture"
     t0 = time.time(); ok, log = magic_edit.run(os.environ["SD"], env, init, mask, prompt, seed, str(png), side=int(job.get("side", 512)))
     mins = (time.time() - t0) / 60
     r = subprocess.CompletedProcess([], 0 if ok else 1, log, "")
@@ -49,9 +52,9 @@ elif mode == "sketch":
     cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--strength", f"{strength(0.7):.2f}"]
 else:
     cmd = base + flux + ["-p", prompt, "--steps", "4", "-W", str(W), "-H", str(H)]
-if os.environ.get("FORGE_DRY") and not (mode == "edit" and job.get("engine") != "flux"):  # tests: show the command, render nothing
+if os.environ.get("FORGE_DRY") and not KLEIN:  # tests: show the command, render nothing
     print(json.dumps(cmd)); sys.exit(0)
-if mode != "edit":
+if not KLEIN:  # Nov 19: this said mode != "edit", so FLUX-engine edits never ran (NameError on r)
     # one hung render must not hold the whole queue (Nov 19: a stuck take blocked every session's jobs for 90 min):
     # cap at 3x the expected time (min 25 min); a timeout becomes a failed take, the job still finishes
     base_min = {(768, 768): 15, (512, 512): 7, (1024, 1024): 27, (576, 1024): 16, (1024, 576): 16}.get((W, H), 15) * (1.4 if mode == "sketch" else 1)
@@ -91,6 +94,7 @@ else:
             if len(raw) < 690_000: break
     (out / f"{k}.b64").write_text(f"{kind}:" + base64.b64encode(raw).decode())
     (out / f"{k}.json").write_text(json.dumps({"minutes": round(mins, 1), "mode": mode, "w": Image.open(png).width, "h": Image.open(png).height, "seed": seed, "kind": kind}))
+if os.environ.get("FORGE_NO_GIT"): sys.exit(0)  # tests: render locally, skip the commit/push loop
 subprocess.run(["git", "add", str(out)])
 subprocess.run(["git", "commit", "-q", "-m", f"[skip ci] forge: {jid} #{k} ({mins:.1f} min)"])
 for i in range(6):

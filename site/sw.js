@@ -1,4 +1,4 @@
-const C='foxboard-ea3253600d', FILES=['./','index.html','manifest.webmanifest'];
+const C='foxboard-3481c455a6', FILES=['./','index.html','manifest.webmanifest'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{const r=e.request; if(r.method!=='GET') return;

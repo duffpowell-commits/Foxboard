@@ -15,16 +15,18 @@ def get(repo, f):
     return hf_hub_download(repo, f, local_dir="models")
 import json, pathlib, urllib.request
 out = {}
-mode = "new"
+mode, job = "new", {}
 if len(sys.argv) > 1:
-    try: mode = json.loads(pathlib.Path(f"forge/jobs/{sys.argv[1]}.json").read_text()).get("mode", "new")
+    try: job = json.loads(pathlib.Path(f"forge/jobs/{sys.argv[1]}.json").read_text()); mode = job.get("mode", "new")
     except Exception: pass
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from engine import uses_klein
 if mode == "upscale":
     dst = "models/RealESRGAN_x4plus_anime_6B.pth"
     urllib.request.urlretrieve("https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth", dst)
     with open("models.env", "w") as fh: fh.write(f"ESRGAN={dst}\n")
     print({"ESRGAN": dst}); sys.exit(0)
-if mode == "edit":
+if uses_klein(job):
     # FLUX.2 klein 4B (Apache-2.0): a real image-editing model; sees the picture and changes only what's asked
     out["KLEIN"] = get("leejet/FLUX.2-klein-4B-GGUF", "flux-2-klein-4b-Q8_0.gguf")
     out["QWEN"] = get("unsloth/Qwen3-4B-GGUF", "Qwen3-4B-Q4_K_M.gguf")
