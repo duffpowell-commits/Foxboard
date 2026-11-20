@@ -1,0 +1,12 @@
+{
+ "mode": "expand",
+ "prompt": "",
+ "n": 1,
+ "seed": 32,
+ "at": 1795133891085,
+ "engine": "klein",
+ "w": 448,
+ "h": 256,
+ "init": "forge/jobs/fb-real-expand3-20261120.init.b64",
+ "mask": "forge/jobs/fb-real-expand3-20261120.mask.b64"
+}
