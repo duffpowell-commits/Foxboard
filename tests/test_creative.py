@@ -176,6 +176,10 @@ async def main():
                 for(let i=0;i<d.length;i+=4){ if(d[i+3]>200){ solid++; if(d[i]>200&&d[i+2]>200&&d[i+1]<80) mag++; } }
                 return {mag, solid}; })()""" % json.dumps(thr))
             check('remove background: enclosed key-colour gaps cleared too (real sprite)', isinstance(r, dict) and g(r, 'mag') < 50 and (g(r, 'solid') or 0) > 20000, r)
+        r = await ev("""(async()=>{ try{ const c=document.createElement('canvas'); c.width=c.height=64; const x=c.getContext('2d'); x.fillStyle='#456'; x.fillRect(0,0,64,64);
+            const id=Foxboard.add('image',{src:c.toDataURL(),x:0,y:0,w:64,h:64}); await new Promise(r=>setTimeout(r,200));
+            const r=Foxboard.forgeFiles({mode:'expand',id,expand:'wide'}); return JSON.parse(r.files[Object.keys(r.files).find(k=>k.endsWith('.json'))]).engine; }catch(e){ return 'ERR '+e.message; } })()""")
+        check('AI expand renders with the klein edit model by default', r == 'klein', r)
         # image panel shows the new tools
         await ev("__fb.sel=Foxboard.list()[0].id; __fb.openProps()"); await pg.wait_for_timeout(250)
         body = await pg.inner_text('#shBody')

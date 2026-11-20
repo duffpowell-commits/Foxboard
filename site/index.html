@@ -2554,7 +2554,8 @@ function forgeBuild(opts){
   const sd=parseInt(opts.seed,10);
   const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:Number.isFinite(sd)&&sd>=0?sd:Math.floor(Math.random()*1e9),at:Date.now()};
   if(opts.tile) job.tile=true;
-  if(opts.engine==='flux'||opts.engine==='klein') job.engine=opts.engine; // flux: whole-area fill (New background); klein: edit model (expand option)
+  if(opts.engine==='flux'||opts.engine==='klein') job.engine=opts.engine; // flux: whole-area fill (New background); klein: edit model
+  else if(mode==='expand') job.engine='klein'; // Nov 20 real-art A/B: klein continued the stones; FLUX gave glassy edges (0.78) or a seam + new texture (0.9)
   const files={}; let box=opts.box||null, label=opts.label||opts.prompt||mode;
   if(mode==='new'){ job.w=opts.w||768; job.h=opts.h||768; job.key=opts.key||null; if(!job.prompt) throw new Error('Describe the picture'); }
   else {
