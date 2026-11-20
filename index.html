@@ -1055,6 +1055,7 @@ function openProps(focusText){
       b.append(row('Tile',h('button',{onclick:tryT(()=>makeTileable(o))},'🧩 Make seamless'),h('button',{onclick:tryT(()=>tilePreview(o))},'▦ Preview 3×3')));
       { const stc=h('input',{type:'color',value:'#ffffff','aria-label':'Outline color'});
         b.append(row('Sticker',h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?1:0.02,color:stc.value}))},'Thin outline'),h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?2:0.045,color:stc.value}))},'Thick outline'),stc)); }
+      b.append(row('ChatGPT pet',h('button',{class:'acc',onclick:tryT(()=>openPet(o))},'🐾 ChatGPT pet')));
       if(O().indexOf(o)>0) b.append(row('Compare',h('button',{onclick:tryT(()=>compareBelow(o))},'◐ Before / after with the layer below')));
       b.append(h('div',{class:'hint'},'Expand grows the picture and fills the new edges from it (instant, on the phone — best for skies, walls, ground). 🔥 AI expand / Upscale / Magic edit run on Forge (free, ~5–15 min, public).'));
       b.append(h('div',{class:'hint'},'Brush over a thing (or a watermark, a stray shadow), tap Erase: it disappears and the gap is filled from the picture around it. Runs on your phone, free, no waiting. Best on small or medium things (poles, stray marks, watermarks, a sprite\'s extra bits); a big person in a busy photo comes out smeared.'));
@@ -2638,6 +2639,8 @@ const API_DOC={
   boostPrompt:'boostPrompt(text) -> Promise<string>. Claude rewrites a short idea into a full FLUX prompt (style is added from the bible separately)',
   pixelate:'pixelate(id, {size:32, colors:"auto"|"game"|"keep", n:16, palette:[hex], outline:true, outlineColor}) -> turns an illustration into a crisp sprite',
   makeTileable:'makeTileable(id) -> edges wrap seamlessly (fills the seam from the picture)', tilePreview:'tilePreview(id, reps=3) -> PNG data URL of the image repeated reps×reps',
+  petSheet:'petSheet(id, {name}) -> PNG data URL: a cut-out turned into a ChatGPT/Codex pet sprite sheet (1536x1872, 8x9 cells of 192x208: idle, running-right, running-left, waving, jumping, failed, waiting, running, review)',
+  petFiles:'petFiles(id, {name, description}) -> {sheet (PNG data URL), sheetName, json (pet.json text)}: the files for a ChatGPT pet (web: Settings > Personalization > Pet > Upload pet; desktop: ~/.codex/pets/<id>/)',
   sticker:'sticker(id, {width, color}) -> outline around a cut-out. width: px for pixel art, else fraction of the image (0.03)',
   newBackground:'newBackground(id, {prompt, n}) -> Promise<jobId>. Forge paints a new scene behind a cut-out, subject kept exactly',
   compare:'compare(id) -> opens a before/after slider: the frame without vs with this layer',
@@ -2727,6 +2730,7 @@ const Foxboard={
   async boostPrompt(t){ return await boostPrompt(t); },
   pixelate(id,o){ pixelate(apiObj(id),o); return true; }, makeTileable(id){ makeTileable(apiObj(id)); return true; },
   tilePreview(id,r){ return tileCanvas(apiObj(id),r||3).toDataURL('image/png'); }, sticker(id,o){ sticker(apiObj(id),o); return true; },
+  petSheet(id,o){ return petSheet(apiObj(id)).toDataURL('image/png'); }, petFiles(id,o){ return petFiles(apiObj(id),o||{}); },
   async newBackground(id,o){ return await newBackground(apiObj(id),o); }, compare(id){ return compareBelow(apiObj(id)); },
   forgeFiles(opts){ const B=forgeBuild(opts||{}); return {jid:B.jid,files:B.files,local:B.local}; },
   forgeTrack(local){ forgeJobs.unshift(local); forgeSaveLocal(); return true; },
@@ -2811,6 +2815,69 @@ function sticker(o,opt){
   if(crisp){ const id=g.getImageData(0,0,c.width,c.height); for(let i=3;i<id.data.length;i+=4) id.data[i]=id.data[i]>127?255:0; g.putImageData(id,0,0); }
   g.drawImage(D.c,p,p);
   const ux=o.w/W, uy=o.h/H; setImgSrc(o,c,{x:o.x-p*ux,y:o.y-p*uy,w:o.w+2*p*ux,h:o.h+2*p*uy}); toast('Sticker outline added');
+}
+/* ---------- ChatGPT pet export (Nov 20): a cut-out becomes a ChatGPT / Codex pet sprite sheet ----------
+   Contract (OpenAI hatch-pet): 1536x1872, transparent, 8 cols x 9 rows of 192x208 cells, one animation per row with
+   a fixed number of leading frames; unused cells stay empty. The pet is drawn once and posed per frame (squash,
+   hop, lean, mirror, grey), so any drawing animates without redrawing it. */
+const PET_ROWS=[['idle',6],['running-right',8],['running-left',8],['waving',4],['jumping',5],['failed',8],['waiting',6],['running',6],['review',6]];
+const PET_CW=192, PET_CH=208, PET_BASE=196, PET_MAXW=150, PET_MAXH=150;
+function petSource(o){
+  if(o.crop&&(o.crop.l||o.crop.r||o.crop.t||o.crop.b)) throw new Error('Reset the crop first');
+  const D=imageData(o), W=D.W, H=D.H, d=D.id.data; let clear=0, x0=W, y0=H, x1=-1, y1=-1;
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const a=d[(y*W+x)*4+3]; if(a<200) clear++; if(a>40){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } }
+  if(clear<W*H*0.02||x1<0) throw new Error('Cut it out first (✂ Remove background), then make it a pet');
+  const w=x1-x0+1, h=y1-y0+1, c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(D.c,-x0,-y0);
+  const gc=document.createElement('canvas'); gc.width=w; gc.height=h; const gg=gc.getContext('2d'); gg.drawImage(c,0,0); const gi=gg.getImageData(0,0,w,h);
+  for(let i=0;i<gi.data.length;i+=4){ const l=(gi.data[i]*0.3+gi.data[i+1]*0.59+gi.data[i+2]*0.11)*0.8; gi.data[i]=l; gi.data[i+1]=l; gi.data[i+2]=Math.min(255,l+12); }
+  gg.putImageData(gi,0,0);
+  return {c, gray:gc, w, h, crisp:!!(doc.pixel||o.px)};
+}
+function petPose(name,i,n){
+  const t=i/n, s2=Math.sin(2*Math.PI*t), P={dx:0,dy:0,rot:0,sx:1,sy:1,flip:false,gray:false};
+  if(name==='idle'){ P.sy=1+0.035*s2; P.sx=1-0.02*s2; }
+  else if(name==='running-right'||name==='running-left'){ const hop=Math.abs(s2), land=1-hop, left=name==='running-left';
+    P.dy=-10*hop; P.sy=1-0.07*land; P.sx=1+0.06*land; P.flip=left; P.rot=left?-0.07:0.07; }
+  else if(name==='waving'){ P.rot=0.11*s2; P.dy=-3*Math.abs(s2); }
+  else if(name==='jumping'){ P.dy=[0,-10,-24,-12,0][i]; P.sy=[0.86,1.1,1.03,1.06,0.9][i]; P.sx=[1.1,0.92,0.98,0.95,1.08][i]; }
+  else if(name==='failed'){ P.gray=true; P.rot=0.1; P.sy=0.93+0.02*s2; P.sx=1.03; P.dx=i%2?1.5:-1.5; }
+  else if(name==='waiting'){ P.rot=0.05*s2; P.dy=-2*(1+s2); }
+  else if(name==='running'){ const q=Math.sin(4*Math.PI*t); P.dy=-6*Math.abs(q); P.dx=2*q; P.sy=1+0.03*Math.cos(4*Math.PI*t); }
+  else if(name==='review'){ P.rot=0.06; P.sx=P.sy=1+0.05*(1-Math.cos(2*Math.PI*t))/2; }
+  return P;
+}
+function petDraw(g,S,pose,ox,oy){
+  let k=Math.min(PET_MAXW/S.w,PET_MAXH/S.h); if(S.crisp&&k>=1) k=Math.floor(k);
+  g.save(); g.beginPath(); g.rect(ox,oy,PET_CW,PET_CH); g.clip(); g.imageSmoothingEnabled=!S.crisp;
+  g.translate(ox+PET_CW/2+pose.dx,oy+PET_BASE+pose.dy); g.rotate(pose.rot); g.scale(pose.sx*k*(pose.flip?-1:1),pose.sy*k);
+  g.drawImage(pose.gray?S.gray:S.c,-S.w/2,-S.h); g.restore();
+}
+function petSheet(o){
+  const S=petSource(o), c=document.createElement('canvas'); c.width=PET_CW*8; c.height=PET_CH*PET_ROWS.length; const g=c.getContext('2d');
+  PET_ROWS.forEach(([name,n],r)=>{ for(let i=0;i<n;i++) petDraw(g,S,petPose(name,i,n),i*PET_CW,r*PET_CH); });
+  // nothing may sit on a cell's top or bottom line (the app slices the atlas by CSS background positions)
+  const id=g.getImageData(0,0,c.width,c.height); for(let r=0;r<PET_ROWS.length;r++) for(const y of [r*PET_CH,r*PET_CH+PET_CH-1]) for(let x=0;x<c.width;x++) id.data[(y*c.width+x)*4+3]=0;
+  g.putImageData(id,0,0); return c;
+}
+function petId(name){ return String(name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'my-pet'; }
+function petFiles(o,opt){ opt=opt||{}; const name=String(opt.name||doc.name||'My pet').slice(0,40), sheetName='spritesheet.png';
+  const json=JSON.stringify({id:petId(name),displayName:name,description:String(opt.description||('A '+name+' drawn in Foxboard.')).slice(0,140),spritesheetPath:sheetName},null,2);
+  return {sheet:petSheet(o).toDataURL('image/png'),sheetName,json}; }
+let petTimer=null;
+function openPet(o){
+  const sheet=petSheet(o); // throws a plain message if it isn't a cut-out
+  openSheet('🐾 ChatGPT pet','pet',b=>{
+    const nm=h('input',{type:'text',value:(doc.name&&doc.name!=='Untitled')?doc.name:'My pet',maxlength:40,'aria-label':'Pet name'});
+    const pv=h('canvas',{class:'petPrev',width:PET_CW,height:PET_CH}); pv.style.cssText='width:192px;max-width:100%;height:auto;border-radius:10px;background:repeating-conic-gradient(#2a2638 0 25%,#1f1c29 0 50%) 0 0/16px 16px;display:block;margin:6px auto';
+    let st=0, f=0; const chips=h('div',{class:'chips'}); const cb=PET_ROWS.map(([name],r)=>{ const bt=h('button',{class:r===0?'on':''},name); bt.onclick=()=>{ st=r; f=0; cb.forEach(x=>x.classList.toggle('on',x===bt)); }; chips.append(bt); return bt; });
+    const pg=pv.getContext('2d'); if(petTimer) clearInterval(petTimer);
+    petTimer=setInterval(()=>{ if(curSheet!=='pet'||!pv.isConnected){ clearInterval(petTimer); petTimer=null; return; } const n=PET_ROWS[st][1];
+      pg.clearRect(0,0,PET_CW,PET_CH); pg.drawImage(sheet,(f%n)*PET_CW,st*PET_CH,PET_CW,PET_CH,0,0,PET_CW,PET_CH); f++; },1000/7);
+    const save=async(json)=>{ const F=petFiles(o,{name:nm.value}); if(json) await deliver(new Blob([F.json],{type:'application/json'}),'pet.json');
+      else await deliver(await new Promise(r=>sheet.toBlob(r,'image/png')),F.sheetName); };
+    b.append(pv,chips,row('Name',nm),row('',h('button',{class:'acc',onclick:()=>save(false)},'⬇ Save sprite sheet'),h('button',{onclick:()=>save(true)},'⬇ pet.json')));
+    b.append(h('div',{class:'hint'},'ChatGPT on the web, if Pets is turned on for your account: Settings › Personalization › Pet › Upload pet, pick the sprite sheet. The web pet shows in supported chats only. It changes how ChatGPT looks, not what it says. Desktop app: put the sprite sheet and pet.json in a folder ~/.codex/pets/<name>/. Works best on a cut-out drawn facing right.'));
+  });
 }
 function bgMask(o){ const D=imageData(o); const m=document.createElement('canvas'); m.width=D.W; m.height=D.H; const g=m.getContext('2d'); const id=g.createImageData(D.W,D.H); let n=0;
   for(let i=0;i<id.data.length;i+=4){ const bg=D.id.data[i+3]<200; if(bg) n++; id.data[i]=id.data[i+1]=id.data[i+2]=bg?255:0; id.data[i+3]=255; }
