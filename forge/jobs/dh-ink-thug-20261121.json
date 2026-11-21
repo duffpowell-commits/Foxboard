@@ -1,0 +1,13 @@
+{
+ "prompt": "STYLE / GAME: ink and blood on real-time 3D. 2D comic-ink concept art, not an in-game sprite. Thick confident black outlines, 2-3 hard light bands, flat colour, large solid-black shadow shapes, no PBR shine, no fine noise.\n\nSUBJECT: a lesser demon thug, not a boss, not the hunter hero. Lean, slightly hunched, ashen-grey skin, two short black horns, pointed ears, short cropped black hair, a snarling mouth with yellowed teeth, no mask. Scuffed black leather jacket over a torn dark t-shirt, dark charcoal jeans, heavy scuffed boots. His right hand holds a length of heavy steel chain; his left hand is empty (no weapon, no coin, no cards). No glowing orange veins on the forearms.\n\nVIEW: full body, three-quarter view, feet at the bottom edge, body and face turned a little toward the left of the frame.\n\nCANVAS: whole figure in frame with margin all round. Nothing important touching an edge.\n\nPALETTE: ink black #0D0C0C, charcoal #2B2A2E, bone white #EEEAE0, blood red #B01818 only on small cuts or a jacket stain. Demon orange #FF6A1A only as a thin rim or horn-tip accent, not on the skin.\n\nLIGHT: key from upper left, 2-3 hard toon light bands, large solid-black shadow shapes.\n\nBACKGROUND: plain flat solid #0D0C0C, no scenery, no alley walls, no floor, no floor shadow, no text, no border.\n\nAVOID: named IP, photorealism, PBR, soft gradients, fine noise, readable text, logos, a white choir robe, Gus's red suit and coin, Rook's iron mask, Vesper's candle halo, extra horns, no alley.",
+ "n": 4,
+ "w": 512,
+ "h": 768,
+ "mode": "new",
+ "seed": 21112026,
+ "key": null,
+ "at": 1795284487555,
+ "ref": "forge/jobs/dh-ink-thug-20261121.ref.b64",
+ "ref_strength": 0.55,
+ "workaround": "style_board"
+}
