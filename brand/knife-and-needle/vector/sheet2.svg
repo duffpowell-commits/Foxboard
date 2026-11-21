@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1080" height="2100" viewBox="0 0 1080 2100">
+<defs>
+<g id="tfox">
+ <path d="M140,215 L178,120 L222,150 L262,72 L300,118 L342,62 L382,140 L424,112 L462,205 L430,250 L170,250 Z" fill="#35507e" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M178,120 L215,215 M262,72 L262,200 M342,62 L330,200 M382,140 L388,215 M222,150 L262,200 M300,118 L330,200" stroke="#7f9fd0" stroke-width="4" opacity=".8"/>
+ <path d="M168,262 L146,120 L268,196 Z" fill="#b8562c" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M176,236 L164,148 L238,196 Z" fill="#1d1512"/>
+ <path d="M432,262 L454,120 L332,196 Z" fill="#b8562c" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M424,236 L436,148 L362,196 Z" fill="#1d1512"/>
+ <path d="M158,262 Q166,188 300,180 Q434,188 442,262 Q446,330 402,382 L332,500 Q300,524 268,500 L198,382 Q154,330 158,262 Z" fill="#c2602f" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M398,236 Q450,282 416,370 L386,412 Q408,330 398,236 Z" fill="#35507e" opacity=".85"/>
+ <path d="M204,356 Q300,392 396,356 L332,500 Q300,524 268,500 Z" fill="#efe2c8" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ 
+ <path d="M300.0,188.0 L309.6,198.5 L323.5,195.6 L325.1,209.8 L338.0,215.6 L331.0,228.0 L338.0,240.4 L325.1,246.2 L323.5,260.4 L309.6,257.5 L300.0,268.0 L290.4,257.5 L276.5,260.4 L274.9,246.2 L262.0,240.4 L269.0,228.0 L262.0,215.6 L274.9,209.8 L276.5,195.6 L290.4,198.5Z" fill="#4a6fa8" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M272,228 Q300,206 328,228 Q300,250 272,228 Z" fill="#cfe0ff" stroke="#0d0d10" stroke-width="4"/>
+ <circle cx="300" cy="228" r="8" fill="#0d0d10"/><circle cx="303" cy="225" r="2.5" fill="#fff"/>
+ <path d="M206,292 Q240,262 282,294 Q242,312 206,292 Z" fill="#f0a040" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ <ellipse cx="246" cy="292" rx="4.5" ry="12" fill="#0d0d10"/>
+ <path d="M394,292 Q360,262 318,294 Q358,312 394,292 Z" fill="#f0a040" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ <ellipse cx="354" cy="292" rx="4.5" ry="12" fill="#0d0d10"/>
+ <path d="M200,282 L192,272 M400,282 L408,272" stroke="#0d0d10" stroke-width="5" stroke-linecap="round"/>
+ <path d="M282,398 Q300,388 318,398 Q312,416 300,420 Q288,416 282,398 Z" fill="#0d0d10"/>
+ <path d="M222,416 Q300,438 378,416 Q358,474 300,486 Q242,474 222,416 Z" fill="#2a0d0d" stroke="#0d0d10" stroke-width="6" stroke-linejoin="round"/>
+ <path d="M226.0,414.0 L233.4,430.6 L240.8,416.2 Z M240.8,416.2 L248.2,434.9 L255.6,417.8 Z M255.6,417.8 L263.0,438.6 L270.4,419.0 Z M270.4,419.0 L277.8,441.9 L285.2,419.8 Z M285.2,419.8 L292.6,444.8 L300.0,420.0 Z M300.0,420.0 L307.4,444.8 L314.8,419.8 Z M314.8,419.8 L322.2,441.9 L329.6,419.0 Z M329.6,419.0 L337.0,438.6 L344.4,417.8 Z M344.4,417.8 L351.8,434.9 L359.2,416.2 Z M359.2,416.2 L366.6,430.6 L374.0,414.0 Z " fill="#f3ead8" stroke="#0d0d10" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M244.0,450.0 L252.0,445.7 L260.0,464.7 Z M260.0,464.7 L268.0,455.3 L276.0,474.5 Z M276.0,474.5 L284.0,460.1 L292.0,479.4 Z M292.0,479.4 L300.0,460.0 L308.0,479.4 Z M308.0,479.4 L316.0,460.1 L324.0,474.5 Z M324.0,474.5 L332.0,455.3 L340.0,464.7 Z M340.0,464.7 L348.0,445.7 L356.0,450.0 Z " fill="#f3ead8" stroke="#0d0d10" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M220,420 L140,398 M222,432 L132,436 M226,444 L144,470 M380,420 L460,398 M378,432 L468,436 M374,444 L456,470" stroke="#efe2c8" stroke-width="3" stroke-linecap="round"/>
+</g><radialGradient id="glow" cx="50%" cy="0%" r="90%"><stop offset="0" stop-color="#f0a040" stop-opacity=".75"/><stop offset="1" stop-color="#f0a040" stop-opacity="0"/></radialGradient></defs>
+<rect width="1080" height="680" fill="#efe4cf"/>
+<rect x="24" y="24" width="1032" height="632" fill="none" stroke="#111" stroke-width="6"/>
+<circle cx="540" cy="225" r="168" fill="#141420" stroke="#111" stroke-width="8"/>
+<circle cx="540" cy="225" r="152" fill="none" stroke="#efe4cf" stroke-width="4" stroke-dasharray="2 14" stroke-linecap="round"/>
+<g transform="translate(540 258) scale(0.66) translate(-300 -295)"><use xlink:href="#tfox"/></g>
+<path d="M760 120 L736 195 L760 195 L738 272 L800 175 L772 175 L792 120 Z" fill="#f0b429" stroke="#111" stroke-width="6" stroke-linejoin="round"/>
+<text x="540" y="545" text-anchor="middle" font-family="Anton" font-size="132" fill="#151515" letter-spacing="6">FLASH FOX</text>
+<text x="540" y="610" text-anchor="middle" font-family="Cardo" font-style="italic" font-size="48" fill="#c2402a">red coat, black ink</text>
+<g transform="translate(0,710)">
+<rect width="1080" height="680" fill="#17171a"/>
+<rect x="24" y="24" width="1032" height="632" fill="none" stroke="#ece6da" stroke-width="4"/>
+<g transform="rotate(-32 540 230)">
+ <rect x="250" y="212" width="135" height="38" rx="8" fill="#111" stroke="#ece6da" stroke-width="5"/>
+ <circle cx="290" cy="231" r="5" fill="#ece6da"/><circle cx="350" cy="231" r="5" fill="#ece6da"/>
+ <path d="M385 210 L760 210 Q840 218 840 252 L385 252 Z" fill="#d9d6cf" stroke="#ece6da" stroke-width="4"/>
+</g>
+<g transform="rotate(32 540 230)">
+ <rect x="245" y="216" width="230" height="30" rx="6" fill="#c2402a" stroke="#ece6da" stroke-width="5"/>
+ <rect x="475" y="212" width="105" height="38" rx="4" fill="#6f6f74" stroke="#ece6da" stroke-width="5"/>
+ <path d="M680 216 L760 227 L760 235 L680 246 Z" fill="#d9d6cf" stroke="#ece6da" stroke-width="4"/>
+ <path d="M760 231 L840 231" stroke="#ece6da" stroke-width="4"/>
+</g>
+<g transform="translate(540 235) scale(0.62) translate(-300 -295)"><use xlink:href="#tfox"/></g>
+<path d="M190 430 L890 430 L860 470 L890 510 L190 510 L220 470 Z" fill="#c2402a" stroke="#ece6da" stroke-width="5" stroke-linejoin="round"/>
+<text x="540" y="494" text-anchor="middle" font-family="Archivo Black" font-size="64" fill="#ece6da" letter-spacing="3">KNIFE &amp; NEEDLE</text>
+<text x="540" y="590" text-anchor="middle" font-family="Cardo" font-style="italic" font-size="40" fill="#e0a070">we only hurt the ones we love</text>
+</g>
+<g transform="translate(0,1420)">
+<rect width="1080" height="680" fill="#0f1626"/>
+<rect x="24" y="24" width="1032" height="632" fill="none" stroke="#f0a040" stroke-width="4"/>
+<rect x="300" y="70" width="480" height="320" fill="#141e33" stroke="#9aa3ad" stroke-width="6"/>
+<path d="M415 80 L370 360 L470 360 L445 80 Z M635 80 L610 360 L710 360 L665 80 Z" fill="url(#glow)"/>
+<path d="M400 60 L460 60 L450 84 L410 84 Z M620 60 L680 60 L670 84 L630 84 Z" fill="#2a2f3a" stroke="#9aa3ad" stroke-width="4"/>
+<path d="M300 100 L780 100" stroke="#9aa3ad" stroke-width="6"/>
+<path d="M700 100 L744 100 L746 172 L736 166 L726 172 L716 166 L706 172 L698 166 Z" fill="#f3efe6" stroke="#111" stroke-width="2"/>
+<g transform="translate(540 250) scale(0.5) translate(-300 -295)"><use xlink:href="#tfox"/></g>
+<path d="M270 392 L810 392" stroke="#c9d0d8" stroke-width="12" stroke-linecap="round"/>
+<text x="540" y="530" text-anchor="middle" font-family="Anton" font-size="128" fill="#f0a040" letter-spacing="10">AFTER CLOSE</text>
+<text x="540" y="598" text-anchor="middle" font-family="Cardo" font-style="italic" font-size="44" fill="#dae0e5">made after the last ticket</text>
+</g></svg>

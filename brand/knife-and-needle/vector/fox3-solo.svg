@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="600" height="640" viewBox="0 0 600 640"><rect width="600" height="640" fill="#17171a"/><defs><g id="tfox">
+ <path d="M128,250 L160,170 L198,188 L232,110 L268,150 L300,78 L334,140 L372,96 L404,180 L440,160 L474,250 Z" fill="#2f4877" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M160,170 L205,250 M232,110 L250,250 M300,78 L290,200 M372,96 L350,240 M404,180 L395,250 M198,188 L250,230 M268,150 L300,200 M334,140 L300,200" stroke="#86a6d8" stroke-width="3.5" opacity=".75"/>
+ <path d="M196,262 Q148,180 150,86 Q226,118 272,196 Z" fill="#b5532a" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M200,240 Q166,178 166,112 Q216,138 252,196 Z" fill="#1b1310"/>
+ <path d="M172,150 l15.6,-13.1 M181,158 l22.0,-12.1 M190,166 l23.0,-9.5 M199,174 l16.3,-11.5 M208,182 l21.0,-13.8 M217,190 l16.1,-5.6 M226,198 l14.2,-11.0 M235,206 l16.7,-12.3 " stroke="#efe2c8" stroke-width="2.2" stroke-linecap="round" opacity="0.5"/>
+ <path d="M404,262 Q452,180 450,86 Q374,118 328,196 Z" fill="#b5532a" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M400,240 Q434,178 434,112 Q384,138 348,196 Z" fill="#1b1310"/>
+ <path d="M194,250 Q228,192 300,186 Q372,192 406,250 Q430,295 446,350 L420,352 L438,378 L404,382 L416,410 L382,408 Q366,450 352,470 L248,470 Q234,450 218,408 L184,410 L196,382 L162,378 L180,352 L154,350 Q170,295 194,250 Z" fill="#c2602f" stroke="#0d0d10" stroke-width="7" stroke-linejoin="round"/>
+ <path d="M396,250 Q440,300 438,352 L418,354 L432,378 L402,382 L410,404 L384,402 Q400,330 396,250 Z" fill="#2f4877" opacity=".85"/>
+ <path d="M235,245 l0.5,-13.3 M337,241 l-3.0,-14.2 M353,229 l-0.9,-15.7 M327,242 l3.2,-16.4 M311,236 l0.1,-16.1 M348,258 l0.9,-11.6 M296,245 l2.9,-17.2 M238,247 l2.7,-17.4 M321,260 l-0.6,-14.4 M345,228 l-2.7,-16.1 M284,245 l-2.1,-11.5 M233,236 l-1.5,-12.4 M254,220 l-0.8,-11.6 M238,250 l-2.6,-12.1 M248,226 l-2.3,-13.9 M285,254 l-3.6,-17.8 " stroke="#0d0d10" stroke-width="2.2" stroke-linecap="round" opacity="0.35"/>
+ <path d="M198,342 l-14.3,-6.0 M211,336 l-17.0,-4.2 M206,359 l-14.6,-4.4 M187,371 l-21.1,-11.4 M186,365 l-17.8,-6.2 M188,337 l-14.8,-2.6 M202,396 l-16.0,-4.7 M190,348 l-13.8,-7.3 M210,406 l-23.2,-3.5 M208,362 l-14.5,-5.5 M224,334 l-13.3,-5.1 M219,353 l-22.3,-8.4 M191,339 l-18.4,-10.1 M197,395 l-17.1,-4.4 " stroke="#0d0d10" stroke-width="2.4" stroke-linecap="round" opacity="0.45"/>
+ <path d="M382,377 l19.2,-10.2 M401,360 l20.6,-7.2 M397,335 l14.8,-6.6 M377,346 l23.3,-5.2 M402,364 l21.6,-4.4 M388,377 l20.9,-4.6 M393,354 l17.2,-8.6 M407,386 l13.1,-5.7 M385,376 l14.3,-8.7 M396,400 l18.8,-9.1 M404,353 l18.2,-2.9 M414,339 l23.6,-3.9 M392,391 l17.4,-2.8 M381,369 l14.5,-7.3 " stroke="#c9d6f0" stroke-width="2.4" stroke-linecap="round" opacity="0.35"/>
+ <path d="M262,300 Q300,292 338,300 L322,440 Q300,452 278,440 Z" fill="#a84d24" opacity=".55"/>
+ <path d="M288,330 L292,430 M312,330 L308,430" stroke="#0d0d10" stroke-width="2.5" opacity=".4"/>
+ <path d="M218,408 Q240,392 270,404 L278,440 Q300,452 322,440 L330,404 Q360,392 382,408 Q366,450 352,470 L248,470 Q234,450 218,408 Z" fill="#efe2c8" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M232,412 l-5.0,11.8 M239,420 l-10.0,15.4 M246,428 l-9.3,11.8 M253,412 l-9.8,14.6 M260,420 l-5.6,15.5 M267,428 l-11.2,13.4 " stroke="#0d0d10" stroke-width="2" stroke-linecap="round" opacity="0.4"/><path d="M330,412 l6.1,13.7 M337,420 l10.7,13.9 M344,428 l9.9,14.6 M351,412 l4.6,13.6 M358,420 l10.1,15.9 M365,428 l5.2,11.4 " stroke="#0d0d10" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+ <path d="M300.0,214.0 L308.0,223.3 L320.0,220.5 L321.0,232.7 L332.3,237.5 L326.0,248.0 L332.3,258.5 L321.0,263.3 L320.0,275.5 L308.0,272.7 L300.0,282.0 L292.0,272.7 L280.0,275.5 L279.0,263.3 L267.7,258.5 L274.0,248.0 L267.7,237.5 L279.0,232.7 L280.0,220.5 L292.0,223.3Z" fill="#4a6fa8" stroke="#0d0d10" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M276,248 Q300,230 324,248 Q300,266 276,248 Z" fill="#cfe0ff" stroke="#0d0d10" stroke-width="3.5"/>
+ <circle cx="300" cy="248" r="7" fill="#0d0d10"/><circle cx="302.5" cy="245.5" r="2.2" fill="#fff"/>
+ <path d="M214,318 Q244,292 282,322 Q246,338 214,318 Z" fill="#f0a040" stroke="#0d0d10" stroke-width="5.5" stroke-linejoin="round"/>
+ <ellipse cx="250" cy="320" rx="4" ry="11" fill="#0d0d10"/>
+ <path d="M282,322 Q284,350 272,372" stroke="#0d0d10" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M386,318 Q356,292 318,322 Q354,338 386,318 Z" fill="#f0a040" stroke="#0d0d10" stroke-width="5.5" stroke-linejoin="round"/>
+ <ellipse cx="350" cy="320" rx="4" ry="11" fill="#0d0d10"/>
+ <path d="M318,322 Q316,350 328,372" stroke="#0d0d10" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M206,312 Q196,300 192,292 M394,312 Q404,300 408,292" stroke="#0d0d10" stroke-width="5" stroke-linecap="round" fill="none"/>
+ <path d="M282,426 Q300,416 318,426 Q314,446 300,450 Q286,446 282,426 Z" fill="#0d0d10"/>
+ <path d="M222,444 Q232,560 300,602 Q368,560 378,444 Z" fill="#efe2c8" stroke="#0d0d10" stroke-width="6" stroke-linejoin="round"/>
+ <path d="M228,452 Q300,472 372,452 Q358,540 300,566 Q242,540 228,452 Z" fill="#2a0b0b" stroke="#0d0d10" stroke-width="6" stroke-linejoin="round"/>
+ <path d="M234.0,458.72 Q240.7,471.7 246.4,484.7 Q249.0,471.7 254.0,458.72 Z M255.0,456.08 Q262.3,476.1 268.6,496.1 Q271.5,476.1 277.0,456.08 Z M281.0,453.2 Q287.0,468.2 292.2,483.2 Q294.5,468.2 299.0,453.2 Z M301.0,453.2 Q307.0,468.2 312.2,483.2 Q314.5,468.2 319.0,453.2 Z M323.0,456.08 Q330.3,476.1 336.6,496.1 Q339.5,476.1 345.0,456.08 Z M346.0,458.72 Q352.7,471.7 358.4,484.7 Q361.0,471.7 366.0,458.72 Z " fill="#f3ead8" stroke="#0d0d10" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M247.0,537.0 Q253.0,526.0 258.2,515.0 Q260.5,526.0 265.0,537.0 Z M271.0,543.0 Q277.0,528.0 282.2,513.0 Q284.5,528.0 289.0,543.0 Z M292.0,548.0 Q297.3,537.0 301.9,526.0 Q304.0,537.0 308.0,548.0 Z M311.0,543.0 Q317.0,528.0 322.2,513.0 Q324.5,528.0 329.0,543.0 Z M335.0,537.0 Q341.0,526.0 346.2,515.0 Q348.5,526.0 353.0,537.0 Z " fill="#f3ead8" stroke="#0d0d10" stroke-width="2.5" stroke-linejoin="round"/>
+ <path d="M236,446 L150,420 M236,456 L142,462 M240,466 L160,500 M364,446 L450,420 M364,456 L458,462 M360,466 L440,500" stroke="#efe2c8" stroke-width="2.6" stroke-linecap="round"/>
+</g></defs><use xlink:href="#tfox"/></svg>
