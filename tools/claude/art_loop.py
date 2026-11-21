@@ -3,7 +3,10 @@
 
 Used by the art-loop skill (render -> judge -> reroll -> deliver). Run from a Foxboard clone.
 
-  python3 tools/claude/art_loop.py queue  --id lm-x-20261119 --prompt-file p.txt [--n 4 --w 512 --h 512 --seed N --key '#00FF00' --kind sprite]
+  python3 tools/claude/art_loop.py queue  --id lm-x-20261119 --prompt-file p.txt [--n 2 --w 512 --h 512 --seed N --key '#00FF00']
+       [--mode new|sketch|edit --init a.png --mask m.png --ref style.png --ref-strength 0.55 --strength 0.7 --tile]
+       Sizes must be 256-1024 and a multiple of 64. Job files are committed and published to Foxboard main (job-only).
+       Pass --no-publish to write the files without git (tests / a dry run).
   python3 tools/claude/art_loop.py status lm-x-20261119 [more ids]
   python3 tools/claude/art_loop.py score  lm-x-20261119 --game lethemoor --kind sprite|texture|scene|hud [--aspect 0.37]
   python3 tools/claude/art_loop.py cut    lm-x-20261119/1 out.png [--height 640] [--key '#00FF00']
@@ -14,8 +17,19 @@ The numbers are a pre-filter only; Claude still looks at the sheet before pickin
 import argparse, json, os, re, subprocess, sys, time, random
 from PIL import Image, ImageDraw
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-JOBS, RESULTS, OUT = (os.path.join(ROOT, "forge", d) for d in ("jobs", "results", "out"))
+def repo_root():
+    return os.path.abspath(os.environ.get("FOXBOARD_ROOT") or os.path.join(os.path.dirname(__file__), "..", ".."))
+
+
+ROOT = repo_root()
+
+
+def dirs():
+    root = repo_root()
+    return root, *(os.path.join(root, "forge", d) for d in ("jobs", "results", "out"))
+
+
+JOBS, RESULTS, OUT = dirs()[1:]
 ID_RE = re.compile(r"^[A-Za-z0-9_-]{4,64}$")
 
 # Per-game locks. Palette + key colour mirror DEFAULT_BIBLE in index.html; keep them in step.
@@ -28,8 +42,8 @@ GAMES = {
 }
 
 
-def sh(*cmd, check=True):
-    r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+def sh(*cmd, check=True, cwd=None):
+    r = subprocess.run(cmd, cwd=cwd or repo_root(), capture_output=True, text=True)
     if check and r.returncode:
         sys.exit(f"failed: {' '.join(cmd)}\n{r.stdout}{r.stderr}")
     return r.stdout.strip()
@@ -40,37 +54,183 @@ def hexrgb(h):
 
 
 # ---------- queue ----------
-def cmd_queue(a):
+
+def encode_image(src):
+    """Read a png/jpg (or an existing png:/jpg: b64 text file) and return 'png:' + base64."""
+    import base64, io
+    head = open(src, "rb").read(8)
+    # already a Forge b64 text file
+    if head.lstrip()[:4] in (b"png:", b"jpg:") or head.lstrip().startswith(b"jpeg:"):
+        return open(src, "r").read().strip()
+    im = Image.open(src).convert("RGBA")
+    buf = io.BytesIO(); im.save(buf, "PNG")
+    return "png:" + base64.b64encode(buf.getvalue()).decode()
+
+
+def check_size(name, v):
+    if v < 256 or v > 1024:
+        sys.exit(f"{name} must be between 256 and 1024 inclusive (got {v})")
+    if v % 64:
+        rec = max(256, min(1024, round(v / 64) * 64))
+        sys.exit(f"{name} must be a multiple of 64 (got {v}). Closest valid size: {rec}")
+
+
+def check_strength(name, v, lo, hi):
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        sys.exit(f"{name} must be a number between {lo} and {hi} (got {v!r})")
+    if not (lo <= f <= hi):
+        sys.exit(f"{name} must be between {lo} and {hi} (got {v})")
+    return f
+
+
+def write_job_files(a):
+    """Build the job JSON and any init/mask/ref b64 files. Returns (job, written paths)."""
+    root, jobs, results, _out = dirs()
     if not ID_RE.match(a.id):
         sys.exit("bad id: 4-64 chars of A-Z a-z 0-9 _ -")
     prompt = open(a.prompt_file).read().strip()
     if len(prompt) > 1500:
         sys.exit(f"prompt is {len(prompt)} chars, max 1500")
-    if a.n < 1 or a.n > 4 or a.w % 64 or a.h % 64 or not (256 <= a.w <= 1024 and 256 <= a.h <= 1024):
-        sys.exit("n 1-4, sizes multiples of 64 between 256 and 1024")
-    if os.path.exists(os.path.join(JOBS, a.id + ".json")) or os.path.isdir(os.path.join(RESULTS, a.id)):
+    if a.n < 1 or a.n > 4:
+        sys.exit(f"n must be between 1 and 4 (got {a.n})")
+    check_size("w", a.w)
+    check_size("h", a.h)
+    if os.path.exists(os.path.join(jobs, a.id + ".json")) or os.path.isdir(os.path.join(results, a.id)):
         sys.exit(f"{a.id} already used: pick a new id (e.g. add -b, -c)")
+    mode = (a.mode or "new").strip().lower()
+    if mode not in ("new", "sketch", "edit", "expand", "upscale"):
+        sys.exit("mode must be new, sketch, edit, expand or upscale")
     key = None if a.key in (None, "", "null", "none") else a.key
-    job = {"prompt": prompt, "n": a.n, "w": a.w, "h": a.h,
+    job = {"prompt": prompt, "n": a.n, "w": a.w, "h": a.h, "mode": mode,
            "seed": a.seed if a.seed is not None else random.randint(1, 2**31 - 1),
            "key": key, "at": int(time.time() * 1000)}
-    sh("git", "pull", "--rebase", "-q")
-    os.makedirs(JOBS, exist_ok=True)
-    with open(os.path.join(JOBS, a.id + ".json"), "w") as f:
+    warnings = []
+    if a.init and mode == "new" and not a.ref:
+        # Why: render_one used to ignore init on mode new. Don't write a lying job.
+        job["mode"] = "sketch"
+        mode = "sketch"
+        warnings.append("init was set on mode new; switched to sketch so the picture is actually used")
+    if a.tile:
+        if mode in ("edit",) and getattr(a, "engine", None) != "flux":
+            warnings.append("tile only affects the FLUX path (new/sketch/flux edit), not klein edits")
+        job["tile"] = True
+    if a.strength is not None:
+        job["strength"] = check_strength("strength", a.strength, 0.3, 0.95)
+    if a.init and a.ref:
+        sys.exit("cannot set both --init (start from this picture) and --ref (style board). FLUX.1-schnell has no separate style-reference encoder.")
+    if a.ref and mode != "new":
+        sys.exit("--ref is only valid with --mode new")
+    os.makedirs(jobs, exist_ok=True)
+    written = []
+
+    def add_b64(flag, field, ext):
+        src = getattr(a, flag)
+        if not src:
+            return
+        if not os.path.exists(src):
+            sys.exit(f"--{flag} file not found: {src}")
+        rel = f"forge/jobs/{a.id}.{ext}.b64"
+        path = os.path.join(jobs, f"{a.id}.{ext}.b64")
+        with open(path, "w") as f:
+            f.write(encode_image(src))
+        job[field] = rel
+        written.append(rel)
+
+    add_b64("init", "init", "init")
+    add_b64("mask", "mask", "mask")
+    add_b64("ref", "ref", "ref")
+    if a.ref:
+        rs = 0.55 if a.ref_strength is None else check_strength("ref-strength", a.ref_strength, 0.15, 0.85)
+        job["ref_strength"] = rs
+        job["workaround"] = "style_board"
+    # Required pairs
+    if mode in ("sketch", "upscale") and "init" not in job:
+        sys.exit(f"--mode {mode} needs --init")
+    if mode in ("edit", "expand"):
+        if "init" not in job or "mask" not in job:
+            sys.exit(f"--mode {mode} needs both --init and --mask (mask: white = change, black = keep). w/h and tile do not apply to klein edits; those use --side (default 512).")
+    rel_json = f"forge/jobs/{a.id}.json"
+    with open(os.path.join(jobs, a.id + ".json"), "w") as f:
         json.dump(job, f, indent=1)
-    sh("git", "add", f"forge/jobs/{a.id}.json")
-    sh("git", "commit", "-q", "-m", f"Forge: {a.id}" + (f"\n\n{a.trailer}" if a.trailer else ""))
+        f.write("\n")
+    written.append(rel_json)
+    return job, written, warnings
+
+
+def publish_jobs_to_main(written, message):
+    """Commit only forge/jobs/** onto origin/main and push, even from a feature branch.
+
+    Why: forge.yml renders only on a push to main under forge/jobs/**. Code still
+    goes through PRs. This builds a commit whose parent is origin/main and whose
+    tree is origin/main plus the new job files, then pushes that SHA to main so
+    a feature branch cannot sneak through.
+    """
+    root = repo_root()
+    sh("git", "fetch", "-q", "origin", "main", cwd=root)
+    # Stage only the job files in a temporary index based on origin/main.
+    import tempfile
+    index = tempfile.mktemp(prefix="forge-idx-")
+    env = os.environ.copy()
+    env["GIT_INDEX_FILE"] = index
+    env["GIT_WORK_TREE"] = root
+    def g(*args, check=True):
+        r = subprocess.run(["git", *args], cwd=root, env=env, capture_output=True, text=True)
+        if check and r.returncode:
+            sys.exit(f"failed: git {' '.join(args)}\n{r.stdout}{r.stderr}")
+        return r
+    g("read-tree", "origin/main")
+    for rel in written:
+        g("add", "-f", "--", rel)
+    tree = g("write-tree").stdout.strip()
+    parent = sh("git", "rev-parse", "origin/main", cwd=root)
+    commit = subprocess.run(
+        ["git", "commit-tree", tree, "-p", parent, "-m", message],
+        cwd=root, capture_output=True, text=True, env=env,
+    )
+    if commit.returncode:
+        sys.exit(f"failed: commit-tree\n{commit.stdout}{commit.stderr}")
+    sha = commit.stdout.strip()
+    os.remove(index)
     for _ in range(3):
-        if subprocess.run(["git", "push", "-q"], cwd=ROOT).returncode == 0:
-            break
-        sh("git", "pull", "--rebase", "-q")
-    else:
-        sys.exit("push failed 3 times")
-    head = sh("git", "rev-parse", "HEAD")
-    remote = sh("git", "ls-remote", "origin", "refs/heads/main").split()[0]
+        r = subprocess.run(["git", "push", "-q", "origin", f"{sha}:main"], cwd=root)
+        if r.returncode == 0:
+            return sha
+        sh("git", "fetch", "-q", "origin", "main", cwd=root)
+        # rebase the job commit onto the new main if someone else pushed
+        parent = sh("git", "rev-parse", "origin/main", cwd=root)
+        # rebuild is safer than rebase for a jobs-only tree; retry from new main
+        env["GIT_INDEX_FILE"] = index = tempfile.mktemp(prefix="forge-idx-")
+        env["GIT_WORK_TREE"] = root
+        g("read-tree", "origin/main")
+        for rel in written:
+            g("add", "-f", "--", rel)
+        tree = g("write-tree").stdout.strip()
+        commit = subprocess.run(
+            ["git", "commit-tree", tree, "-p", parent, "-m", message],
+            cwd=root, capture_output=True, text=True, env=env,
+        )
+        sha = commit.stdout.strip()
+        os.remove(index)
+    sys.exit("push to origin main failed 3 times")
+
+
+def cmd_queue(a):
+    job, written, warnings = write_job_files(a)
+    for w in warnings:
+        print("warning: " + w, file=sys.stderr)
+    sha = None
+    if not a.no_publish:
+        msg = f"Forge: {a.id}" + (f"\n\n{a.trailer}" if a.trailer else "")
+        sha = publish_jobs_to_main(written, msg)
+        # also add the files on the current branch so the working tree stays consistent
+        root = repo_root()
+        subprocess.run(["git", "update-index", "--add", "--", *written], cwd=root, capture_output=True)
     mins = {512: 5, 576: 8, 640: 9, 704: 12, 768: 15, 1024: 27}.get(max(a.w, a.h), 15)
-    print(json.dumps({"queued": a.id, "seed": job["seed"], "on_main": remote == head or
-                      subprocess.run(["git", "merge-base", "--is-ancestor", head, remote], cwd=ROOT).returncode == 0,
+    print(json.dumps({"queued": a.id, "seed": job["seed"], "mode": job.get("mode", "new"),
+                      "files": written, "warnings": warnings, "published": sha,
+                      "on_main": bool(sha),
                       "check_after_min": mins + 3}))
 
 
@@ -299,6 +459,14 @@ def main():
     q = sub.add_parser("queue"); q.add_argument("--id", required=True); q.add_argument("--prompt-file", required=True)
     q.add_argument("--n", type=int, default=4); q.add_argument("--w", type=int, default=512); q.add_argument("--h", type=int, default=512)
     q.add_argument("--seed", type=int); q.add_argument("--key"); q.add_argument("--trailer", default="")
+    q.add_argument("--mode", default="new", help="new | sketch | edit | expand | upscale")
+    q.add_argument("--init", help="path to a start-from image (png/jpg). Required for sketch/edit.")
+    q.add_argument("--mask", help="path to a mask image (white=change, black=keep). Required for edit.")
+    q.add_argument("--ref", help="path to a style-reference image (mode new only). Style-board workaround, not IP-Adapter.")
+    q.add_argument("--ref-strength", type=float, dest="ref_strength", help="how hard to follow --ref (0.15-0.85, default 0.55)")
+    q.add_argument("--strength", type=float, help="img2img strength 0.3-0.95 (sketch default is 0.7 in the renderer)")
+    q.add_argument("--tile", action="store_true", help="seamless (sd.cpp --circular). FLUX path only.")
+    q.add_argument("--no-publish", action="store_true", help="write job files but do not commit or push")
     s = sub.add_parser("status"); s.add_argument("ids", nargs="+")
     c = sub.add_parser("score"); c.add_argument("id"); c.add_argument("--game", default="lethemoor", choices=sorted(GAMES))
     c.add_argument("--kind", default="sprite", choices=["sprite", "texture", "scene", "hud"]); c.add_argument("--aspect", type=float)

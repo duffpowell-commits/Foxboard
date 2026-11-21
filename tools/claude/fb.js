@@ -4,6 +4,8 @@
 //   e.g.  const t = F.add('text',{text:'Hi',size:80}); F.set(t,{curve:40,shadow:{c:'#000',a:.6,blur:12,x:4,y:4}});
 //         await save(await F.exportFile('pdf'), 'card.pdf');
 // Forge from Claude: const r = F.forgeFiles({mode:'edit', id, mask:{rects:[[x,y,w,h]]}, prompt:'...'}); await saveForge(r);
+//   Also: mode:'new', refCanvas/refSrc, refStrength (style-board workaround); mode:'sketch' + initCanvas; tile, seed, strength, w, h.
+//   Jobs must land on Foxboard main to render. Prefer tools/claude/art_loop.py queue.
 //   -> writes r.files into the repo (forge/jobs/...); commit + push them with git and the runners pick them up.
 // Prints the script's return value as JSON. --out writes the doc (with images) for fbx.py push-doc.
 const fs = require('fs'), path = require('path');

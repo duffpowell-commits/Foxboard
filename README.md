@@ -39,7 +39,7 @@ python tests/test_magic_eraser.py
 public-repo runners through stable-diffusion.cpp. No GPU, no API bill, no cooldown; minutes per image.
 It's the go-to for all of Duff's image creation: in the app it's ✨AI › 🔥 Forge (first tab), and Claude chats
 queue the same jobs (art-director skill). Canva is the fallback for private or urgent images.
-Queue: commit `forge/jobs/<id>.json` (`prompt`, `n` ≤ 4, `w`/`h` multiples of 64 up to 1024, `seed`, `key` or null).
+Queue: `python3 tools/claude/art_loop.py queue --id … --prompt-file p.txt` (optional `--mode --init --mask --ref --ref-strength --strength --tile --seed --w/--h --key`), or commit `forge/jobs/<id>.json` plus any `.init.b64` / `.mask.b64` / `.ref.b64` in the same commit, onto **main**. `w`/`h` must be 256-1024 and a multiple of 64. `n` ≤ 4. `seed` is honored (take k uses seed+k). `ref` is a style-board workaround, not IP-Adapter. Prompts and outputs here are public.
 Results: `forge/results/<id>/<k>.png` + `<k>.b64` + `done.json`. Key-colour jobs come back with an exact-key
 background (`forge/keyfix.py`). Only runs while the repo is public. Prompts and outputs here are public.
 

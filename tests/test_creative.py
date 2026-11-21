@@ -69,6 +69,27 @@ async def main():
         check('tile: job carries tile:true', r.get('tile') is True, r)
         check('seed lock: typed seed is used', r.get('seed') == 12345, r)
 
+        r = await ev("""(()=>{ try{
+          const c=document.createElement('canvas'); c.width=32; c.height=32; const g=c.getContext('2d'); g.fillStyle='#334'; g.fillRect(0,0,32,32);
+          const r=Foxboard.forgeFiles({mode:'new',prompt:'a lantern',refCanvas:c,refStrength:0.6,seed:'9'});
+          const j=JSON.parse(r.files[Object.keys(r.files).find(k=>k.endsWith('.json'))]);
+          return {mode:j.mode,ref:!!j.ref,rs:j.ref_strength,w:j.workaround,hasFile:Object.keys(r.files).some(k=>k.endsWith('.ref.b64'))};
+        }catch(e){ return {err:String(e.message||e)}; } })()""")
+        check('ref: new job carries ref + style_board workaround', r.get('mode')=='new' and r.get('ref') and r.get('rs')==0.6 and r.get('w')=='style_board' and r.get('hasFile'), r)
+        r = await ev("""(()=>{ try{
+          const c=document.createElement('canvas'); c.width=32; c.height=32; c.getContext('2d').fillRect(0,0,32,32);
+          Foxboard.forgeFiles({mode:'new',prompt:'x',initCanvas:c,refCanvas:c});
+          return 'no throw';
+        }catch(e){ return String(e.message||e); } })()""")
+        check('ref: init+ref throws', 'both' in str(r).lower(), r)
+        r = await ev("""(()=>{ try{
+          const c=document.createElement('canvas'); c.width=32; c.height=32; c.getContext('2d').fillRect(0,0,32,32);
+          const r=Foxboard.forgeFiles({mode:'new',prompt:'a lantern',initCanvas:c});
+          const j=JSON.parse(r.files[Object.keys(r.files).find(k=>k.endsWith('.json'))]);
+          return {mode:j.mode,init:!!j.init,note:j.note||''};
+        }catch(e){ return {err:String(e.message||e)}; } })()""")
+        check('init on mode new switches to sketch in forgeFiles', r.get('mode')=='sketch' and r.get('init') and 'switched to sketch' in r.get('note',''), r)
+
         # Forge screen: start-from chips, seamless toggle, seed field, boost
         await ev("openAI ? 0 : 0") if False else None
         await ev("__fb.openAI('forge')"); await pg.wait_for_timeout(300)

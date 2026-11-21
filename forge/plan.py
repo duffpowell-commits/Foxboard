@@ -10,7 +10,8 @@ for jf in sorted(pathlib.Path("forge/jobs").glob("*.json")):
     if (res / "done.json").exists(): continue
     n = max(1, min(4, int(job.get("n", 1))))
     for k in range(n):
-        if not (res / f"{k}.png").exists(): items.append({"job": jid, "k": k})
+        # a committed error.txt is a finished failed take (finish.py counts it); do not retry it forever
+        if not (res / f"{k}.png").exists() and not (res / f"{k}.error.txt").exists(): items.append({"job": jid, "k": k})
 items = items[:16]
 with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
     fh.write(f"matrix={json.dumps(items)}\nany={'true' if items else 'false'}\n")

@@ -12,6 +12,41 @@ prompt = str(job.get("prompt", ""))[:1500]
 out = pathlib.Path(f"forge/results/{jid}"); out.mkdir(parents=True, exist_ok=True)
 png = out / f"{k}.png"
 mode = str(job.get("mode", "new"))
+ref_rel = job.get("ref") or job.get("style")
+init_rel = job.get("init")
+notes = []
+
+# init on mode new used to be silently ignored (only sketch/edit/expand/upscale loaded it).
+# Switch to sketch and say so; never drop the picture. ref is a different input (style board).
+if init_rel and mode == "new" and not ref_rel:
+    notes.append("init was set on mode new; switched to sketch so the picture is actually used")
+    mode = "sketch"
+    print("forge: " + notes[-1], file=sys.stderr)
+def commit_take(label):
+    # Why: plan.py / finish.py treat a committed error.txt as a finished (failed) take.
+    # Leaving the file uncommitted made a bad job sit pending and retry on the next
+    # forge/jobs push.
+    if os.environ.get("FORGE_NO_GIT"):
+        return
+    subprocess.run(["git", "add", str(out)])
+    subprocess.run(["git", "commit", "-q", "-m", f"[skip ci] forge: {jid} #{k} ({label})"])
+    for i in range(6):
+        if subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"]).returncode == 0 and subprocess.run(["git", "push", "-q", "origin", "HEAD:main"]).returncode == 0: break
+        time.sleep(5 + i * 5)
+
+def fail_take(code, msg):
+    (out / f"{k}.error.txt").write_text(msg)
+    print("forge: " + msg, file=sys.stderr)
+    if os.environ.get("FORGE_DRY"):
+        print(json.dumps({"error": code})); sys.exit(0)
+    commit_take("error")
+    sys.exit(0)
+
+if init_rel and ref_rel:
+    fail_take("init_and_ref", "a job cannot set both init (layout / start-from) and ref (style board) — FLUX.1-schnell has no separate style-reference encoder. Use ref alone for a new subject, or init + mode sketch to start from a picture.")
+if ref_rel and mode not in ("new",):
+    fail_take("ref_bad_mode", f"ref is only valid on mode new (got {mode!r}). sketch/edit use init, not ref.")
+
 def b64file(rel, dst):
     t = pathlib.Path(rel).read_text().strip(); kind, data = t.split(":", 1)
     pathlib.Path(dst).write_bytes(base64.b64decode(data)); return dst
@@ -50,14 +85,25 @@ elif mode == "sketch":
     # sketch -> art (also "vary" a take): img2img from the whole init, no mask. Lower strength = closer to the sketch.
     Image.open(init).convert("RGB").resize((W, H), Image.LANCZOS).save("init_s.png")
     cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--strength", f"{strength(0.7):.2f}"]
+elif ref_rel:
+    # Style-board workaround (not IP-Adapter — see style_ref.py). New subject, style bleed from ref.
+    from style_ref import load_b64, style_board, img2img_strength, clamp_ref_strength
+    rs = clamp_ref_strength(job.get("ref_strength"))
+    st = strength(img2img_strength(rs)) if job.get("strength") is not None else img2img_strength(rs)
+    board = style_board(load_b64(ref_rel), W, H, seed)
+    board.save("init_s.png")
+    notes.append(f"style board from {ref_rel} (ref_strength={rs}, img2img strength={st:.2f}); not IP-Adapter")
+    cmd = base + flux + ["-p", prompt, "--steps", "8", "-W", str(W), "-H", str(H), "--init-img", "init_s.png", "--strength", f"{st:.2f}"]
 else:
     cmd = base + flux + ["-p", prompt, "--steps", "4", "-W", str(W), "-H", str(H)]
+if notes:
+    (out / f"{k}.note.txt").write_text("\n".join(notes) + "\n")
 if os.environ.get("FORGE_DRY") and not KLEIN:  # tests: show the command, render nothing
     print(json.dumps(cmd)); sys.exit(0)
 if not KLEIN:  # Nov 19: this said mode != "edit", so FLUX-engine edits never ran (NameError on r)
     # one hung render must not hold the whole queue (Nov 19: a stuck take blocked every session's jobs for 90 min):
     # cap at 3x the expected time (min 25 min); a timeout becomes a failed take, the job still finishes
-    base_min = {(768, 768): 15, (512, 512): 7, (1024, 1024): 27, (576, 1024): 16, (1024, 576): 16}.get((W, H), 15) * (1.4 if mode == "sketch" else 1)
+    base_min = {(768, 768): 15, (512, 512): 7, (1024, 1024): 27, (576, 1024): 16, (1024, 576): 16}.get((W, H), 15) * (1.4 if mode == "sketch" or ref_rel else 1)
     cap = float(os.environ.get("FORGE_TIMEOUT_MIN") or max(25, 3 * base_min))
     t0 = time.time()
     try: r = subprocess.run(cmd, capture_output=True, text=True, timeout=cap * 60)
@@ -93,10 +139,11 @@ else:
             buf = io.BytesIO(); (im0 if has_a else im0.convert("RGB")).save(buf, "WEBP", quality=q); raw = buf.getvalue(); kind = "webp"
             if len(raw) < 690_000: break
     (out / f"{k}.b64").write_text(f"{kind}:" + base64.b64encode(raw).decode())
-    (out / f"{k}.json").write_text(json.dumps({"minutes": round(mins, 1), "mode": mode, "w": Image.open(png).width, "h": Image.open(png).height, "seed": seed, "kind": kind}))
+    meta = {"minutes": round(mins, 1), "mode": mode, "w": Image.open(png).width, "h": Image.open(png).height, "seed": seed, "kind": kind}
+    if ref_rel:
+        meta["ref"] = True
+        meta["ref_strength"] = job.get("ref_strength")
+        meta["workaround"] = "style_board"
+    (out / f"{k}.json").write_text(json.dumps(meta))
 if os.environ.get("FORGE_NO_GIT"): sys.exit(0)  # tests: render locally, skip the commit/push loop
-subprocess.run(["git", "add", str(out)])
-subprocess.run(["git", "commit", "-q", "-m", f"[skip ci] forge: {jid} #{k} ({mins:.1f} min)"])
-for i in range(6):
-    if subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"]).returncode == 0 and subprocess.run(["git", "push", "-q", "origin", "HEAD:main"]).returncode == 0: break
-    time.sleep(5 + i * 5)
+commit_take(f"{mins:.1f} min")
