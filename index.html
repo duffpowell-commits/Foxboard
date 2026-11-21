@@ -263,7 +263,7 @@ function updUndo(){ $('#bUndo').disabled=!hist.length; $('#bRedo').disabled=!fut
 
 /* ---------- storage ---------- */
 let saveT=null;
-function autosave(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(LS_KEY, snap()); }catch(e){ toast('Autosave full — Menu › Save project file'); } },500); }
+function autosave(){ clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(LS_KEY, snap()); }catch(e){ toast('Autosave full: Menu › Save project file'); } },500); }
 function loadAuto(){ try{ const s=localStorage.getItem(LS_KEY)||localStorage.getItem('foxboard.v1'); if(s) doc=migrate(JSON.parse(s)); }catch(e){} }
 
 /* ---------- geometry ---------- */
@@ -560,7 +560,7 @@ stage.addEventListener('pointerdown',e=>{
   const d=s2d(p.x,p.y);
   if(magic){ if(!magicObj()){ endMagic(); return; } const lp=natPt(magic.o,magic.mask.width,magic.mask.height,d);
     let maskBefore=null; try{ maskBefore=magic.mask.getContext('2d').getImageData(0,0,magic.mask.width,magic.mask.height); }catch(_){}
-    if(magic.tap){ try{ const D=imageData(magic.o); const w=wandMask(D.id.data,D.W,D.H,lp.x,lp.y,doc.pixel?8:45); const g=magic.mask.getContext('2d'), md=g.getImageData(0,0,D.W,D.H); let n=0; for(let i=0;i<w.length;i++) if(w[i]){ md.data[i*4]=255; md.data[i*4+1]=45; md.data[i*4+2]=85; md.data[i*4+3]=255; n++; } g.putImageData(md,0,0); toast(n?'Selected — tap more, or 🪄 Erase':'Nothing there'); }catch(e){ toast(e.message); } act={kind:'none',maskBefore,at:Date.now()}; draw(); return; }
+    if(magic.tap){ try{ const D=imageData(magic.o); const w=wandMask(D.id.data,D.W,D.H,lp.x,lp.y,doc.pixel?8:45); const g=magic.mask.getContext('2d'), md=g.getImageData(0,0,D.W,D.H); let n=0; for(let i=0;i<w.length;i++) if(w[i]){ md.data[i*4]=255; md.data[i*4+1]=45; md.data[i*4+2]=85; md.data[i*4+3]=255; n++; } g.putImageData(md,0,0); toast(n?'Selected: tap more, or 🪄 Erase':'Nothing there'); }catch(e){ toast(e.message); } act={kind:'none',maskBefore,at:Date.now()}; draw(); return; }
     act={kind:'mask',last:lp,maskBefore}; magicStamp(lp,lp); draw(); return; }
   if(drawMode){
     if(tool==='pick'){ pickColor(d); act={kind:'none'}; return; }
@@ -829,7 +829,7 @@ function magicMaskCount(){ if(!magic) return 0; const c=magic.mask, d=c.getConte
 function startMagic(o){
   if(!o||o.type!=='image'){ toast('Select an image first'); return; }
   if(o.locked||o.hidden){ toast('Unlock / show the layer first'); return; }
-  if(o.rot||o.flipX||o.flipY){ toast('Straighten it first (no rotate/flip) — then Magic eraser'); return; }
+  if(o.rot||o.flipX||o.flipY){ toast('Straighten it first (no rotate/flip), then Magic eraser'); return; }
   const im=srcOf(o); if(!im){ toast('Image still loading'); return; }
   if(drawMode) setDrawMode(false);
   closeSheet();
@@ -850,8 +850,8 @@ function magicStamp(a,b){
 function runMagic(){
   if(magic&&magic.edit){ const o=magicObj(); if(!o){ endMagic(); return; } const mc=magic.mask;
     if(!magicMaskCount()){ toast('Brush over the area first'); return; }
-    openSheet('🖌 Magic edit','magicedit',b=>{ const ta=h('textarea',{placeholder:'What goes in the brushed area? e.g. a glowing lantern, a black cat, nothing — just more brick wall'});
-      b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const pr=ta.value.trim(); if(!pr){ toast('Say what to paint there'); return; } closeSheet(); const id=await forgeSend({mode:'edit',id:o.id,maskCanvas:mc,prompt:pr},'Magic edit queued ✓ (~10 min) — ✨AI › Forge shows it'); if(id) endMagic(); }},'🔥 Queue it')));
+    openSheet('🖌 Magic edit','magicedit',b=>{ const ta=h('textarea',{placeholder:'What goes in the brushed area? e.g. a glowing lantern, a black cat, or nothing but more brick wall'});
+      b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const pr=ta.value.trim(); if(!pr){ toast('Say what to paint there'); return; } closeSheet(); const id=await forgeSend({mode:'edit',id:o.id,maskCanvas:mc,prompt:pr},'Magic edit queued ✓ (~10 min). ✨AI › Forge shows it'); if(id) endMagic(); }},'🔥 Queue it')));
       b.append(h('div',{class:'hint'},'An AI editing model zooms in on the brushed area and changes only that, keeping the pose, light and style. Say it plainly, e.g. "the flame turned up high". Free on GitHub machines, about 10 minutes, public. The result lands on top of your image, lined up.')); setTimeout(()=>ta.focus(),200); });
     return; }
   if(!magic) return; const o=magicObj(); if(!o){ toast('That image is gone'); endMagic(); return; } const mc=magic.mask, W=mc.width, H=mc.height;
@@ -870,7 +870,7 @@ function runMagic(){
       const src=c.toDataURL('image/png'); live.set(o.id,{src,canvas:c});
       edit(()=>{ o.src=src; o.natW=W; o.natH=H; });
       mc.getContext('2d').clearRect(0,0,W,H);
-      toast('Erased ✓ ('+((performance.now()-t0)/1000).toFixed(1)+' s) — undo if you don\'t like it');
+      toast('Erased ✓ ('+((performance.now()-t0)/1000).toFixed(1)+' s). Undo if you don\'t like it');
     }catch(e){ toast('Erase failed: '+e.message); }
     $('#mgErase').disabled=false; draw();
   },60);
@@ -912,7 +912,7 @@ function removeBg(o,tol){
   g.putImageData(id,0,0);
   const src=c.toDataURL('image/png');
   edit(()=>{ o.src=src; o.natW=W; o.natH=H; });
-  toast(cleared?`Removed ${Math.round(cleared/(W*H)*100)}% of pixels`:'Nothing matched — raise tolerance');
+  toast(cleared?`Removed ${Math.round(cleared/(W*H)*100)}% of pixels`:'Nothing matched (raise tolerance)');
 }
 
 /* ---------- context actions ---------- */
@@ -1057,7 +1057,7 @@ function openProps(focusText){
         b.append(row('Sticker',h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?1:0.02,color:stc.value}))},'Thin outline'),h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?2:0.045,color:stc.value}))},'Thick outline'),stc)); }
       b.append(row('ChatGPT pet',h('button',{class:'acc',onclick:tryT(()=>openPet(o))},'🐾 ChatGPT pet')));
       if(O().indexOf(o)>0) b.append(row('Compare',h('button',{onclick:tryT(()=>compareBelow(o))},'◐ Before / after with the layer below')));
-      b.append(h('div',{class:'hint'},'Expand grows the picture and fills the new edges from it (instant, on the phone — best for skies, walls, ground). 🔥 AI expand / Upscale / Magic edit run on Forge (free, ~5–15 min, public).'));
+      b.append(h('div',{class:'hint'},'Expand grows the picture and fills the new edges from it (instant on the phone, best for skies, walls and ground). 🔥 AI expand / Upscale / Magic edit run on Forge (free, ~5–15 min, public).'));
       b.append(h('div',{class:'hint'},'Brush over a thing (or a watermark, a stray shadow), tap Erase: it disappears and the gap is filled from the picture around it. Runs on your phone, free, no waiting. Best on small or medium things (poles, stray marks, watermarks, a sprite\'s extra bits); a big person in a busy photo comes out smeared.'));
       b.append(h('div',{class:'hint'},'Removes the solid color touching the edges (great for AI art on plain backgrounds). Raise tolerance if bits are left; undo if it eats too much. For fine cleanup use Draw › 🧽 on this image.'));
       const pg=gameById(activeGame);
@@ -1109,7 +1109,7 @@ function thumb(o){
 }
 function openLayers(){
   openSheet('Layers · frame '+(doc.cur+1),'layers',b=>{
-    if(!O().length){ b.append(h('div',{class:'hint'},'Nothing here yet. Add text, a shape, an image — or draw.')); }
+    if(!O().length){ b.append(h('div',{class:'hint'},'Nothing here yet. Add text, a shape, an image, or draw.')); }
     [...O()].reverse().forEach(o=>{
       const nm=o.name||(o.type==='text'?'“'+(o.text||'').split('\n')[0].slice(0,24)+'”':o.type);
       const el=h('div',{class:'layer'+(o.id===selId?' sel':'')},thumb(o),h('div',{class:'nm'},nm),
@@ -1127,7 +1127,7 @@ function openLayers(){
 
 function openNew(){
   openSheet('New canvas','new',b=>{
-    b.append(h('div',{class:'hint'},'Starts fresh and replaces the current canvas — undo brings it back, or save the project file first.'));
+    b.append(h('div',{class:'hint'},'Starts fresh and replaces the current canvas. Undo brings it back, or save the project file first.'));
     b.append(h('h4',{style:'margin:10px 0 4px'},'Templates'));
     const tg=h('div',{class:'grid2'});
     BUILTIN.forEach(fn=>{ const d=fn(); const bt=h('button',{class:'preset',onclick:()=>useTemplate(d)},pageThumb(0,120,d),d.name,h('small',{},`${d.w}×${d.h}${d.pages.length>1?' · '+d.pages.length+' frames':''}`)); bt.querySelector('canvas').style.cssText='width:100%;height:auto;border-radius:8px;margin-bottom:4px'; tg.append(bt); });
@@ -1138,7 +1138,7 @@ function openNew(){
     myTemplates.forEach(t=>{ let d; try{ d=migrate(JSON.parse(JSON.stringify(t.doc))); }catch(e){ return; }
       for(const pg of d.pages) for(const o of pg.objects) if(o.type==='image') getImg(o.src);
       const del=h('button',{class:'danger',style:'min-height:40px;min-width:44px;padding:2px 8px;align-self:flex-end','aria-label':'Delete template'},'🗑');
-      del.onclick=async ev=>{ ev.stopPropagation(); if(!del.dataset.arm){ del.dataset.arm='1'; del.textContent='Delete?'; toast('Tap again to delete "'+String(t.name).slice(0,30)+'" for everyone'); setTimeout(()=>{ delete del.dataset.arm; del.textContent='🗑'; },3000); return; } tplDeleted.add(t.id); myTemplates=myTemplates.filter(x=>x.id!==t.id); const w=await persistTemplates(); openNew(); toast(w==='cloud'||w==='local'?'Template deleted':'Deleted on this phone only — couldn\'t reach the cloud list ('+w+')',2600); };
+      del.onclick=async ev=>{ ev.stopPropagation(); if(!del.dataset.arm){ del.dataset.arm='1'; del.textContent='Delete?'; toast('Tap again to delete "'+String(t.name).slice(0,30)+'" for everyone'); setTimeout(()=>{ delete del.dataset.arm; del.textContent='🗑'; },3000); return; } tplDeleted.add(t.id); myTemplates=myTemplates.filter(x=>x.id!==t.id); const w=await persistTemplates(); openNew(); toast(w==='cloud'||w==='local'?'Template deleted':'Deleted on this phone only. Couldn\'t reach the cloud list ('+w+')',2600); };
       const bt=h('button',{class:'preset',onclick:()=>useTemplate(d)},pageThumb(0,120,d),t.name,h('small',{},`${d.w}×${d.h}`),del); bt.querySelector('canvas').style.cssText='width:100%;height:auto;border-radius:8px;margin-bottom:4px'; mg.append(bt); });
     b.append(mg);
     b.append(h('h4',{style:'margin:14px 0 4px'},'Blank'));
@@ -1187,7 +1187,7 @@ function openMenu(){
     g.append(h('button',{onclick:openSendToGame},'🎮 Send to game'));
     g.append(h('button',{onclick:openClaudeLink},'📨 Send to Claude'));
     b.append(g);
-    b.append(h('div',{class:'hint'},'Autosave lives in this browser and can get wiped. Save a project file (.json) to keep it for real — reopens with every layer and frame editable.'));
+    b.append(h('div',{class:'hint'},'Autosave lives in this browser and can get wiped. Save a project file (.json) to keep it for real (reopens with every layer and frame editable).'));
     b.append(h('div',{class:'hint'},'Gestures: drag to move · pinch to zoom · drag empty space to pan · tap empty space to deselect · ↻ rotates (snaps 15°). In Draw mode two fingers zoom instead of painting.'));
   });
 }
@@ -1200,8 +1200,8 @@ function aiErr(e){
   const c=e&&e.code; if(c!=='cancelled') report('ai',e);
   if(c==='cancelled') return 'Stopped.';
   if(c==='not_granted'||c==='sampling_disabled'||c==='not_declared'||c==='capability_disabled') return 'AI is switched off for this page. Reopen Foxboard inside the Claude app and tap Allow when asked.';
-  if(c==='rate_limited') return 'Claude usage limit or too many requests — wait a bit and try again.';
-  if(c==='refused') return 'Claude declined that one — reword the prompt.';
+  if(c==='rate_limited') return 'Claude usage limit or too many requests. Wait a bit and try again.';
+  if(c==='refused') return 'Claude declined that one, so reword the prompt.';
   if(c==='invalid_json') return 'Claude\'s answer didn\'t parse. Try again or simplify the prompt.';
   if(c==='session_expired') return 'Sign in to Claude again.';
   return 'Something went wrong ('+(c||'error')+'). Try again.';
@@ -1287,12 +1287,12 @@ async function forgeAdd(u,name,j){
   const png=await (async()=>{ const im=await loadSrc(u); const c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight; c.getContext('2d').drawImage(im,0,0); return {src:c.toDataURL('image/png'),w:c.width,h:c.height}; })();
   getImg(png.src); const o=imageObj(png.src,png.w,png.h,'Forge: '+name,1);
   if(j&&j.box&&(j.page===undefined||j.page===doc.cur)){ Object.assign(o,j.box); }
-  addObj(o); toast(j&&j.box?'Added on top of the original — hide or delete the old layer':'Added to the canvas');
+  addObj(o); toast(j&&j.box?'Added on top of the original (hide or delete the old layer)':'Added to the canvas');
 }
 function forgePromptOf(j){ return j.prompt||String(j.label||'').replace(/^(Sketch|Edit|Subtle|Strong): /,''); }
 async function forgeVary(j,k,how){
   if(!mcpCap) throw new Error('Variations need Foxboard open inside the Claude app with the GitHub connector on');
-  const u=await forgeImgFor(j,k); if(!u) throw new Error('That take didn\'t load — try again');
+  const u=await forgeImgFor(j,k); if(!u) throw new Error('That take didn\'t load. Try again');
   const subtle=how!=='strong';
   return forgeQueue({mode:'sketch',initSrc:u,prompt:forgePromptOf(j),strength:subtle?0.35:0.6, /* runner A/B Nov 19: 0.35 keeps the layout, 0.45 starts carving symbols, 0.6 reworks details, 0.8 is a new picture */n:2,key:j.key||null,tile:!!j.tile,
     seed:j.seed!=null?j.seed+k:undefined,box:j.box||null,page:j.page,label:(subtle?'Subtle: ':'Strong: ')+String(forgePromptOf(j)).slice(0,60)});
@@ -1326,7 +1326,7 @@ function buildForge(b,ta){
   const out=h('div',{class:'out hidden'}); const go=h('button',{class:'acc'},'🔥 Queue it');
   b.append(ta,row('',...(sampleFn?[boost,undoB]:[])),row('Start from',...fromBtns),followRow,...gc.rows,sizeRow,row('Versions',nv),row('',kb,tb),row('🔒 Seed',seedIn,h('span',{class:'hint'},'same seed + prompt = same picture')),row('',go),out);
   upd();
-  b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo. My sketch: scribble shapes and colors on the canvas, FLUX paints it — Follow sets how closely.'));
+  b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo. My sketch: scribble shapes and colors on the canvas, FLUX paints it, and Follow sets how closely.'));
   let view='jobs', pick=null;
   const views=[['jobs','Jobs'],['all','All takes'],['fav','⭐ Favorites']].map(([k,l])=>{ const bt=h('button',{},l); bt.dataset.k=k; bt.onclick=()=>{ view=k; pick=null; render(); }; return bt; });
   const list=h('div',{}); b.append(h('h4',{style:'margin:12px 0 4px'},'Your Forge results'),h('div',{class:'tabs'},...views),list);
@@ -1345,7 +1345,7 @@ function buildForge(b,ta){
       h('button',{onclick:busy(async()=>{ await forgeVary(j,k,'subtle'); toast('Subtle variations queued ✓',3000); render(); })},'🔁 Subtle'),
       h('button',{onclick:busy(async()=>{ await forgeVary(j,k,'strong'); toast('Strong variations queued ✓',3000); render(); })},'🎲 Strong'),
       h('button',{class:fav?'on':'',onclick:()=>{ forgeFav(j,k); render(); }},fav?'⭐ Saved':'☆ Favorite'),
-      h('button',{onclick:()=>{ ta.value=forgePromptOf(j); if(j.seed!=null) seedIn.value=String(j.seed+k); ta.scrollIntoView({block:'center'}); toast('Prompt + seed loaded — change a detail and queue'); }},'♻ Reuse'));
+      h('button',{onclick:()=>{ ta.value=forgePromptOf(j); if(j.seed!=null) seedIn.value=String(j.seed+k); ta.scrollIntoView({block:'center'}); toast('Prompt + seed loaded: change a detail and queue'); }},'♻ Reuse'));
     if(j.seed!=null) r.append(h('span',{class:'hint'},'seed '+(j.seed+k)));
     return r;
   }
@@ -1353,7 +1353,7 @@ function buildForge(b,ta){
     list.innerHTML=''; views.forEach(x=>x.classList.toggle('on',x.dataset.k===view));
     if(view!=='jobs'){
       const ts=forgeTakes().filter(t=>view==='all'||t.fav).slice(0,24);
-      if(!ts.length){ list.append(h('div',{class:'hint'},view==='fav'?'No favorites yet — tap a take, then ☆ Favorite.':'No finished takes yet.')); return; }
+      if(!ts.length){ list.append(h('div',{class:'hint'},view==='fav'?'No favorites yet. Tap a take, then ☆ Favorite.':'No finished takes yet.')); return; }
       if(pick) list.append(h('div',{class:'hint',style:'margin:2px 4px'},String(pick.j.label||'').slice(0,80)),actions(pick.j,pick.k));
       const strip=h('div',{style:'display:flex;gap:6px;flex-wrap:wrap'}); ts.forEach(t=>strip.append(thumb(t.j,t.k))); list.append(strip); return;
     }
@@ -1388,7 +1388,7 @@ function buildForge(b,ta){
     go.disabled=true; out.classList.remove('hidden'); out.textContent='Queuing on GitHub… (first time asks you to Allow)';
     try{
       await forgeQueue(opts); const j=forgeJobs[0];
-      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working — come back to ✨AI › Forge and tap Check now.`;
+      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working, then come back to ✨AI › Forge and tap Check now.`;
       view='jobs'; pick=null; render();
     }catch(e){ report('forge',e,opts.mode); out.textContent=e&&e.message?e.message:ghErr(e); }
     finally{ go.disabled=false; }
@@ -1399,7 +1399,7 @@ function openAI(mode){
   mode=mode||'forge';
   openSheet('✨ AI studio','ai',b=>{
     if(aiReady && !sampleFn && mode!=='forge'){
-      b.append(h('div',{class:'out'},'AI needs Foxboard opened inside the Claude app (it runs on your Claude plan — no API key, no extra bill). Everything else works here.'));
+      b.append(h('div',{class:'out'},'AI needs Foxboard opened inside the Claude app (it runs on your Claude plan: no API key, no extra bill). Everything else works here.'));
       return;
     }
     const tabs=h('div',{class:'tabs'});
@@ -1453,7 +1453,7 @@ Reply with only the SVG code.`;
     } else if(mode==='forge'){
       buildForge(b,ta); return;
     } else if(mode==='layout'){
-      ta.placeholder='e.g. boss card for "The Ex-Husband" — HP 120, weakness: honesty, flavor line at the bottom';
+      ta.placeholder='e.g. boss card for "The Ex-Husband", HP 120, weakness: honesty, flavor line at the bottom';
       extra=[h('div',{class:'hint'},'Claude places text and shapes on this frame using your canvas size. Your existing layers stay; undo removes the whole layout.')];
       go.onclick=()=>runAI(async(sig)=>{
         const existing=O().slice(0,30).map(o=>({type:o.type,x:Math.round(o.x),y:Math.round(o.y),w:Math.round(o.w),h:Math.round(o.h),text:o.text})).filter(Boolean);
@@ -1493,9 +1493,9 @@ Give: one-line verdict, then 3-5 bullets of the biggest problems with a concrete
       });
     }
     b.append(ta,...extra,row('',go,stop),out);
-    b.append(h('div',{class:'hint'},'Runs on your Claude plan — no API key, no per-image bill. Pixel + vector use the strongest model, so expect 20–90 s.'));
+    b.append(h('div',{class:'hint'},'Runs on your Claude plan (no API key, no per-image bill). Pixel + vector use the strongest model, so expect 20–90 s.'));
     function runAI(fn){
-      if(!sampleFn){ out.classList.remove('hidden'); out.textContent=aiReady?'AI unavailable here.':'Still connecting to Claude — try again in a second.'; return; }
+      if(!sampleFn){ out.classList.remove('hidden'); out.textContent=aiReady?'AI unavailable here.':'Still connecting to Claude. Try again in a second.'; return; }
       aiCtl=new AbortController(); go.disabled=true; stop.classList.remove('hidden');
       out.classList.remove('hidden'); out.textContent='Thinking… (first run asks you to Allow)';
       fn(aiCtl.signal).then(msg=>{ out.textContent=msg||'Done.'; }).catch(e=>{ out.textContent=aiErr(e); })
@@ -1683,7 +1683,7 @@ function useTemplate(d){
   if(drawMode) setDrawMode(false); if(magic) endMagic();
   beginEdit(); doc=cloneDocFresh(d); selId=null; endEdit();
   for(const p of doc.pages) for(const o of p.objects){ if(o.type==='image') getImg(o.src); if(o.type==='text') loadFont(o); }
-  closeSheet(); refreshUI(); renderPages(); fit(); toast('Template loaded — make it yours');
+  closeSheet(); refreshUI(); renderPages(); fit(); toast('Template loaded: make it yours');
 }
 function openSaveTemplate(){
   openSheet('Save as template','savetpl',b=>{
@@ -1697,7 +1697,7 @@ function openSaveTemplate(){
       myTemplates.filter(x=>x.name===t.name).forEach(x=>tplDeleted.add(x.id));
       myTemplates=[t,...myTemplates.filter(x=>x.name!==t.name)];
       const where=await persistTemplates(); go.disabled=false; if(where!=='cloud'&&where!=='local') report('templates',where);
-      toast(where==='cloud'?'Template saved to Foxboard':where==='local'?'Template saved on this phone':where==='offline'?'Saved on this phone — couldn\'t reach the cloud list, so it wasn\'t touched. Try again later.':'Saved on this phone (cloud save: '+where+')',2600);
+      toast(where==='cloud'?'Template saved to Foxboard':where==='local'?'Template saved on this phone':where==='offline'?'Saved on this phone, but couldn\'t reach the cloud list, so it wasn\'t touched. Try again later.':'Saved on this phone (cloud save: '+where+')',2600);
       closeSheet();
     };
     b.append(row('',go));
@@ -1764,8 +1764,8 @@ function openBible(gid){
     b.append(h('div',{class:'hint'},bibleSrc==='shared'?'Shared with everyone on Foxboard. AI, palettes and Send to game all read this.':'AI, palettes and Send to game all read this.'));
     b.append(row('Use it',h('button',{class:g.id===activeGame?'on':'',onclick:()=>{ setActiveGame(g.id===activeGame?'':g.id); openBible(gid); }},g.id===activeGame?'✓ Active game':'Make active')));
     const sw=h('div',{class:'swatches'});
-    g.palette.forEach((c,i)=>{ const it=h('i',{title:c}); it.style.background=c; it.onclick=()=>{ setColor(c); toast('Draw color '+c); }; if(canEditBible){ const o=it.onclick; it.onclick=()=>{ if(it._lp){ it._lp=false; return; } o(); }; longPress(it,()=>{ g.palette.splice(i,1); bibleDirty=true; openBible(gid); toast('Removed '+c+' — Save to keep'); }); } sw.append(it); });
-    b.append(h('div',{class:'hint'},'Palette — tap = draw with it'+(canEditBible?' · long-press = remove':'')));
+    g.palette.forEach((c,i)=>{ const it=h('i',{title:c}); it.style.background=c; it.onclick=()=>{ setColor(c); toast('Draw color '+c); }; if(canEditBible){ const o=it.onclick; it.onclick=()=>{ if(it._lp){ it._lp=false; return; } o(); }; longPress(it,()=>{ g.palette.splice(i,1); bibleDirty=true; openBible(gid); toast('Removed '+c+'. Save to keep'); }); } sw.append(it); });
+    b.append(h('div',{class:'hint'},'Palette: tap = draw with it'+(canEditBible?' · long-press = remove':'')));
     b.append(sw);
     if(canEditBible) b.append(row('',h('button',{onclick:()=>{ const c=$('#drawColor').value; if(!g.palette.includes(c)){ g.palette.push(c); bibleDirty=true; } openBible(gid); }},'＋ Add current draw color')));
     const sp=h('textarea',{}); sp.value=g.sprite; const hd=h('textarea',{}); hd.value=g.hd;
@@ -1790,7 +1790,7 @@ function openBible(gid){
     if(canEditBible){
       const sv=h('button',{class:'acc'},'💾 Save bible');
       sv.onclick=async()=>{ g.sprite=sp.value; g.hd=hd.value; g.key=keyIn.value; sv.disabled=true; const w=await saveBible(); sv.disabled=false; if(w==='shared'||!dbCap){ bibleDirty=false; pendingBible=null; } toast(w==='shared'?'Bible saved for everyone':'Bible saved on this phone'); };
-      b.append(row('',sv,h('button',{onclick:()=>{ bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)); bibleDirty=true; openBible(gid); toast('Reset to defaults — Save to keep'); }},'Reset to defaults')));
+      b.append(row('',sv,h('button',{onclick:()=>{ bible=JSON.parse(JSON.stringify(DEFAULT_BIBLE)); bibleDirty=true; openBible(gid); toast('Reset to defaults. Save to keep'); }},'Reset to defaults')));
     } else b.append(h('div',{class:'hint'},'Only Duff can edit the bible.'));
   });
 }
@@ -1805,12 +1805,12 @@ function ghErr(e){
   const c=e&&e.code;
   if(c==='server_not_connected') return 'GitHub isn\'t connected. Add it in Claude: Settings › Connectors › GitHub, then try again.';
   if(c==='needs_reauth') return 'GitHub sign-in expired. Reconnect it in Claude: Settings › Connectors.';
-  if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required') return 'Foxboard needs your OK to use GitHub — tap Send again and Allow.';
+  if(c==='not_in_manifest'||c==='approval_required'||c==='consent_required') return 'Foxboard needs your OK to use GitHub. Tap Send again and Allow.';
   if(c==='blocked_by_policy') return 'Your Claude org blocks this GitHub tool.';
   if(c==='selection_required') return 'Pick which GitHub connector to use in the prompt Claude shows, then try again.';
   if(c==='tool_error'&&/\b404\b|Not Found/i.test(String(e.message||''))) return 'GitHub says it can\'t see that repo. It\'s private and your GitHub connector only has public access. On github.com (phone browser): Settings › Applications › the Claude/Anthropic app › Configure › give it access to this repo. Then Send again.';
   if(c==='tool_error') return 'GitHub said no: '+String(e.message||'').slice(0,160);
-  if(c==='server_unavailable'||c==='upstream_error') return 'GitHub didn\'t answer — it may or may not have landed. Check the repo before sending again.';
+  if(c==='server_unavailable'||c==='upstream_error') return 'GitHub didn\'t answer. It may or may not have landed. Check the repo before sending again.';
   return 'Couldn\'t send ('+(c||'error')+').';
 }
 let outboxItems=[];
@@ -1837,7 +1837,7 @@ function outboxLine(it){
   const st=it.status==='delivered'?'✅':it.status==='error'?'❌':it.status==='uploading'?'⚠️':'⏳';
   const d=h('div',{class:'hint'}); d.append(`${st} ${it.name}.${it.ext} → ${it.gameName||it.game} · ${fmtDate(it.at)} · `);
   if(it.status==='delivered'&&it.path) d.append(h('a',{href:`https://github.com/${it.repo}/blob/main/${it.path}`,target:'_blank',rel:'noopener'},'in repo'));
-  else d.append(it.status==='error'?String(it.error||'failed').slice(0,120):it.status==='uploading'?'upload didn\'t finish — send it again':'waiting for the next sweep');
+  else d.append(it.status==='error'?String(it.error||'failed').slice(0,120):it.status==='uploading'?'upload didn\'t finish, so send it again':'waiting for the next sweep');
   return d;
 }
 function openSendToGame(){
@@ -1860,7 +1860,7 @@ function openSendToGame(){
       const g=gameById(gs.value)||games[0];
       wb.forEach(x=>x.classList.toggle('on',x.dataset.k===what)); sb.forEach(x=>x.classList.toggle('on',+x.dataset.s===scale));
       kb.classList.toggle('on',keyBg&&what!=='gif'); kb.disabled=what==='gif'; kb.textContent=`Key-color background (${g.key})`;
-      info.textContent=`Lands in ${g.repo} › ${g.inbox}/${ymd(new Date())}-foxboard/ as ${(ni.value||'art').replace(/[^a-z0-9_-]+/gi,'_')}.${what==='gif'?'gif':'png'} — the game's art inbox. ${g.direct?'':' Delivered by the Foxboard sweep.'} A Claude session imports it into the game from there.`;
+      info.textContent=`Lands in ${g.repo} › ${g.inbox}/${ymd(new Date())}-foxboard/ as ${(ni.value||'art').replace(/[^a-z0-9_-]+/gi,'_')}.${what==='gif'?'gif':'png'} (the game's art inbox). ${g.direct?'':' Delivered by the Foxboard sweep.'} A Claude session imports it into the game from there.`;
     }
     gs.onchange=()=>{ gid=gs.value; setActiveGame(gid); upd(); }; ni.oninput=upd;
     b.append(row('Game',gs),row('Name',ni)); if(multi) b.append(row('What',...wb)); b.append(row('Scale',...sb),row('',kb),info);
@@ -1881,7 +1881,7 @@ function openSendToGame(){
           await queueOutbox(g,name,ext,blob,`${g.inbox}/${ymd(now)}-foxboard`,`${name}-${stamp}.${ext}`);
           out.textContent=`Queued ✓ ${name}.${ext} for ${g.name}. The Foxboard sweep drops it into ${g.inbox}/ on its next run (every few hours), or say "sweep the Foxboard outbox" in any Claude chat to do it now.`;
           toast('Queued for '+g.name);
-        }catch(e){ report('send',e,'outbox'); out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':e&&e.code==='invalid_argument'?'You can\'t send yet — Duff has to make you an Editor.':e&&e.code==='quota_exceeded'?'Outbox is full — wait for the sweep to clear it.':'Couldn\'t queue it ('+(e&&e.code||'error')+').'; }
+        }catch(e){ report('send',e,'outbox'); out.textContent=e&&e.code==='too_big'?'Too big to send. Lower the scale or send one frame.':e&&e.code==='invalid_argument'?'You can\'t send yet (Duff has to make you an Editor).':e&&e.code==='quota_exceeded'?'Outbox is full: wait for the sweep to clear it.':'Couldn\'t queue it ('+(e&&e.code||'error')+').'; }
         finally{ go.disabled=false; }
         return;
       }
@@ -1906,7 +1906,7 @@ function openSendToGame(){
       }catch(e){
         const blocked=e&&(e.code==='server_not_connected'||e.code==='needs_reauth'||(e.code==='tool_error'&&/\b404\b|Not Found/i.test(String(e.message||''))));
         if(blocked&&dbCap&&lastSend){ try{ await queueOutbox(g,lastSend.name,lastSend.ext,lastSend.blob,lastSend.dir,lastSend.file); out.textContent='GitHub connector can\'t reach that repo, so it went to the outbox instead ✓ The Foxboard sweep delivers it.'; return; }catch(_){} }
-        report('send',e,'direct'); out.textContent=e&&e.code==='too_big'?'Too big to send — lower the scale or send one frame.':ghErr(e); }
+        report('send',e,'direct'); out.textContent=e&&e.code==='too_big'?'Too big to send. Lower the scale or send one frame.':ghErr(e); }
       finally{ go.disabled=false; }
     };
     b.append(row('',go),out);
@@ -1951,7 +1951,7 @@ const CHUNK=180000;
 async function shareCanvas(btn){
   endEdit();
   const json=JSON.stringify({...doc,cur:0});
-  if(json.length>CHUNK*20){ toast('Too big to share (big images) — export it instead',2600); return; }
+  if(json.length>CHUNK*20){ toast('Too big to share (big images), so export it instead',2600); return; }
   btn.disabled=true; btn.textContent='Sharing…';
   const id=uid()+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
   let wrote=0;
@@ -1960,7 +1960,7 @@ async function shareCanvas(btn){
     const th=pageThumb(0,128).toDataURL('image/png');
     await dbCap.doc(`library/${id}`).set({name:doc.name||'Untitled',w:doc.w,h:doc.h,frames:doc.pages.length,pixel:!!doc.pixel,by:myUserId||'',at:Date.now(),thumb:th,chunks:parts.length});
     toast('Shared with everyone on Foxboard');
-  }catch(e){ report('share',e); for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`libchunks/${id}_${n}`).delete(); }catch(_){} } toast(e&&e.code==='quota_exceeded'?'Library is full — delete old items':e&&e.code==='invalid_argument'?'You can look but not share — Duff has to make you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
+  }catch(e){ report('share',e); for(let n=0;n<wrote;n++){ try{ await dbCap.doc(`libchunks/${id}_${n}`).delete(); }catch(_){} } toast(e&&e.code==='quota_exceeded'?'Library is full: delete old items':e&&e.code==='invalid_argument'?'You can look but not share until Duff makes you an Editor':'Share failed ('+(e&&e.code||'error')+')',3000); }
   btn.disabled=false; btn.textContent='⬆ Share this canvas';
 }
 async function openLibCanvas(it){
@@ -1988,7 +1988,7 @@ function openLibrary(){
     if(canWriteShared!==false){ const sb=h('button',{class:'acc'},'⬆ Share this canvas'); sb.onclick=()=>shareCanvas(sb); b.append(row('',sb)); }
     else b.append(h('div',{class:'hint'},'You can browse and open things here. To share or leave notes, Duff has to invite you as an Editor.'));
     if(libState==='loading') b.append(h('div',{class:'hint'},'Loading…'));
-    else if(libState==='slow') b.append(h('div',{class:'hint'},'Can\'t reach the library yet — still trying.'));
+    else if(libState==='slow') b.append(h('div',{class:'hint'},'Can\'t reach the library yet (still trying).'));
     else if(String(libState).startsWith('error')) b.append(h('div',{class:'hint'},'Library unavailable here.'));
     else if(!libItems.length) b.append(h('div',{class:'hint'},'Nothing shared yet. Share a canvas and it shows up for everyone.'));
     const g=h('div',{class:'grid2'});
@@ -2056,7 +2056,7 @@ async function sendToClaude(note){
   if(!myUserId) throw new Error('Sign in to Claude to send');
   const B=`toclaude/${myUserId}`; // rule: you write only under your own id; Duff + Claude read everyone's
   endEdit(); note=String(note||'').trim().slice(0,2000);
-  const json=JSON.stringify(doc); if(json.length>CHUNK*30) throw new Error('Too big to send — save a project file instead');
+  const json=JSON.stringify(doc); if(json.length>CHUNK*30) throw new Error('Too big to send, so save a project file instead');
   const id=Date.now().toString(36)+uid(), parts=[]; for(let i=0;i<json.length;i+=CHUNK) parts.push(json.slice(i,i+CHUNK));
   const layers=O().slice(-60).map(o=>({id:o.id,type:o.type,name:o.name||'',text:o.type==='text'?String(o.text||'').slice(0,80):undefined,x:Math.round(o.x),y:Math.round(o.y),w:Math.round(o.w),h:Math.round(o.h),hidden:!!o.hidden}));
   await dbCap.doc(B).set({at:Date.now(),by:myUserId});
@@ -2074,9 +2074,9 @@ async function openDraft(id){
   if(!dbCap) throw new Error('Drafts open inside the Claude app');
   const it=fromClaude.find(x=>x.id===id); if(!it) throw new Error('No draft '+id);
   const s=await dbCap.collection('fromclaudechunks').where('item','==',id).get();
-  const parts=s.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n); if(parts.length!==it.chunks) throw new Error('Draft is still arriving — try again in a moment');
+  const parts=s.docs.map(d=>d.data()).sort((a,b)=>a.n-b.n); if(parts.length!==it.chunks) throw new Error('Draft is still arriving. Try again in a moment');
   const d=migrate(JSON.parse(parts.map(p=>p.data).join(''))); // data only: a doc, never code
-  useTemplate(d); markDraftSeen(id); draftBanner(); toast('Opened Claude\'s draft — undo goes back to yours',3000); return true;
+  useTemplate(d); markDraftSeen(id); draftBanner(); toast('Opened Claude\'s draft (undo goes back to yours)',3000); return true;
 }
 function draftBanner(){
   let el=$('#draftbar'); const seen=draftSeen(), d=fromClaude.find(x=>!seen.has(x.id));
@@ -2088,13 +2088,13 @@ function draftBanner(){
 }
 function openClaudeLink(){
   openSheet('📨 Send to Claude','toclaude',b=>{
-    if(!dbCap) b.append(h('div',{class:'cloudnote'},'Sending works when Foxboard is open inside the Claude app. The problem log below still works — copy it and paste it to Duff.'));
+    if(!dbCap) b.append(h('div',{class:'cloudnote'},'Sending works when Foxboard is open inside the Claude app. The problem log below still works: copy it and paste it to Duff.'));
     else {
       const ta=h('textarea',{placeholder:'What should Claude look at? e.g. "make the knight read better at 32px" or "Forge keeps eating his shield"'});
       const out=h('div',{class:'out hidden'}), go=h('button',{class:'acc'},'📨 Send this canvas');
       go.onclick=async()=>{ go.disabled=true; out.classList.remove('hidden'); out.textContent='Sending…';
         try{ await sendToClaude(ta.value); ta.value=''; out.textContent='Sent ✓ Claude sees the canvas, every layer and your note. Say "check my Foxboard inbox" in any Claude chat.'; }
-        catch(e){ report('toclaude',e); out.textContent=e&&e.code==='invalid_argument'?'Duff has to make you an Editor first.':e&&e.code==='quota_exceeded'?'Inbox is full — ask Claude to clear it.':(e.message||'Couldn\'t send ('+(e&&e.code||'error')+')'); }
+        catch(e){ report('toclaude',e); out.textContent=e&&e.code==='invalid_argument'?'Duff has to make you an Editor first.':e&&e.code==='quota_exceeded'?'Inbox is full, so ask Claude to clear it.':(e.message||'Couldn\'t send ('+(e&&e.code||'error')+')'); }
         go.disabled=false; };
       b.append(ta,row('',go),out);
       const mine=toClaudeItems.slice(0,6);
@@ -2106,7 +2106,7 @@ function openClaudeLink(){
     b.append(h('h4',{style:'margin:12px 0 4px'},'Problem log (this phone)'));
     if(!L.length) b.append(h('div',{class:'hint'},'No problems logged. 🎉'));
     else { L.slice(0,8).forEach(x=>b.append(h('div',{class:'hint'},`${fmtDate(x.at)} · ${x.kind}: ${x.msg.slice(0,140)}`)));
-      b.append(row('',h('button',{onclick:async()=>{ const t=L.slice(0,20).map(x=>`${new Date(x.at).toISOString()} ${x.kind} ${x.code} ${x.msg} | ${x.ua}`).join('\n'); try{ await navigator.clipboard.writeText(t); toast('Copied — paste it to Duff or Claude'); }catch(e){ showText(t); } }},'📋 Copy log'),
+      b.append(row('',h('button',{onclick:async()=>{ const t=L.slice(0,20).map(x=>`${new Date(x.at).toISOString()} ${x.kind} ${x.code} ${x.msg} | ${x.ua}`).join('\n'); try{ await navigator.clipboard.writeText(t); toast('Copied. Paste it to Duff or Claude'); }catch(e){ showText(t); } }},'📋 Copy log'),
         h('button',{onclick:()=>{ try{ localStorage.removeItem(DIAG_LS); }catch(_){} openClaudeLink(); }},'Clear'))); }
     b.append(h('div',{class:'hint'},'Inside the Claude app problems also reach Claude automatically (only Duff and Claude can read them).'));
   });
@@ -2131,7 +2131,7 @@ function slug(){ return (doc.name||'foxboard').toLowerCase().replace(/[^a-z0-9]+
 async function deliver(blob,filename,fallback){
   if(downloads){
     try{ await downloads.save({filename,data:blob}); toast('Saved '+filename); return; }
-    catch(e){ if(e&&e.code==='declined'){ toast('Cancelled'); return; } if(e&&e.code==='rate_limited'){ toast('One save at a time — try again'); return; } }
+    catch(e){ if(e&&e.code==='declined'){ toast('Cancelled'); return; } if(e&&e.code==='rate_limited'){ toast('One save at a time, so try again'); return; } }
   }
   // outside the Claude app (e.g. the home-screen copy on an iPhone): share sheet, else a normal download
   try{
@@ -2139,7 +2139,7 @@ async function deliver(blob,filename,fallback){
     if(navigator.canShare&&navigator.canShare({files:[file]})&&/iPhone|iPad|Android/i.test(navigator.userAgent)){ await navigator.share({files:[file],title:filename}); return; }
   }catch(e){ if(e&&e.name==='AbortError') return; }
   try{ const u=URL.createObjectURL(blob), a=document.createElement('a'); a.href=u; a.download=filename; document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),30000); toast('Saved '+filename); return; }catch(e){}
-  if(fallback) fallback(); else toast('Could not save here — try Preview and long-press the image');
+  if(fallback) fallback(); else toast('Could not save here. Try Preview and long-press the image');
 }
 function openExport(){
   if(drawMode) setDrawMode(false); if(magic) endMagic();
@@ -2162,30 +2162,30 @@ function openExport(){
       sheetRow.classList.toggle('hidden',what!=='sheet'||fmt==='gif'||fmt==='pdf'||fmt==='video');
       wb.forEach(x=>x.disabled=fmt==='gif'||fmt==='pdf'||fmt==='video');
       if(fmt==='gif') info.textContent=gifInfo();
-      if(fmt==='pdf') info.textContent=`PDF · ${doc.pages.length} page${doc.pages.length>1?'s':''} (one per frame) · ${Math.round(doc.w*scale)}×${Math.round(doc.h*scale)} px each — for print or sharing`;
+      if(fmt==='pdf') info.textContent=`PDF · ${doc.pages.length} page${doc.pages.length>1?'s':''} (one per frame) · ${Math.round(doc.w*scale)}×${Math.round(doc.h*scale)} px each (for print or sharing)`;
       if(fmt==='video') info.textContent=videoMime()?`${(videoMime()||'').includes('mp4')?'MP4':'WebM'} video · ${Math.round(doc.w*scale)}×${Math.round(doc.h*scale)} · ${doc.pages.length} frame${doc.pages.length>1?'s':''} @ ${doc.fps} fps, plays 3×`:'This browser cannot record video';
     }
     if(multi) b.append(row('What',...wb));
     b.append(row('Scale',...sb)); b.append(row('Format',...fb)); b.append(sheetRow); b.append(info);
     const gifInfo=()=>{ const W=Math.round(doc.w*scale),H=Math.round(doc.h*scale); return `${W} × ${H} px · animated GIF · ${doc.pages.length} frame${doc.pages.length>1?'s':''} @ ${doc.fps} fps${(!doc.bg||doc.bg==='transparent')?' · transparent':''}`; };
-    const make=()=>{ const [W,H]=dims(); if(W*H>67e6){ toast('Too big — lower the scale'); return null; } return what==='sheet'?renderSheet(scale,cols,pad,fmt==='jpg'):renderToCanvas(scale,fmt==='jpg'); };
+    const make=()=>{ const [W,H]=dims(); if(W*H>67e6){ toast('Too big: lower the scale'); return null; } return what==='sheet'?renderSheet(scale,cols,pad,fmt==='jpg'):renderToCanvas(scale,fmt==='jpg'); };
     const go=h('button',{class:'acc'},'⬇ Save image');
     go.onclick=()=>{
-      if(fmt==='pdf'){ go.disabled=true; setTimeout(()=>{ let blob; try{ blob=makePDF(scale); }catch(e){ toast('PDF failed — try a smaller scale'); } go.disabled=false; if(blob) deliver(blob,`${slug()}.pdf`,null); },30); return; }
+      if(fmt==='pdf'){ go.disabled=true; setTimeout(()=>{ let blob; try{ blob=makePDF(scale); }catch(e){ toast('PDF failed (try a smaller scale)'); } go.disabled=false; if(blob) deliver(blob,`${slug()}.pdf`,null); },30); return; }
       if(fmt==='video'){ if(!videoMime()){ toast('This browser cannot record video'); return; } go.disabled=true; go.textContent='Recording…';
         makeVideo(scale,3).then(blob=>{ const ext=blob.type.includes('mp4')?'mp4':'webm'; deliver(blob,`${slug()}.${ext}`,null); }).catch(e=>toast('Video failed: '+e.message)).finally(()=>{ go.disabled=false; go.textContent='⬇ Save image'; }); return; }
-      if(fmt==='gif'){ const W=doc.w*scale,H=doc.h*scale; if(W*H*doc.pages.length>40e6){ toast('GIF too big — lower the scale'); return; }
+      if(fmt==='gif'){ const W=doc.w*scale,H=doc.h*scale; if(W*H*doc.pages.length>40e6){ toast('GIF too big, so lower the scale'); return; }
         go.disabled=true; go.textContent='Encoding…';
-        setTimeout(()=>{ let blob; try{ blob=makeGIF(scale); }catch(e){ toast('GIF failed — try a smaller scale'); }
+        setTimeout(()=>{ let blob; try{ blob=makeGIF(scale); }catch(e){ toast('GIF failed. Try a smaller scale'); }
           go.disabled=false; go.textContent='⬇ Save image'; if(!blob) return;
           const fn=`${slug()}${scale!==1?'@'+scale+'x':''}.gif`;
           deliver(blob,fn,()=>{ const u=URL.createObjectURL(blob); $('#ivImg').src=u; $('#imgview').classList.add('open'); }); },30);
         return; }
       const c=make(); if(!c) return;
-      c.toBlob(blob=>{ if(!blob){ toast('Too big to export — try a smaller scale'); return; }
+      c.toBlob(blob=>{ if(!blob){ toast('Too big to export: try a smaller scale'); return; }
         const fn=`${slug()}${what==='sheet'?'-sheet':''}${scale!==1?'@'+scale+'x':''}.${fmt}`;
         deliver(blob,fn,()=>showImage(c,fmt)); }, fmt==='jpg'?'image/jpeg':'image/png', 0.92); };
-    const pv=h('button',{onclick:()=>{ if(fmt==='gif'){ try{ const u=URL.createObjectURL(makeGIF(scale)); $('#ivImg').src=u; $('#imgview').classList.add('open'); }catch(e){ toast('GIF failed — try a smaller scale'); } return; } const c=make(); if(c) showImage(c,fmt); }},'👁 Preview');
+    const pv=h('button',{onclick:()=>{ if(fmt==='gif'){ try{ const u=URL.createObjectURL(makeGIF(scale)); $('#ivImg').src=u; $('#imgview').classList.add('open'); }catch(e){ toast('GIF failed. Try a smaller scale'); } return; } const c=make(); if(c) showImage(c,fmt); }},'👁 Preview');
     b.append(row('',go,pv));
     b.append(row('',h('button',{onclick:openSendToGame},'🎮 Send to game instead')));
     b.append(h('div',{class:'hint'},doc.pixel?'Pixel art: 1× for in-game use, 4–8× to share. Sprite sheet frames go left→right, top→bottom.':'Tip: 2× is sharper on phone screens.'));
@@ -2373,7 +2373,7 @@ function openElements(){
     const fill=()=>{ grid.innerHTML=''; Object.keys(ELEMENTS).forEach(n=>{ const im=h('img',{alt:n,src:elementSrc(n,color)}); const bt=h('button',{title:n},im,h('small',{},n)); bt.onclick=()=>{ addObj(makeElement(n,color)); closeSheet(); }; grid.append(bt); }); };
     ci.addEventListener('input',()=>{ color=ci.value; try{ localStorage.setItem('foxboard.elcolor',color); }catch(e){} fill(); });
     b.append(row('Color',ci,h('span',{class:'hint'},'recolor later in ✎ Edit')),grid);
-    b.append(h('div',{class:'hint'},'Original vector shapes — stay sharp at any size. Mask, shadow, blend and the magic tools work on them too.'));
+    b.append(h('div',{class:'hint'},'Original vector shapes stay sharp at any size. Mask, shadow, blend and the magic tools work on them too.'));
     fill();
   });
 }
@@ -2395,7 +2395,7 @@ function resizeDoc(nw,nh,mode){
 function openResize(){
   openSheet('Resize','resize',b=>{
     let mode='fit';
-    b.append(h('div',{class:'hint'},`Now ${doc.w}×${doc.h}. Every layer on every frame scales and recenters. Undo brings the old size back — Save as template first to keep both.`));
+    b.append(h('div',{class:'hint'},`Now ${doc.w}×${doc.h}. Every layer on every frame scales and recenters. Undo brings the old size back. Save as template first to keep both.`));
     const mb=[['fit','Fit (nothing cut off)'],['fill','Fill (no empty edges)']].map(([k,l])=>{ const bt=h('button',{class:k===mode?'on':''},l); bt.onclick=()=>{ mode=k; mb.forEach(x=>x.classList.toggle('on',x===bt)); }; return bt; });
     b.append(row('Mode',...mb));
     const g=h('div',{class:'grid2'});
@@ -2484,7 +2484,7 @@ function expandPreset(o,kind){
   else if(kind==='tall'){ const nh=Math.max(H,Math.round(W*16/9)); t=Math.floor((nh-H)/2); b=nh-H-t; if(!t&&!b){ t=b=Math.round(H*0.15); } }
   else if(kind==='square'){ const s=Math.max(W,H); l=Math.floor((s-W)/2); r=s-W-l; t=Math.floor((s-H)/2); b=s-H-t; }
   if(!(l||r||t||b)){ toast('Already that shape'); return; }
-  const px=(W+l+r)*(H+t+b); if(px>1600*1600){ toast('Too big to expand on the phone — shrink it first'); return; }
+  const px=(W+l+r)*(H+t+b); if(px>1600*1600){ toast('Too big to expand on the phone (shrink it first)'); return; }
   toast('Expanding…',9000);
   setTimeout(()=>{ try{ const t0=performance.now(); expandImage(o,{l,r,t,b}); toast('Expanded ✓ ('+((performance.now()-t0)/1000).toFixed(1)+' s)'); draw(); openProps(); }catch(e){ toast(e.message); } },60);
 }
@@ -2522,7 +2522,7 @@ function openAlign(){
       b.append(row('Align to',h('button',{onclick:()=>{ edit(()=>alignObjs(selObjs(),'center',true)); edit(()=>alignObjs(selObjs(),'middle',true)); }},'Center all on canvas')));
       b.append(row('Spread',h('button',{onclick:()=>{ let ok; edit(()=>{ ok=distributeObjs(selObjs(),'h'); }); if(!ok) toast('Needs 3+ items'); }},'⇹ Even across'),h('button',{onclick:()=>{ let ok; edit(()=>{ ok=distributeObjs(selObjs(),'v'); }); if(!ok) toast('Needs 3+ items'); }},'⇳ Even down')));
       const grouped=list.every(o=>o.gid&&o.gid===list[0].gid);
-      b.append(row('Group',grouped?h('button',{onclick:()=>{ edit(()=>ungroupObjs(selObjs())); multi.clear(); closeSheet(); refreshUI(); toast('Ungrouped'); }},'⧉ Ungroup'):h('button',{class:'acc',onclick:()=>{ edit(()=>groupObjs(selObjs())); closeSheet(); refreshUI(); toast('Grouped — they move together'); }},'🔗 Group')));
+      b.append(row('Group',grouped?h('button',{onclick:()=>{ edit(()=>ungroupObjs(selObjs())); multi.clear(); closeSheet(); refreshUI(); toast('Ungrouped'); }},'⧉ Ungroup'):h('button',{class:'acc',onclick:()=>{ edit(()=>groupObjs(selObjs())); closeSheet(); refreshUI(); toast('Grouped: they move together'); }},'🔗 Group')));
       b.append(row('',h('button',{onclick:()=>{ dupSel(); closeSheet(); }},'⧉ Duplicate all'),h('button',{class:'danger',onclick:()=>{ delSel(); closeSheet(); }},'🗑 Delete all')));
     }
     b.append(h('div',{class:'hint'},'Multi-select: tap ☑ in the bar, then tap more layers (or tick them in Layers). Grouped layers select and move together.'));
@@ -2633,7 +2633,7 @@ const API_DOC={
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
   forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
-  forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local} — the job files without sending (Claude commits them with git)',
+  forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local}: the job files without sending (Claude commits them with git)',
   vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
   takes:'takes() -> [{job, k, seed, prompt, fav}] every finished Forge take on this phone', favorite:'favorite(jobId, k, on?) -> bool',
   boostPrompt:'boostPrompt(text) -> Promise<string>. Claude rewrites a short idea into a full FLUX prompt (style is added from the bible separately)',
@@ -2743,15 +2743,15 @@ function expandAmounts(o,kind){ const W=o.natW,H=o.natH; let l=0,r=0,t=0,b=0;
   if(kind==='all'){ l=r=Math.round(W*0.15); t=b=Math.round(H*0.15); } else if(kind==='wide'){ const nw=Math.max(Math.round(W*1.3),Math.round(H*16/9)); l=Math.floor((nw-W)/2); r=nw-W-l; } else if(kind==='tall'){ const nh=Math.max(Math.round(H*1.3),Math.round(W*16/9)); t=Math.floor((nh-H)/2); b=nh-H-t; } else if(kind==='square'){ const s=Math.max(W,H); l=Math.floor((s-W)/2); r=s-W-l; t=Math.floor((s-H)/2); b=s-H-t; }
   return {l,r,t,b}; }
 async function forgeSend(opts,okMsg){
-  try{ toast('Sending to Forge… (first time asks you to Allow)',6000); const id=await forgeQueue(opts); toast(okMsg||'Queued ✓ — results show in ✨AI › Forge',4000); return id; }
+  try{ toast('Sending to Forge… (first time asks you to Allow)',6000); const id=await forgeQueue(opts); toast(okMsg||'Queued ✓. Results show in ✨AI › Forge',4000); return id; }
   catch(e){ report('forge',e,opts&&opts.mode); toast(e&&e.message?e.message:ghErr(e),5000); return null; }
 }
 function forgeTool(o,mode){
-  if(mode==='upscale'){ forgeSend({mode:'upscale',id:o.id},'Upscale queued ✓ (~5 min) — ✨AI › Forge shows it'); return; }
+  if(mode==='upscale'){ forgeSend({mode:'upscale',id:o.id},'Upscale queued ✓ (~5 min): ✨AI › Forge shows it'); return; }
   openSheet('🔥 AI expand','aiexpand',b=>{
     const ta=h('textarea',{placeholder:'Optional: what should the new edges show? e.g. more forest, misty sky'});
     let kind='wide'; const ks=[['wide','Wide 16:9'],['tall','Tall 9:16'],['square','Square'],['all','+15% all sides']].map(([k,l])=>{ const bt=h('button',{class:k===kind?'on':''},l); bt.onclick=()=>{ kind=k; ks.forEach(x=>x.classList.toggle('on',x===bt)); }; return bt; });
-    b.append(ta,row('Shape',...ks),row('',h('button',{class:'acc',onclick:async()=>{ const e=expandAmounts(o,kind); if(!(e.l||e.r||e.t||e.b)){ toast('Already that shape'); return; } closeSheet(); await forgeSend({mode:'expand',id:o.id,expand:e,prompt:ta.value.trim()},'AI expand queued ✓ (~10 min) — ✨AI › Forge shows it'); }},'🔥 Queue it')));
+    b.append(ta,row('Shape',...ks),row('',h('button',{class:'acc',onclick:async()=>{ const e=expandAmounts(o,kind); if(!(e.l||e.r||e.t||e.b)){ toast('Already that shape'); return; } closeSheet(); await forgeSend({mode:'expand',id:o.id,expand:e,prompt:ta.value.trim()},'AI expand queued ✓ (~10 min). ✨AI › Forge shows it'); }},'🔥 Queue it')));
     b.append(h('div',{class:'hint'},'FLUX paints the new edges to match the picture. Free on GitHub machines, about 10 minutes, public. The result lands on top of your image, already lined up. For instant results use Expand (on the phone) instead.'));
   });
 }
@@ -2768,7 +2768,7 @@ function makeTileable(o){
   const id=g.getImageData(0,0,W,H), m=new Uint8Array(W*H), bw=Math.max(1,Math.round(Math.min(W,H)*(doc.pixel?0.04:0.06)));
   for(let y=0;y<H;y++) for(let x=0;x<W;x++) if(Math.abs(x-hx+0.5)<bw||Math.abs(y-hy+0.5)<bw) m[y*W+x]=1;
   id.data.set(inpaint(id.data,W,H,m,{dilate:0})); g.putImageData(id,0,0);
-  setImgSrc(o,c); toast('Seamless ✓ — ▦ Preview to check the repeat');
+  setImgSrc(o,c); toast('Seamless ✓ (▦ Preview to check the repeat)');
 }
 function tileCanvas(o,reps){ const D=imageData(o), r=reps||3, c=document.createElement('canvas'); const k=Math.max(1,Math.floor(512/Math.max(D.W,D.H)));
   c.width=D.W*k*r; c.height=D.H*k*r; const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
@@ -2888,7 +2888,7 @@ function openNewBackground(o){
   try{ bgMask(o); }catch(e){ toast(e.message,3500); return; }
   openSheet('🌄 New background','aiexpand',b=>{
     const ta=h('textarea',{placeholder:'e.g. a misty pine forest at dusk, lanterns in the distance'});
-    b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const p=ta.value.trim(); if(!p){ toast('Describe the new background'); return; } closeSheet(); await forgeSend({mode:'bg',id:o.id,prompt:p},'New background queued ✓ (~15 min) — ✨AI › Forge shows it'); }},'🔥 Queue it')));
+    b.append(ta,row('',h('button',{class:'acc',onclick:async()=>{ const p=ta.value.trim(); if(!p){ toast('Describe the new background'); return; } closeSheet(); await forgeSend({mode:'bg',id:o.id,prompt:p},'New background queued ✓ (~15 min), and ✨AI › Forge shows it'); }},'🔥 Queue it')));
     b.append(h('div',{class:'hint'},'Keeps your cut-out subject pixel-for-pixel and paints a new scene behind it on Forge (free, ~15 min, public). The result lands on top, lined up.'));
   });
 }
@@ -2904,7 +2904,7 @@ function compareBelow(o){
   cv2.addEventListener('pointerdown',e=>{ drag(e); cv2.setPointerCapture(e.pointerId); }); cv2.addEventListener('pointermove',e=>{ if(e.buttons||e.pointerType==='touch') drag(e); });
   rg.oninput=paint; paint();
   const close=h('button',{},'Close'); close.onclick=()=>ov.remove();
-  ov.append(h('div',{class:'hint'},'◀ before (without this layer) · after ▶ — drag across'),cv2,rg,close); document.body.append(ov); return true;
+  ov.append(h('div',{class:'hint'},'◀ before (without this layer) · after ▶: drag across'),cv2,rg,close); document.body.append(ov); return true;
 }
 function startMagicEdit(o){ startMagic(o); if(!magic) return; magic.edit=true; $('#mgErase').textContent='🔥 AI fill'; toast('Brush the area to change, then tap 🔥 AI fill',2600); }
 
