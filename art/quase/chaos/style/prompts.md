@@ -2,9 +2,9 @@
 
 Copied from `docs/art-notes.md` section 6 in the private game repo. Names in
 brackets are the reference images attached to each call. "you front/back" is the
-protagonist sprite, used only as a style and pose reference; it is not in this
-library (see `art/quase/README.md`). Scene prompts start with the standard
-preamble in `style-anchor.md` and list props from `prop-bible.md`.
+protagonist (Duff) sprite (`sprites/duff/`), used as the style and pose reference
+for every character. Scene prompts start with the standard preamble in
+`style-anchor.md` and list props from `prop-bible.md`.
 
 Shared sprite tail (appended to every sprite prompt below as **[TAIL]**):
 > Semi-realistic painted graphic-novel comic style matching the attached images:
@@ -110,7 +110,7 @@ All sprite prompts: aspect 3:4. References in brackets.
 
 ### Portraits (1:1)
 
-Second pass: extra emotions use the character's first cold portrait as the reference, with "same chest-up three-quarter framing ... but [EMOTION]". Where that came out too close to the reference (neutral, betrayed, resolved), the regen asked for "a clearly DIFFERENT pose" plus a gesture: Teodor betrayed pointing; Teodor resolved with a gloved hand at his collar, cranes behind. Defector: the guard_defector sprite as reference, "holding his removed full-face riot helmet against his chest in both gloved hands ... shaken, uncertain, on the edge of a decision ... No red anywhere." Warm versions are made from each cold one as before.
+Second pass: extra emotions use the character's first cold portrait as the reference, with "same chest-up three-quarter framing ... but [EMOTION]". Where that came out too close to the reference (neutral, betrayed, resolved), the regen asked for "a clearly DIFFERENT pose" plus a gesture: Duff neutral with arms folded, looking at the viewer; Teodor betrayed pointing; Teodor resolved with a gloved hand at his collar, cranes behind. Defector: the guard_defector sprite as reference, "holding his removed full-face riot helmet against his chest in both gloved hands ... shaken, uncertain, on the edge of a decision ... No red anywhere." Warm versions are made from each cold one as before.
 
 Cold, [that character's sprite front]:
 > Chest-up portrait of the attached character ([recap]), three-quarter view,
@@ -120,7 +120,7 @@ Cold, [that character's sprite front]:
 > cold blue-grey near-monochrome palette, regime district mood, the red [item]
 > the only warm note. Documentary mood, not glamour. No text.
 
-Emotions: Mara "calm and tired, kind but hard eyes";
+Emotions: Duff "tired and steady"; Mara "calm and tired, kind but hard eyes";
 Kesh "alert and suspicious, shoulders slightly hunched"; Teodor "unimpressed and
 watchful" (v2 used: added "deep dark brown skin", referenced v1 for composition).
 

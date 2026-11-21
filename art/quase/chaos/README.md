@@ -8,11 +8,12 @@ Every file here has an entry in `../manifest.json`. Status: all approved by Duff
 | `portraits/` | Chest-up portraits, cold (regime) and warm (liberated) versions |
 | `backdrops/` | Signal Box, Dormitories regime/liberated (street) |
 | `stills/` | Opening raid (phone video), strike, safehouse door, broadcast airing, Teodor's dock |
-| `endings/` | District turns, yards silent, occupiers, window closes, kid's wall x3 |
+| `endings/` | District turns, yards silent, occupiers, captured, window closes, kid's wall x3 |
 | `woodcuts/` | Title, State TV frame (blank + lettered "CN24"), pirate radio frame, opening raid |
 | `posters/` | Regime "Continuity" and movement "Unbroken": blank + lettered |
 | `stamps/`, `icons/` | Choice stamps and action icons (woodcut) |
 | `itch/` | itch.io cover and banner: blank + lettered |
+| `explorations/` | Approved early explorations (labelled EXPLORATION): the Canva Duff sprite used for the 128 px size call |
 | `sheets/` | Contact sheets for each type, plus the joint-map overlay |
 | `style/` | References: `identity/<name>.md` (must-keep traits), `style-anchor.md` and the two crops, `prop-bible.md`, `type-sheet.md` (lettering spec), `prompts.md` (exact prompts) |
 

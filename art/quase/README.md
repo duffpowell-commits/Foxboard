@@ -15,12 +15,16 @@ Copies here are kept small. Masters stay in the game repo (the `master` field in
 - posters: 576x768 JPEG; stamps and icons: 256 palette PNG plus 128 `display/` icons
 - itch cover/banner: full size (630x500, 960x300) JPEG
 
+## Duff's likeness
+Duff is the player character "You". His sprites, portraits, identity pack, joint maps and the "captured"
+ending are included. On Nov 21, 2026 he explicitly okayed his likeness being public in this repo (see CLAUDE.md).
+`chaos/explorations/` holds approved early explorations. Each is labelled EXPLORATION in the manifest.
+
 ## Not here, on purpose
-- **The player character "You" (Duff's likeness)**: the sprites, the 6 portraits, the identity pack, the joint maps,
-  the "captured" ending (it shows his face on a phone) and the early style explorations. This repo is public, and
-  CLAUDE.md says no Duff likeness. They stay in the private game repo.
 - Rejected drafts, first takes and pre-redo versions replaced at the same path (`docs/art-notes.md` in the game
   repo lists them). The layout drafts used for the backdrops are left out too, since the finals replace them.
+- Grey-background sprite sources (`you_front_anchor.jpg`, `you_back.jpg` and the rest): the cut-out sprites duplicate
+  them. Their paths are kept in the manifest's `source` field.
 
 ## Tools
 Generic QA, lettering and joint-map scripts are in `tools/quase/` (see its README).

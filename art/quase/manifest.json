@@ -150,6 +150,54 @@
    "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
   },
   {
+   "id": "chaos-sprite-duff-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Duff (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/duff/duff_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/duff/duff_front.png"
+   },
+   "size": [
+    303,
+    512
+   ],
+   "bytes": 137518,
+   "display": "art/quase/chaos/sprites/duff/display/duff_front.png",
+   "joints": "art/quase/chaos/sprites/duff/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/duff.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)",
+   "source": "assets/characters/source/you_front_anchor.jpg (grey-background original; the anchor ref for every character prompt)"
+  },
+  {
+   "id": "chaos-sprite-duff-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Duff (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/duff/duff_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/duff/duff_back.png"
+   },
+   "size": [
+    299,
+    512
+   ],
+   "bytes": 126370,
+   "display": "art/quase/chaos/sprites/duff/display/duff_back.png",
+   "joints": "art/quase/chaos/sprites/duff/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/duff.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)",
+   "source": "assets/characters/source/you_back.jpg (grey-background original; the anchor ref for every character prompt)"
+  },
+  {
    "id": "chaos-sprite-guard-front",
    "game": "chaosisthemotheroforder",
    "type": "sprite",
@@ -534,6 +582,126 @@
     512
    ],
    "bytes": 37081,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_angry_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff angry cold",
+   "file": "art/quase/chaos/portraits/duff_angry_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_angry_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 50060,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_angry_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff angry warm",
+   "file": "art/quase/chaos/portraits/duff_angry_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_angry_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 56361,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_neutral_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff neutral cold",
+   "file": "art/quase/chaos/portraits/duff_neutral_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_neutral_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 41886,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_neutral_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff neutral warm",
+   "file": "art/quase/chaos/portraits/duff_neutral_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_neutral_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 51802,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_tired_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff tired cold",
+   "file": "art/quase/chaos/portraits/duff_tired_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_tired_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 44237,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-duff_tired_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "duff tired warm",
+   "file": "art/quase/chaos/portraits/duff_tired_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/duff_tired_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 52719,
    "status": "approved",
    "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
   },
@@ -976,6 +1144,27 @@
    "bytes": 67844,
    "status": "approved (kept from the earlier round)",
    "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-captured",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "captured",
+   "file": "art/quase/chaos/endings/captured.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/captured.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 87627,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md",
+   "note": "the phone on the table shows Duff with a black bar over his eyes"
   },
   {
    "id": "chaos-ending-district_turns",
@@ -1949,6 +2138,26 @@
    "prompt_ref": "style/style-anchor.md"
   },
   {
+   "id": "chaos-exploration-duff-canva-sprite",
+   "game": "chaosisthemotheroforder",
+   "type": "exploration",
+   "title": "EXPLORATION: early Canva Duff sprite (Nov 11), used for the 64/96/128 px size test; Duff picked 128 px",
+   "file": "art/quase/chaos/explorations/duff_canva_sprite.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "docs/renders/sprites/size_test/duff_canva_src.png"
+   },
+   "size": [
+    72,
+    196
+   ],
+   "bytes": 27355,
+   "status": "exploration (approved for the size call; replaced by sprites/duff)",
+   "prompt_ref": null
+  },
+  {
    "id": "chaos-sheet-characters_sheet",
    "game": "chaosisthemotheroforder",
    "type": "contact-sheet",
@@ -1956,10 +2165,10 @@
    "file": "art/quase/chaos/sheets/characters_sheet.jpg",
    "master": null,
    "size": [
-    2200,
+    2600,
     636
    ],
-   "bytes": 217003,
+   "bytes": 237054,
    "status": "generated from this library's copies"
   },
   {
@@ -1973,7 +2182,7 @@
     1718,
     1920
    ],
-   "bytes": 462447,
+   "bytes": 499931,
    "status": "generated from this library's copies (tools/quase/joint_map.py --overlay)"
   },
   {
@@ -1985,9 +2194,9 @@
    "master": null,
    "size": [
     2048,
-    548
+    822
    ],
-   "bytes": 191361,
+   "bytes": 271563,
    "status": "generated from this library's copies"
   },
   {
@@ -2015,7 +2224,7 @@
     1920,
     1152
    ],
-   "bytes": 344263,
+   "bytes": 361184,
    "status": "generated from this library's copies"
   },
   {
@@ -2069,6 +2278,14 @@
    "title": "civilian c",
    "file": "art/quase/chaos/style/identity/civilian_c.md",
    "bytes": 1086
+  },
+  {
+   "id": "chaos-doc-duff",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "duff",
+   "file": "art/quase/chaos/style/identity/duff.md",
+   "bytes": 1878
   },
   {
    "id": "chaos-doc-guard",
@@ -2148,7 +2365,7 @@
    "type": "reference-doc",
    "title": "prompts",
    "file": "art/quase/chaos/style/prompts.md",
-   "bytes": 11154
+   "bytes": 11220
   },
   {
    "id": "chaos-doc-prop-bible",
