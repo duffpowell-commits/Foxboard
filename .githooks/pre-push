@@ -1,0 +1,39 @@
+#!/bin/sh
+# Why: Forge jobs only render when they land on main (forge.yml). Code still
+# goes through pull requests. This hook is the local backstop: a push to main
+# is allowed only when every file in the push lives under forge/jobs/**.
+# GitHub's merge button and the Actions bot do not use this hook (they have no
+# hooksPath). Enable it with: git config core.hooksPath .githooks
+# --force / --force-with-lease to main is always refused.
+
+remote="$1"
+url="$2"
+deny() { echo "pre-push: $*" >&2; exit 1; }
+
+zero=0000000000000000000000000000000000000000
+while read local_ref local_sha remote_ref remote_sha
+do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master) ;;
+    *) continue ;;
+  esac
+  # deleting main, or a non-fast-forward (force)
+  if [ "$local_sha" = "$zero" ]; then
+    deny "refusing to delete main"
+  fi
+  if [ "$remote_sha" != "$zero" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+    deny "refusing a force-push to main"
+  fi
+  if [ "$remote_sha" = "$zero" ]; then
+    range="$local_sha"
+    files=$(git diff-tree --no-commit-id --name-only -r "$local_sha")
+  else
+    files=$(git diff --name-only "$remote_sha" "$local_sha")
+  fi
+  bad=$(printf '%s\n' "$files" | awk 'NF && $0 !~ /^forge\/jobs\// { print }')
+  if [ -n "$bad" ]; then
+    deny "push to main is only allowed for forge/jobs/** (job-only commits). Put code changes in a pull request. Offending files:
+$bad"
+  fi
+done
+exit 0

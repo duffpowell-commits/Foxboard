@@ -26,7 +26,7 @@ node tools/claude/fb.js script.js [--doc in.json] [--out doc.json] [--png prefix
 const r = F.forgeFiles({mode:'edit', id, mask:{rects:[[x,y,w,h]]}, prompt:'...'});   // or mode 'new' | 'expand' | 'upscale'
 await saveForge(r);   // writes forge/jobs/<id>.json (+ .init.b64 / .mask.b64) into the repo
 ```
-Then `git add forge/jobs && git commit && git push`. The workflow renders it in about 5–15 minutes on free runners, and results land in `forge/results/<id>/`. Pass `jid` to choose the id. Only `<id>.json` triggers a render, and the input files are pushed in the same commit.
+Then commit those job files and push them to **Foxboard `main`** (or use `art_loop.py queue`, which does that). The workflow only runs on a push to `main` under `forge/jobs/**` while the repo is public. Results land in `forge/results/<id>/` in about 5–15 minutes. Pass `jid` to choose the id. Only `<id>.json` triggers a render, and the input files must be in the same commit. Code changes still go through a pull request.
 
 ## 4. The shared library (Duff's phone sees it)
 Use the artifact db tools on artifact `408d3d4e-8800-4a0e-9cdc-1251d2b400a7`. `library/<id>` holds each piece's meta and `libchunks/<id>_<n>` holds its body. `fbx.py push-doc` / `pull` do the packing. Never overwrite or delete what Duff made. Push new items.
@@ -34,11 +34,16 @@ Use the artifact db tools on artifact `408d3d4e-8800-4a0e-9cdc-1251d2b400a7`. `l
 ## 5. The art loop (`art_loop.py`)
 Render, judge, reroll, deliver, without Duff babysitting it (steps in the art-loop skill).
 ```
-python3 tools/claude/art_loop.py queue  --id lm-sky-c-20261119 --prompt-file p.txt --n 4 --w 512 --h 512 [--key '#00FF00']
+python3 tools/claude/art_loop.py queue  --id lm-sky-c-20261119 --prompt-file p.txt --n 2 --w 512 --h 512 [--key '#00FF00']
+       [--mode new|sketch|edit --init a.png --mask m.png --ref style.png --ref-strength 0.55 --strength 0.7 --tile --seed N]
 python3 tools/claude/art_loop.py status lm-sky-c-20261119
 python3 tools/claude/art_loop.py score  lm-sky-c-20261119 --kind sprite|texture|scene|hud [--aspect 0.37]
 python3 tools/claude/art_loop.py cut    lm-sky-c-20261119/1 pick.png --height 640
 ```
+Sizes must be 256-1024 and a multiple of 64. `queue` publishes a job-only commit to Foxboard `main`
+(that is what `forge.yml` renders). Use `--no-publish` to write the files without pushing.
+`--ref` is a style-board workaround, not IP-Adapter. `--init` with `--mode new` switches to sketch and warns.
+`score` / `cut` are the cleanup and QA tools to use before a handoff.
 `score` flags what kept going wrong by eye: key punching holes through the subject, floor shadow,
 watermarks/stray marks, cropped head or sides, floating feet, off-palette, baked glow, seams on
 textures. It writes `forge/out/<id>_sheet.png`. `cut` turns the pick into a game-ready PNG: key to transparent, crop, resize, and despill (green/magenta cast pulled out of the 3 px edge band only, so moss inside stays green). It's a pre-filter: still look at the sheet

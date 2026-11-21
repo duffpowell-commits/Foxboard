@@ -2543,12 +2543,18 @@ async function forgePut(path,content,msg){ await mcpCap.callTool('github','creat
 function forgeBuild(opts){
   if(opts.mode==='bg'){ const o=apiObj(opts.id); const p=String(opts.prompt||'').trim(); if(!p) throw new Error('Describe the new background');
     opts={...opts,mode:'edit',engine:'flux',maskCanvas:bgMask(o),prompt:'Background scene: '+p+'. The subject in front stays exactly as it is, lit to match.',label:'New background: '+p}; }
-  const mode=opts.mode||'new', jid=opts.jid||(Date.now().toString(36)+uid()), n=Math.max(1,Math.min(4,opts.n||(mode==='upscale'?1:2)));
+  let mode=opts.mode||'new'; const jid=opts.jid||(Date.now().toString(36)+uid()), n=Math.max(1,Math.min(4,opts.n||(mode==='upscale'?1:2)));
   const sd=parseInt(opts.seed,10);
   const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:Number.isFinite(sd)&&sd>=0?sd:Math.floor(Math.random()*1e9),at:Date.now()};
   if(opts.tile) job.tile=true;
   if(opts.engine==='flux'||opts.engine==='klein') job.engine=opts.engine; // flux: whole-area fill (New background); klein: edit model
   else if(mode==='expand') job.engine='klein'; // Nov 20 real-art A/B: klein continued the stones; FLUX gave glassy edges (0.78) or a seam + new texture (0.9)
+  if((opts.initCanvas||opts.initSrc) && (opts.refCanvas||opts.refSrc||opts.ref)) throw new Error('Cannot set both init (start from this picture) and ref (style board). FLUX.1-schnell has no separate style-reference encoder.');
+  if(mode==='new' && (opts.initCanvas||opts.initSrc) && !(opts.refCanvas||opts.refSrc||opts.ref)){
+    // Why: render_one used to ignore init on mode new. Switch to sketch and say so.
+    mode='sketch'; job.mode='sketch'; job.note='init was set on mode new; switched to sketch so the picture is actually used';
+    opts={...opts, mode:'sketch'};
+  }
   const files={}; let box=opts.box||null, label=opts.label||opts.prompt||mode;
   if(mode==='new'){ job.w=opts.w||768; job.h=opts.h||768; job.key=opts.key||null; if(!job.prompt) throw new Error('Describe the picture'); }
   else {
@@ -2595,6 +2601,15 @@ function forgeBuild(opts){
     if(mask){ job.mask=`forge/jobs/${jid}.mask.b64`; files[job.mask]='png:'+mask.toDataURL('image/png').split(',')[1]; }
     if(mode!=='sketch'&&!opts.label) label=(mode==='upscale'?'Upscale ':mode==='expand'?'Expand ':'Edit: ')+(job.prompt||o.name||'image');
   }
+  if(opts.refCanvas){
+    if(job.init) throw new Error('Cannot set both init (start from this picture) and ref (style board). FLUX.1-schnell has no separate style-reference encoder.');
+    if(job.mode!=='new') throw new Error('ref is only for mode new (a new subject in the reference style)');
+    job.ref=`forge/jobs/${jid}.ref.b64`;
+    const rs=+(opts.refStrength??opts.ref_strength??0.55);
+    job.ref_strength=Math.round(Math.max(0.15,Math.min(0.85,rs))*100)/100;
+    job.workaround='style_board';
+    files[job.ref]=encSmall(opts.refCanvas);
+  }
   files[`forge/jobs/${jid}.json`]=JSON.stringify(job,null,1);
   return {jid,job,files,local:{id:jid,label,mode,n,w:job.w,h:job.h,at:job.at,state:'rendering',got:[],failed:[],box,page:opts.page??doc.cur,prompt:job.prompt,seed:job.seed,key:job.key||null,tile:!!job.tile}};
 }
@@ -2603,6 +2618,7 @@ async function srcCanvas(src){ const im=await loadSrc(src); const c=document.cre
 async function forgeQueue(opts){
   if(!mcpCap) throw new Error('Forge needs Foxboard open inside the Claude app with the GitHub connector on');
   if(opts.initSrc&&!opts.initCanvas) opts={...opts,initCanvas:await srcCanvas(opts.initSrc)};
+  if(opts.refSrc&&!opts.refCanvas) opts={...opts,refCanvas:await srcCanvas(opts.refSrc)};
   const B=forgeBuild(opts);
   for(const [path,content] of Object.entries(B.files)) await forgePut(path,content,`Forge ${B.job.mode} ${B.jid}: ${path.split('/').pop()}`);
   forgeJobs.unshift(B.local); forgeSaveLocal(); return B.jid;
@@ -2632,7 +2648,7 @@ const API_DOC={
   addPage:'addPage(copy=true) -> new frame after the current one', goPage:'goPage(i)', delPage:'delPage(i)', setFps:'setFps(n)',
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
-  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue forge/jobs/<id>.json with git.',
+  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?, refCanvas|refSrc?, refStrength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. refCanvas/refSrc: style-board workaround for a new subject (not IP-Adapter; FLUX.1-schnell has no style encoder); refStrength 0.15-0.85 default 0.55. init on mode new switches to sketch. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue with art_loop.py or git. Jobs must land on main to render.',
   forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local}: the job files without sending (Claude commits them with git)',
   vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
   takes:'takes() -> [{job, k, seed, prompt, fav}] every finished Forge take on this phone', favorite:'favorite(jobId, k, on?) -> bool',
