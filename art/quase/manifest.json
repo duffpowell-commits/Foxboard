@@ -1,0 +1,2178 @@
+{
+ "_doc": "Index of the Quase art library. One entry per file. \"file\" is relative to the Foxboard repo root. \"master\" points at the full-resolution original in the private game repo; the copies here are size-limited (sprites 512 tall + 128 display, scenes 960x540 JPEG, posters 576x768 JPEG, icons/stamps 256 palette PNG).",
+ "version": 1,
+ "library": "quase",
+ "games": {
+  "chaosisthemotheroforder": {
+   "repo": "duffpowell-commits/chaosisthemotheroforder",
+   "visibility": "private",
+   "branch": "art/rail-yards-slice",
+   "pr": 7
+  }
+ },
+ "entries": [
+  {
+   "id": "chaos-sprite-civilian_a-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian A (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_a/civilian_a_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_a/civilian_a_front.png"
+   },
+   "size": [
+    296,
+    512
+   ],
+   "bytes": 133286,
+   "display": "art/quase/chaos/sprites/civilian_a/display/civilian_a_front.png",
+   "joints": "art/quase/chaos/sprites/civilian_a/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/civilian_a.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-civilian_a-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian A (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_a/civilian_a_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_a/civilian_a_back.png"
+   },
+   "size": [
+    260,
+    512
+   ],
+   "bytes": 127011,
+   "display": "art/quase/chaos/sprites/civilian_a/display/civilian_a_back.png",
+   "joints": "art/quase/chaos/sprites/civilian_a/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/civilian_a.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-civilian_b-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian B (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_b/civilian_b_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_b/civilian_b_front.png"
+   },
+   "size": [
+    300,
+    512
+   ],
+   "bytes": 135366,
+   "display": "art/quase/chaos/sprites/civilian_b/display/civilian_b_front.png",
+   "joints": "art/quase/chaos/sprites/civilian_b/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/civilian_b.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-civilian_b-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian B (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_b/civilian_b_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_b/civilian_b_back.png"
+   },
+   "size": [
+    278,
+    512
+   ],
+   "bytes": 130135,
+   "display": "art/quase/chaos/sprites/civilian_b/display/civilian_b_back.png",
+   "joints": "art/quase/chaos/sprites/civilian_b/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/civilian_b.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-civilian_c-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian C (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_c/civilian_c_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_c/civilian_c_front.png"
+   },
+   "size": [
+    294,
+    512
+   ],
+   "bytes": 145019,
+   "display": "art/quase/chaos/sprites/civilian_c/display/civilian_c_front.png",
+   "joints": "art/quase/chaos/sprites/civilian_c/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/civilian_c.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-civilian_c-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Civilian C (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/civilian_c/civilian_c_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/civilian_c/civilian_c_back.png"
+   },
+   "size": [
+    278,
+    512
+   ],
+   "bytes": 135503,
+   "display": "art/quase/chaos/sprites/civilian_c/display/civilian_c_back.png",
+   "joints": "art/quase/chaos/sprites/civilian_c/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/civilian_c.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-guard-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Guard (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/guard/guard_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/guard/guard_front.png"
+   },
+   "size": [
+    298,
+    512
+   ],
+   "bytes": 144721,
+   "display": "art/quase/chaos/sprites/guard/display/guard_front.png",
+   "joints": "art/quase/chaos/sprites/guard/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/guard.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-guard-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Guard (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/guard/guard_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/guard/guard_back.png"
+   },
+   "size": [
+    288,
+    512
+   ],
+   "bytes": 134052,
+   "display": "art/quase/chaos/sprites/guard/display/guard_back.png",
+   "joints": "art/quase/chaos/sprites/guard/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/guard.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-guard_defector-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Guard Defector (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/guard_defector/guard_defector_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/guard_defector/guard_defector_front.png"
+   },
+   "size": [
+    298,
+    512
+   ],
+   "bytes": 141812,
+   "display": "art/quase/chaos/sprites/guard_defector/display/guard_defector_front.png",
+   "joints": "art/quase/chaos/sprites/guard_defector/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/guard_defector.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-kesh-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Kesh (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/kesh/kesh_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/kesh/kesh_front.png"
+   },
+   "size": [
+    302,
+    512
+   ],
+   "bytes": 138727,
+   "display": "art/quase/chaos/sprites/kesh/display/kesh_front.png",
+   "joints": "art/quase/chaos/sprites/kesh/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/kesh.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-kesh-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Kesh (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/kesh/kesh_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/kesh/kesh_back.png"
+   },
+   "size": [
+    298,
+    512
+   ],
+   "bytes": 128277,
+   "display": "art/quase/chaos/sprites/kesh/display/kesh_back.png",
+   "joints": "art/quase/chaos/sprites/kesh/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/kesh.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-mara-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Mara (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/mara/mara_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/mara/mara_front.png"
+   },
+   "size": [
+    307,
+    512
+   ],
+   "bytes": 154169,
+   "display": "art/quase/chaos/sprites/mara/display/mara_front.png",
+   "joints": "art/quase/chaos/sprites/mara/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/mara.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-mara-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Mara (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/mara/mara_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/mara/mara_back.png"
+   },
+   "size": [
+    286,
+    512
+   ],
+   "bytes": 140284,
+   "display": "art/quase/chaos/sprites/mara/display/mara_back.png",
+   "joints": "art/quase/chaos/sprites/mara/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/mara.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_a-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative A (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_a/operative_a_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_a/operative_a_front.png"
+   },
+   "size": [
+    290,
+    512
+   ],
+   "bytes": 140925,
+   "display": "art/quase/chaos/sprites/operative_a/display/operative_a_front.png",
+   "joints": "art/quase/chaos/sprites/operative_a/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/operative_a.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_a-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative A (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_a/operative_a_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_a/operative_a_back.png"
+   },
+   "size": [
+    280,
+    512
+   ],
+   "bytes": 126746,
+   "display": "art/quase/chaos/sprites/operative_a/display/operative_a_back.png",
+   "joints": "art/quase/chaos/sprites/operative_a/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/operative_a.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_b-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative B (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_b/operative_b_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_b/operative_b_front.png"
+   },
+   "size": [
+    304,
+    512
+   ],
+   "bytes": 153235,
+   "display": "art/quase/chaos/sprites/operative_b/display/operative_b_front.png",
+   "joints": "art/quase/chaos/sprites/operative_b/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/operative_b.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_b-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative B (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_b/operative_b_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_b/operative_b_back.png"
+   },
+   "size": [
+    291,
+    512
+   ],
+   "bytes": 130629,
+   "display": "art/quase/chaos/sprites/operative_b/display/operative_b_back.png",
+   "joints": "art/quase/chaos/sprites/operative_b/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/operative_b.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_c-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative C (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_c/operative_c_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_c/operative_c_front.png"
+   },
+   "size": [
+    307,
+    512
+   ],
+   "bytes": 137639,
+   "display": "art/quase/chaos/sprites/operative_c/display/operative_c_front.png",
+   "joints": "art/quase/chaos/sprites/operative_c/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/operative_c.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-operative_c-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Operative C (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/operative_c/operative_c_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/operative_c/operative_c_back.png"
+   },
+   "size": [
+    296,
+    512
+   ],
+   "bytes": 112636,
+   "display": "art/quase/chaos/sprites/operative_c/display/operative_c_back.png",
+   "joints": "art/quase/chaos/sprites/operative_c/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/operative_c.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-teodor-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Teodor (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/teodor/teodor_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/teodor/teodor_front.png"
+   },
+   "size": [
+    316,
+    512
+   ],
+   "bytes": 163036,
+   "display": "art/quase/chaos/sprites/teodor/display/teodor_front.png",
+   "joints": "art/quase/chaos/sprites/teodor/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/teodor.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-teodor-back",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Teodor (back), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/teodor/teodor_back.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/teodor/teodor_back.png"
+   },
+   "size": [
+    281,
+    512
+   ],
+   "bytes": 142364,
+   "display": "art/quase/chaos/sprites/teodor/display/teodor_back.png",
+   "joints": "art/quase/chaos/sprites/teodor/joints_back.json",
+   "identity": "art/quase/chaos/style/identity/teodor.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-sprite-visor_operative-front",
+   "game": "chaosisthemotheroforder",
+   "type": "sprite",
+   "title": "Visor Operative (front), A-pose cut-out",
+   "file": "art/quase/chaos/sprites/visor_operative/visor_operative_front.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/characters/visor_operative/visor_operative_front.png"
+   },
+   "size": [
+    305,
+    512
+   ],
+   "bytes": 129690,
+   "display": "art/quase/chaos/sprites/visor_operative/display/visor_operative_front.png",
+   "joints": "art/quase/chaos/sprites/visor_operative/joints_front.json",
+   "identity": "art/quase/chaos/style/identity/visor_operative.md",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (sprites)"
+  },
+  {
+   "id": "chaos-portrait-defector_helmet_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "defector helmet cold",
+   "file": "art/quase/chaos/portraits/defector_helmet_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/defector_helmet_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 37081,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-kesh_scared_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "kesh scared cold",
+   "file": "art/quase/chaos/portraits/kesh_scared_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/kesh_scared_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 38519,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-kesh_scared_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "kesh scared warm",
+   "file": "art/quase/chaos/portraits/kesh_scared_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/kesh_scared_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 48869,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-kesh_suspicious_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "kesh suspicious cold",
+   "file": "art/quase/chaos/portraits/kesh_suspicious_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/kesh_suspicious_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 42170,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-kesh_suspicious_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "kesh suspicious warm",
+   "file": "art/quase/chaos/portraits/kesh_suspicious_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/kesh_suspicious_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 51452,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-mara_calm_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "mara calm cold",
+   "file": "art/quase/chaos/portraits/mara_calm_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/mara_calm_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 40577,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-mara_calm_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "mara calm warm",
+   "file": "art/quase/chaos/portraits/mara_calm_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/mara_calm_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 40112,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-mara_worried_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "mara worried cold",
+   "file": "art/quase/chaos/portraits/mara_worried_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/mara_worried_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 34529,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-mara_worried_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "mara worried warm",
+   "file": "art/quase/chaos/portraits/mara_worried_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/mara_worried_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 47059,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_betrayed_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor betrayed cold",
+   "file": "art/quase/chaos/portraits/teodor_betrayed_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_betrayed_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 39876,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_betrayed_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor betrayed warm",
+   "file": "art/quase/chaos/portraits/teodor_betrayed_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_betrayed_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 49428,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_guarded_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor guarded cold",
+   "file": "art/quase/chaos/portraits/teodor_guarded_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_guarded_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 34763,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_guarded_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor guarded warm",
+   "file": "art/quase/chaos/portraits/teodor_guarded_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_guarded_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 45929,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_resolved_cold",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor resolved cold",
+   "file": "art/quase/chaos/portraits/teodor_resolved_cold.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_resolved_cold.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 38280,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-portrait-teodor_resolved_warm",
+   "game": "chaosisthemotheroforder",
+   "type": "portrait",
+   "title": "teodor resolved warm",
+   "file": "art/quase/chaos/portraits/teodor_resolved_warm.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/portraits/teodor_resolved_warm.png"
+   },
+   "size": [
+    512,
+    512
+   ],
+   "bytes": 55270,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (portraits)"
+  },
+  {
+   "id": "chaos-backdrop-backdrop_liberated_painted",
+   "game": "chaosisthemotheroforder",
+   "type": "backdrop",
+   "title": "backdrop liberated painted",
+   "file": "art/quase/chaos/backdrops/backdrop_liberated_painted.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/backdrop_liberated_painted.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 83314,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-backdrop-backdrop_regime_painted",
+   "game": "chaosisthemotheroforder",
+   "type": "backdrop",
+   "title": "backdrop regime painted",
+   "file": "art/quase/chaos/backdrops/backdrop_regime_painted.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/backdrop_regime_painted.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 88700,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-backdrop-backdrop_signal_box",
+   "game": "chaosisthemotheroforder",
+   "type": "backdrop",
+   "title": "backdrop signal box",
+   "file": "art/quase/chaos/backdrops/backdrop_signal_box.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/backdrop_signal_box.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 91431,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-still-broadcast_airing",
+   "game": "chaosisthemotheroforder",
+   "type": "still",
+   "title": "broadcast airing",
+   "file": "art/quase/chaos/stills/broadcast_airing.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/stills/broadcast_airing.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 87243,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-still-opening_raid_phone",
+   "game": "chaosisthemotheroforder",
+   "type": "still",
+   "title": "opening raid phone",
+   "file": "art/quase/chaos/stills/opening_raid_phone.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/stills/opening_raid_phone.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 135705,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-still-safehouse_door",
+   "game": "chaosisthemotheroforder",
+   "type": "still",
+   "title": "safehouse door",
+   "file": "art/quase/chaos/stills/safehouse_door.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/stills/safehouse_door.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 72022,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-still-strike",
+   "game": "chaosisthemotheroforder",
+   "type": "still",
+   "title": "strike",
+   "file": "art/quase/chaos/stills/strike.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/stills/strike.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 78510,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-still-teodor_dock",
+   "game": "chaosisthemotheroforder",
+   "type": "still",
+   "title": "teodor dock",
+   "file": "art/quase/chaos/stills/teodor_dock.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/stills/teodor_dock.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 67844,
+   "status": "approved (kept from the earlier round)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-district_turns",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "district turns",
+   "file": "art/quase/chaos/endings/district_turns.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/district_turns.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 136081,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-kids_wall_bare",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "kids wall bare",
+   "file": "art/quase/chaos/endings/kids_wall_bare.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/kids_wall_bare.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 97726,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-kids_wall_over_regime",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "kids wall over regime",
+   "file": "art/quase/chaos/endings/kids_wall_over_regime.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/kids_wall_over_regime.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 112178,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-kids_wall_your_poster",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "kids wall your poster",
+   "file": "art/quase/chaos/endings/kids_wall_your_poster.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/kids_wall_your_poster.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 106454,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-occupiers",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "occupiers",
+   "file": "art/quase/chaos/endings/occupiers.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/occupiers.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 81812,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-window_closes",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "window closes",
+   "file": "art/quase/chaos/endings/window_closes.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/window_closes.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 94595,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-ending-yards_silent",
+   "game": "chaosisthemotheroforder",
+   "type": "ending",
+   "title": "yards silent",
+   "file": "art/quase/chaos/endings/yards_silent.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/endings/yards_silent.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 108005,
+   "status": "approved (present-day redo)",
+   "prompt_ref": "style/style-anchor.md scene preamble + style/prop-bible.md"
+  },
+  {
+   "id": "chaos-woodcut-title",
+   "game": "chaosisthemotheroforder",
+   "type": "woodcut",
+   "title": "title",
+   "file": "art/quase/chaos/woodcuts/title.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/title.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 171746,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-woodcut-report_frame_cn24",
+   "game": "chaosisthemotheroforder",
+   "type": "woodcut",
+   "title": "report frame cn24",
+   "file": "art/quase/chaos/woodcuts/report_frame_cn24.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/report_frame_cn24.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 148679,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-woodcut-report_frame_unbroken",
+   "game": "chaosisthemotheroforder",
+   "type": "woodcut",
+   "title": "report frame unbroken",
+   "file": "art/quase/chaos/woodcuts/report_frame_unbroken.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/report_frame_unbroken.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 185891,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-woodcut-opening_dormitory_raid",
+   "game": "chaosisthemotheroforder",
+   "type": "woodcut",
+   "title": "opening dormitory raid",
+   "file": "art/quase/chaos/woodcuts/opening_dormitory_raid.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/opening_dormitory_raid.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 134388,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-woodcut-report_frame_cn24_lettered",
+   "game": "chaosisthemotheroforder",
+   "type": "woodcut",
+   "title": "report frame cn24 lettered",
+   "file": "art/quase/chaos/woodcuts/report_frame_cn24_lettered.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/report_frame_cn24_lettered.png"
+   },
+   "size": [
+    960,
+    540
+   ],
+   "bytes": 150557,
+   "lettered": true,
+   "status": "approved",
+   "prompt_ref": "lettered with tools/quase/letter.py from style/type-sheet.md"
+  },
+  {
+   "id": "chaos-poster-poster_regime_continuity",
+   "game": "chaosisthemotheroforder",
+   "type": "poster",
+   "title": "poster regime continuity",
+   "file": "art/quase/chaos/posters/poster_regime_continuity.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/poster_regime_continuity.png"
+   },
+   "size": [
+    576,
+    768
+   ],
+   "bytes": 167159,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut) + style/type-sheet.md for lettering"
+  },
+  {
+   "id": "chaos-poster-poster_movement_unbroken",
+   "game": "chaosisthemotheroforder",
+   "type": "poster",
+   "title": "poster movement unbroken",
+   "file": "art/quase/chaos/posters/poster_movement_unbroken.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/poster_movement_unbroken.png"
+   },
+   "size": [
+    576,
+    768
+   ],
+   "bytes": 145048,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut) + style/type-sheet.md for lettering"
+  },
+  {
+   "id": "chaos-poster-poster_regime_continuity_lettered",
+   "game": "chaosisthemotheroforder",
+   "type": "poster",
+   "title": "poster regime continuity lettered",
+   "file": "art/quase/chaos/posters/poster_regime_continuity_lettered.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/poster_regime_continuity_lettered.png"
+   },
+   "size": [
+    576,
+    768
+   ],
+   "bytes": 170902,
+   "lettered": true,
+   "status": "approved",
+   "prompt_ref": "lettered with tools/quase/letter.py from style/type-sheet.md"
+  },
+  {
+   "id": "chaos-poster-poster_movement_unbroken_lettered",
+   "game": "chaosisthemotheroforder",
+   "type": "poster",
+   "title": "poster movement unbroken lettered",
+   "file": "art/quase/chaos/posters/poster_movement_unbroken_lettered.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/poster_movement_unbroken_lettered.png"
+   },
+   "size": [
+    576,
+    768
+   ],
+   "bytes": 151790,
+   "lettered": true,
+   "status": "approved",
+   "prompt_ref": "lettered with tools/quase/letter.py from style/type-sheet.md"
+  },
+  {
+   "id": "chaos-stamp-stamp_blackmail",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp blackmail",
+   "file": "art/quase/chaos/stamps/stamp_blackmail.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_blackmail.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 43845,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_clean_slot",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp clean slot",
+   "file": "art/quase/chaos/stamps/stamp_clean_slot.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_clean_slot.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 45810,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_fake_radio",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp fake radio",
+   "file": "art/quase/chaos/stamps/stamp_fake_radio.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_fake_radio.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 45931,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_killing_guards",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp killing guards",
+   "file": "art/quase/chaos/stamps/stamp_killing_guards.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_killing_guards.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44815,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_lay_low",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp lay low",
+   "file": "art/quase/chaos/stamps/stamp_lay_low.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_lay_low.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 46155,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_secrecy",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp secrecy",
+   "file": "art/quase/chaos/stamps/stamp_secrecy.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_secrecy.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 43308,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-stamp-stamp_the_lie",
+   "game": "chaosisthemotheroforder",
+   "type": "stamp",
+   "title": "stamp the lie",
+   "file": "art/quase/chaos/stamps/stamp_the_lie.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/stamp_the_lie.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 47166,
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_aid",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action aid",
+   "file": "art/quase/chaos/icons/action_aid.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_aid.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 45581,
+   "display": "art/quase/chaos/icons/display/action_aid.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_diversion",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action diversion",
+   "file": "art/quase/chaos/icons/action_diversion.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_diversion.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44928,
+   "display": "art/quase/chaos/icons/display/action_diversion.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_expose",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action expose",
+   "file": "art/quase/chaos/icons/action_expose.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_expose.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44077,
+   "display": "art/quase/chaos/icons/display/action_expose.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_lay_low",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action lay low",
+   "file": "art/quase/chaos/icons/action_lay_low.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_lay_low.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 43917,
+   "display": "art/quase/chaos/icons/display/action_lay_low.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_listen",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action listen",
+   "file": "art/quase/chaos/icons/action_listen.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_listen.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44399,
+   "display": "art/quase/chaos/icons/display/action_listen.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_recruit",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action recruit",
+   "file": "art/quase/chaos/icons/action_recruit.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_recruit.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44488,
+   "display": "art/quase/chaos/icons/display/action_recruit.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_scavenge",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action scavenge",
+   "file": "art/quase/chaos/icons/action_scavenge.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_scavenge.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44888,
+   "display": "art/quase/chaos/icons/display/action_scavenge.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-action_see_teodor",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "action see teodor",
+   "file": "art/quase/chaos/icons/action_see_teodor.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/action_see_teodor.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 43806,
+   "display": "art/quase/chaos/icons/display/action_see_teodor.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_cash",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res cash",
+   "file": "art/quase/chaos/icons/res_cash.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_cash.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44047,
+   "display": "art/quase/chaos/icons/display/res_cash.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_heat",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res heat",
+   "file": "art/quase/chaos/icons/res_heat.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_heat.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 41922,
+   "display": "art/quase/chaos/icons/display/res_heat.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_legitimacy",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res legitimacy",
+   "file": "art/quase/chaos/icons/res_legitimacy.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_legitimacy.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44489,
+   "display": "art/quase/chaos/icons/display/res_legitimacy.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_parts",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res parts",
+   "file": "art/quase/chaos/icons/res_parts.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_parts.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44734,
+   "display": "art/quase/chaos/icons/display/res_parts.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_people",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res people",
+   "file": "art/quase/chaos/icons/res_people.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_people.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44690,
+   "display": "art/quase/chaos/icons/display/res_people.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-res_supplies",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "res supplies",
+   "file": "art/quase/chaos/icons/res_supplies.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/res_supplies.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 45515,
+   "display": "art/quase/chaos/icons/display/res_supplies.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-tool_flashbang",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "tool flashbang",
+   "file": "art/quase/chaos/icons/tool_flashbang.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/tool_flashbang.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44266,
+   "display": "art/quase/chaos/icons/display/tool_flashbang.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-tool_lights_out",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "tool lights out",
+   "file": "art/quase/chaos/icons/tool_lights_out.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/tool_lights_out.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44211,
+   "display": "art/quase/chaos/icons/display/tool_lights_out.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-tool_radio_call",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "tool radio call",
+   "file": "art/quase/chaos/icons/tool_radio_call.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/tool_radio_call.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 44269,
+   "display": "art/quase/chaos/icons/display/tool_radio_call.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-icon-tool_smoke",
+   "game": "chaosisthemotheroforder",
+   "type": "icon",
+   "title": "tool smoke",
+   "file": "art/quase/chaos/icons/tool_smoke.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/ui/woodcut/icons/tool_smoke.png"
+   },
+   "size": [
+    256,
+    256
+   ],
+   "bytes": 41815,
+   "display": "art/quase/chaos/icons/display/tool_smoke.png",
+   "status": "approved",
+   "prompt_ref": "art/quase/chaos/style/prompts.md (woodcut)"
+  },
+  {
+   "id": "chaos-itch-cover_630x500",
+   "game": "chaosisthemotheroforder",
+   "type": "itch",
+   "title": "cover 630x500",
+   "file": "art/quase/chaos/itch/cover_630x500.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/itch/cover_630x500.png"
+   },
+   "size": [
+    630,
+    500
+   ],
+   "bytes": 116464,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "crops of the title woodcut; lettering in style/type-sheet.md"
+  },
+  {
+   "id": "chaos-itch-banner_960x300",
+   "game": "chaosisthemotheroforder",
+   "type": "itch",
+   "title": "banner 960x300",
+   "file": "art/quase/chaos/itch/banner_960x300.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/itch/banner_960x300.png"
+   },
+   "size": [
+    960,
+    300
+   ],
+   "bytes": 96081,
+   "lettered": false,
+   "status": "approved",
+   "prompt_ref": "crops of the title woodcut; lettering in style/type-sheet.md"
+  },
+  {
+   "id": "chaos-itch-cover_630x500_lettered",
+   "game": "chaosisthemotheroforder",
+   "type": "itch",
+   "title": "cover 630x500 lettered",
+   "file": "art/quase/chaos/itch/cover_630x500_lettered.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/itch/cover_630x500_lettered.png"
+   },
+   "size": [
+    630,
+    500
+   ],
+   "bytes": 119695,
+   "lettered": true,
+   "status": "approved",
+   "prompt_ref": "lettered with tools/quase/letter.py from style/type-sheet.md"
+  },
+  {
+   "id": "chaos-itch-banner_960x300_lettered",
+   "game": "chaosisthemotheroforder",
+   "type": "itch",
+   "title": "banner 960x300 lettered",
+   "file": "art/quase/chaos/itch/banner_960x300_lettered.jpg",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/itch/banner_960x300_lettered.png"
+   },
+   "size": [
+    960,
+    300
+   ],
+   "bytes": 103214,
+   "lettered": true,
+   "status": "approved",
+   "prompt_ref": "lettered with tools/quase/letter.py from style/type-sheet.md"
+  },
+  {
+   "id": "chaos-style-style_anchor_jacket_outline",
+   "game": "chaosisthemotheroforder",
+   "type": "style-anchor",
+   "title": "style anchor jacket outline",
+   "file": "art/quase/chaos/style/style_anchor_jacket_outline.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/source/style_anchor_jacket_outline.png"
+   },
+   "size": [
+    380,
+    334
+   ],
+   "bytes": 134848,
+   "status": "approved",
+   "prompt_ref": "style/style-anchor.md"
+  },
+  {
+   "id": "chaos-style-style_anchor_trousers_boots",
+   "game": "chaosisthemotheroforder",
+   "type": "style-anchor",
+   "title": "style anchor trousers boots",
+   "file": "art/quase/chaos/style/style_anchor_trousers_boots.png",
+   "master": {
+    "repo": "duffpowell-commits/chaosisthemotheroforder",
+    "branch": "art/rail-yards-slice",
+    "commit": "e7872521722206efb4ff09aee55e9abbd3969eee",
+    "path": "assets/art/source/style_anchor_trousers_boots.png"
+   },
+   "size": [
+    432,
+    472
+   ],
+   "bytes": 179490,
+   "status": "approved",
+   "prompt_ref": "style/style-anchor.md"
+  },
+  {
+   "id": "chaos-sheet-characters_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "characters sheet",
+   "file": "art/quase/chaos/sheets/characters_sheet.jpg",
+   "master": null,
+   "size": [
+    2200,
+    636
+   ],
+   "bytes": 217003,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-sheet-joints_overlay",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "joints overlay",
+   "file": "art/quase/chaos/sheets/joints_overlay.jpg",
+   "master": null,
+   "size": [
+    1718,
+    1920
+   ],
+   "bytes": 462447,
+   "status": "generated from this library's copies (tools/quase/joint_map.py --overlay)"
+  },
+  {
+   "id": "chaos-sheet-portraits_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "portraits sheet",
+   "file": "art/quase/chaos/sheets/portraits_sheet.jpg",
+   "master": null,
+   "size": [
+    2048,
+    548
+   ],
+   "bytes": 191361,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-sheet-posters_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "posters sheet",
+   "file": "art/quase/chaos/sheets/posters_sheet.jpg",
+   "master": null,
+   "size": [
+    1200,
+    418
+   ],
+   "bytes": 167870,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-sheet-scenes_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "scenes sheet",
+   "file": "art/quase/chaos/sheets/scenes_sheet.jpg",
+   "master": null,
+   "size": [
+    1920,
+    1152
+   ],
+   "bytes": 344263,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-sheet-stamps_icons_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "stamps icons sheet",
+   "file": "art/quase/chaos/sheets/stamps_icons_sheet.jpg",
+   "master": null,
+   "size": [
+    1440,
+    534
+   ],
+   "bytes": 237533,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-sheet-woodcuts_itch_sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "contact-sheet",
+   "title": "woodcuts itch sheet",
+   "file": "art/quase/chaos/sheets/woodcuts_itch_sheet.jpg",
+   "master": null,
+   "size": [
+    1440,
+    864
+   ],
+   "bytes": 295202,
+   "status": "generated from this library's copies"
+  },
+  {
+   "id": "chaos-doc-civilian_a",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "civilian a",
+   "file": "art/quase/chaos/style/identity/civilian_a.md",
+   "bytes": 1153
+  },
+  {
+   "id": "chaos-doc-civilian_b",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "civilian b",
+   "file": "art/quase/chaos/style/identity/civilian_b.md",
+   "bytes": 995
+  },
+  {
+   "id": "chaos-doc-civilian_c",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "civilian c",
+   "file": "art/quase/chaos/style/identity/civilian_c.md",
+   "bytes": 1086
+  },
+  {
+   "id": "chaos-doc-guard",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "guard",
+   "file": "art/quase/chaos/style/identity/guard.md",
+   "bytes": 1410
+  },
+  {
+   "id": "chaos-doc-guard_defector",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "guard defector",
+   "file": "art/quase/chaos/style/identity/guard_defector.md",
+   "bytes": 1225
+  },
+  {
+   "id": "chaos-doc-kesh",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "kesh",
+   "file": "art/quase/chaos/style/identity/kesh.md",
+   "bytes": 1294
+  },
+  {
+   "id": "chaos-doc-mara",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "mara",
+   "file": "art/quase/chaos/style/identity/mara.md",
+   "bytes": 1645
+  },
+  {
+   "id": "chaos-doc-operative_a",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "operative a",
+   "file": "art/quase/chaos/style/identity/operative_a.md",
+   "bytes": 1122
+  },
+  {
+   "id": "chaos-doc-operative_b",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "operative b",
+   "file": "art/quase/chaos/style/identity/operative_b.md",
+   "bytes": 987
+  },
+  {
+   "id": "chaos-doc-operative_c",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "operative c",
+   "file": "art/quase/chaos/style/identity/operative_c.md",
+   "bytes": 1166
+  },
+  {
+   "id": "chaos-doc-teodor",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "teodor",
+   "file": "art/quase/chaos/style/identity/teodor.md",
+   "bytes": 1723
+  },
+  {
+   "id": "chaos-doc-visor_operative",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "visor operative",
+   "file": "art/quase/chaos/style/identity/visor_operative.md",
+   "bytes": 1063
+  },
+  {
+   "id": "chaos-doc-prompts",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "prompts",
+   "file": "art/quase/chaos/style/prompts.md",
+   "bytes": 11154
+  },
+  {
+   "id": "chaos-doc-prop-bible",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "prop-bible",
+   "file": "art/quase/chaos/style/prop-bible.md",
+   "bytes": 2883
+  },
+  {
+   "id": "chaos-doc-style-anchor",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "style-anchor",
+   "file": "art/quase/chaos/style/style-anchor.md",
+   "bytes": 1961
+  },
+  {
+   "id": "chaos-doc-type-sheet",
+   "game": "chaosisthemotheroforder",
+   "type": "reference-doc",
+   "title": "type-sheet",
+   "file": "art/quase/chaos/style/type-sheet.md",
+   "bytes": 3923
+  }
+ ]
+}
