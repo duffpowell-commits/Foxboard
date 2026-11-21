@@ -1,0 +1,1 @@
+style board from forge/jobs/dh-ink-thug-20261121.ref.b64 (ref_strength=0.55, img2img strength=0.81); not IP-Adapter
