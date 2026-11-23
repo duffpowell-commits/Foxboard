@@ -1055,6 +1055,7 @@ function openProps(focusText){
       b.append(row('Tile',h('button',{onclick:tryT(()=>makeTileable(o))},'🧩 Make seamless'),h('button',{onclick:tryT(()=>tilePreview(o))},'▦ Preview 3×3')));
       { const stc=h('input',{type:'color',value:'#ffffff','aria-label':'Outline color'});
         b.append(row('Sticker',h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?1:0.02,color:stc.value}))},'Thin outline'),h('button',{onclick:tryT(()=>sticker(o,{width:doc.pixel||o.px?2:0.045,color:stc.value}))},'Thick outline'),stc)); }
+      b.append(row('3D draft',h('button',{onclick:()=>openMeshDraft(o)},'Generate 3D draft')));
       b.append(row('ChatGPT pet',h('button',{class:'acc',onclick:tryT(()=>openPet(o))},'🐾 ChatGPT pet')));
       if(O().indexOf(o)>0) b.append(row('Compare',h('button',{onclick:tryT(()=>compareBelow(o))},'◐ Before / after with the layer below')));
       b.append(h('div',{class:'hint'},'Expand grows the picture and fills the new edges from it (instant on the phone, best for skies, walls and ground). 🔥 AI expand / Upscale / Magic edit run on Forge (free, ~5–15 min, public).'));
@@ -1249,7 +1250,7 @@ function forgeLoadLocal(){ try{ const a=JSON.parse(localStorage.getItem(FORGE_LS
 function forgeSaveLocal(){ try{ localStorage.setItem(FORGE_LS,JSON.stringify(forgeJobs.slice(0,30))); }catch(e){} }
 forgeLoadLocal();
 function keyName(hx){ return /^#?ff00ff$/i.test(hx)?'magenta (#FF00FF)':/^#?00ff00$/i.test(hx)?'pure green (#00FF00)':hx; }
-function forgeEta(j){ const per=(FORGE_SIZES.find(z=>z[1]===j.w&&z[2]===j.h)||[0,0,0,15])[3]; return (per*(j.mode==='sketch'?1.4:1)+5)*60000; }
+function forgeEta(j){ if(j.mode==='3d') return 8*60000; const per=(FORGE_SIZES.find(z=>z[1]===j.w&&z[2]===j.h)||[0,0,0,15])[3]; return (per*(j.mode==='sketch'?1.4:1)+5)*60000; }
 function forgeText(res){
   const parts=[]; for(const c of (res&&res.content)||[]){ if(c.type==='text') parts.push(c.text); else if(c.resource){ if(c.resource.text) parts.push(c.resource.text); else if(c.resource.blob){ try{ parts.push(atob(c.resource.blob)); }catch(e){} } } }
   if(typeof res?.payload==='string') parts.push(res.payload);
@@ -1262,6 +1263,20 @@ async function forgeCheck(j){
   try{ return await forgeCheckInner(j); } finally{ forgeBusy.delete(j.id); }
 }
 async function forgeCheckInner(j){
+  if(j.mode==='3d'){
+    if(!/^[a-z0-9][a-z0-9-]{0,63}$/.test(j.id)) return false;
+    try{
+      const text=await forgeFetch(`forge/mesh-results/${j.id}/done.json`);
+      const start=text.indexOf('{'), end=text.lastIndexOf('}');
+      if(start<0||end<start) return false;
+      const result=JSON.parse(text.slice(start,end+1));
+      if(result.status!=='done'&&result.status!=='failed') return false;
+      j.state='done';
+      j.meshReady=result.status==='done';
+      forgeSaveLocal();
+      return true;
+    }catch(e){ if(e&&e.code==='tool_error') return false; throw e; }
+  }
   let changed=false;
   for(let k=0;k<j.n;k++){
     if((j.got||[]).includes(k)||(j.failed||[]).includes(k)) continue;
@@ -1360,6 +1375,32 @@ function buildForge(b,ta){
     if(!forgeJobs.length){ list.append(h('div',{class:'hint'},'Nothing queued yet.')); return; }
     forgeJobs.slice(0,10).forEach(j=>{
       const box=h('div',{class:'layer',style:'flex-direction:column;align-items:stretch'});
+      if(j.mode==='3d'){
+        box.append(h('div',{class:'nm',style:'white-space:normal'},String(j.label).slice(0,80)),
+          h('div',{class:'hint'},j.state!=='done'?'Waiting for the 3D worker':j.meshReady?'Textured draft ready for review':'3D generation failed. See the Forge 3D workflow log.'));
+        if(j.state!=='done'){
+          const check=h('button',{},'Check now');
+          check.onclick=async()=>{ check.disabled=true; try{ await forgeCheck(j); }catch(e){ toast(ghErr(e)); } render(); };
+          box.append(check);
+        }else if(j.meshReady&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(j.id)){
+          const download=h('button',{},'Download GLB');
+          download.onclick=async()=>{
+            download.disabled=true;
+            try{
+              const url=`https://raw.githubusercontent.com/${FORGE_REPO.owner}/${FORGE_REPO.repo}/main/forge/mesh-results/${j.id}/model.glb`;
+              const response=await fetch(url);
+              if(!response.ok) throw new Error('The GLB could not be loaded. Try again.');
+              const bytes=await response.arrayBuffer();
+              if(bytes.byteLength<12||new DataView(bytes).getUint32(0,true)!==0x46546c67) throw new Error('The 3D draft is not a GLB file.');
+              await deliver(new Blob([bytes],{type:'model/gltf-binary'}),`foxboard-${j.id}.glb`);
+            }catch(e){ toast(e.message||'Download failed. Try again.'); }
+            finally{ download.disabled=false; }
+          };
+          box.append(download);
+        }
+        list.append(box);
+        return;
+      }
       const left=Math.max(0,Math.ceil((j.at+forgeEta(j)-Date.now())/60000));
       const st=j.state==='done'?`✅ ${(j.got||[]).length}/${j.n} ready`+((j.failed||[]).length?` · ❌ ${(j.failed||[]).length} failed`:''):`⏳ ${(j.got||[]).length}/${j.n} ready · ${left?'~'+left+' min left':'any minute now'}`;
       box.append(h('div',{class:'nm',style:'white-space:normal'},`${String(j.label||'').slice(0,80)} · ${j.w}×${j.h}${j.tile?' · 🧩':''}`),h('div',{class:'hint',style:'margin:2px 4px'},st));
@@ -2540,7 +2581,53 @@ function encSmall(c){ // PNG when it has see-through pixels, else JPEG (keeps up
   return 'jpg:'+c.toDataURL('image/jpeg',0.93).split(',')[1]; }
 function snap64(v){ return Math.max(256,Math.min(1024,Math.round(v/64)*64)); }
 async function forgePut(path,content,msg){ await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path,content,message:msg}); }
+function meshReference(o){
+  const image=srcOf(o);
+  if(!image) throw new Error('Image still loading');
+  if(o.hidden||o.opacity===0) throw new Error('Show the image layer before generating a 3D draft');
+  const r=cropRect(o,image);
+  const w=r.sw, h=r.sh, angle=o.rot||0;
+  const bw=Math.abs(w*Math.cos(angle))+Math.abs(h*Math.sin(angle));
+  const bh=Math.abs(w*Math.sin(angle))+Math.abs(h*Math.cos(angle));
+  const scale=Math.min(1,768/Math.max(bw,bh));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.min(768,Math.ceil(bw*scale));
+  canvas.height=Math.min(768,Math.ceil(bh*scale));
+  const context=canvas.getContext('2d');
+  context.translate(canvas.width/2,canvas.height/2);
+  context.scale(scale,scale);
+  drawObj(context,{...o,x:-w/2,y:-h/2,w,h,shadow:null,blend:null});
+  return canvas;
+}
+function openMeshDraft(o){
+  openSheet('Generate 3D draft','mesh-draft',b=>{
+    if(!mcpCap){
+      b.append(h('div',{class:'hint'},'Open Foxboard inside Claude with the GitHub connector enabled to queue a model.'));
+      return;
+    }
+    b.append(h('div',{class:'hint'},'Use one isolated subject. The cropped, masked image and generated GLB will be public in the Foxboard repository. Review the draft before using it in a game.'));
+    const go=h('button',{class:'acc'},'Publish reference and queue');
+    go.onclick=async()=>{
+      go.disabled=true;
+      const id=await forgeSend({mode:'3d',id:o.id},'3D draft queued. Check AI › Forge for the GLB.');
+      if(id) openAI('forge');
+      else go.disabled=false;
+    };
+    b.append(row('',go));
+  });
+}
 function forgeBuild(opts){
+  if(opts.mode==='3d'){
+    const o=apiObj(opts.id);
+    if(o.type!=='image') throw new Error('Pick an image layer');
+    const jid=opts.jid||(Date.now().toString(36)+uid());
+    if(!/^[a-z0-9][a-z0-9-]{0,63}$/.test(jid)) throw new Error('Invalid 3D job ID');
+    const at=Date.now(), job={mode:'3d',at};
+    const init=encSmall(meshReference(o));
+    if(init.length>1000000) throw new Error('The reference is too large. Try a smaller image.');
+    return {jid,job,files:{[`forge/jobs/3d/${jid}.init.b64`]:init,[`forge/jobs/3d/${jid}.json`]:JSON.stringify(job)},
+      local:{id:jid,label:'3D draft: '+(o.name||'image'),mode:'3d',at,state:'rendering'}};
+  }
   if(opts.mode==='bg'){ const o=apiObj(opts.id); const p=String(opts.prompt||'').trim(); if(!p) throw new Error('Describe the new background');
     opts={...opts,mode:'edit',engine:'flux',maskCanvas:bgMask(o),prompt:'Background scene: '+p+'. The subject in front stays exactly as it is, lit to match.',label:'New background: '+p}; }
   let mode=opts.mode||'new'; const jid=opts.jid||(Date.now().toString(36)+uid()), n=Math.max(1,Math.min(4,opts.n||(mode==='upscale'?1:2)));
@@ -2648,7 +2735,8 @@ const API_DOC={
   addPage:'addPage(copy=true) -> new frame after the current one', goPage:'goPage(i)', delPage:'delPage(i)', setFps:'setFps(n)',
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
-  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?, refCanvas|refSrc?, refStrength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. refCanvas/refSrc: style-board workaround for a new subject (not IP-Adapter; FLUX.1-schnell has no style encoder); refStrength 0.15-0.85 default 0.55. init on mode new switches to sketch. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue with art_loop.py or git. Jobs must land on main to render.',
+  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?, refCanvas|refSrc?, refStrength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. refCanvas/refSrc: style-board workaround for a new subject (not IP-Adapter; FLUX.1-schnell has no style encoder); refStrength 0.15-0.85 default 0.55. init on mode new switches to sketch. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue with art_loop.py or git. Jobs must land on main to render. Use mode 3d with an image id for a public textured GLB draft.',
+  meshStatus:'meshStatus(jobId) -> checks the 3D job and returns its local status and meshReady flag',
   forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local}: the job files without sending (Claude commits them with git)',
   vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
   takes:'takes() -> [{job, k, seed, prompt, fav}] every finished Forge take on this phone', favorite:'favorite(jobId, k, on?) -> bool',
@@ -2748,6 +2836,12 @@ const Foxboard={
   tilePreview(id,r){ return tileCanvas(apiObj(id),r||3).toDataURL('image/png'); }, sticker(id,o){ sticker(apiObj(id),o); return true; },
   petSheet(id,o){ return petSheet(apiObj(id)).toDataURL('image/png'); }, petFiles(id,o){ return petFiles(apiObj(id),o||{}); },
   async newBackground(id,o){ return await newBackground(apiObj(id),o); }, compare(id){ return compareBelow(apiObj(id)); },
+  async meshStatus(jid){
+    const job=forgeJobs.find(j=>j.mode==='3d'&&j.id===jid);
+    if(!job) throw new Error('No 3D job with that ID on this phone');
+    if(job.state!=='done') await forgeCheck(job);
+    return {...job};
+  },
   forgeFiles(opts){ const B=forgeBuild(opts||{}); return {jid:B.jid,files:B.files,local:B.local}; },
   forgeTrack(local){ forgeJobs.unshift(local); forgeSaveLocal(); return true; },
   undo(){ undo(); return true; }, redo(){ redo(); return true; }

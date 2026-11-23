@@ -1,0 +1,85 @@
+name: Forge 3D
+on:
+  push:
+    branches: [main]
+    paths: ["forge/jobs/3d/*.json"]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: foxboard-forge-3d
+  cancel-in-progress: false
+jobs:
+  render:
+    if: github.ref == 'refs/heads/main' && !github.event.repository.private
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OMP_NUM_THREADS: 4
+      OPENBLAS_NUM_THREADS: 1
+      MKL_NUM_THREADS: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: forge
+      - id: queue
+        name: Check for unfinished jobs
+        run: |
+          for job in forge/jobs/3d/*.json; do
+            [ -f "$job" ] || continue
+            name=$(basename "$job" .json)
+            [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]] || continue
+            if [ ! -f "forge/mesh-results/$name/done.json" ]; then
+              echo 'pending=true' >> "$GITHUB_OUTPUT"
+              break
+            fi
+          done
+      - uses: actions/setup-python@v5
+        if: steps.queue.outputs.pending == 'true'
+        with:
+          python-version: "3.12"
+      - name: Install CPU reconstruction dependencies
+        if: steps.queue.outputs.pending == 'true'
+        run: |
+          export TRIPOSR_ROOT="$RUNNER_TEMP/triposr" TRIPOSR_WEIGHTS="$RUNNER_TEMP/triposr-weights" U2NET_HOME="$RUNNER_TEMP/rembg"
+          printf '%s=%s\n' TRIPOSR_ROOT "$TRIPOSR_ROOT" TRIPOSR_WEIGHTS "$TRIPOSR_WEIGHTS" U2NET_HOME "$U2NET_HOME" >> "$GITHUB_ENV"
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.15.0'
+          python -m pip install 'transformers==4.49.0' 'huggingface_hub[hf_xet]<1' 'rembg[cpu]==2.0.87' omegaconf pillow einops trimesh imageio xatlas moderngl scikit-image
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1-mesa-dri
+          git init -q "$TRIPOSR_ROOT"
+          git -C "$TRIPOSR_ROOT" fetch --depth 1 https://github.com/VAST-AI-Research/TripoSR.git 107cefdc244c39106fa830359024f6a2f1c78871
+          git -C "$TRIPOSR_ROOT" checkout -q FETCH_HEAD
+          cp forge/mesh_cpu.py "$TRIPOSR_ROOT/torchmcubes.py"
+          sed -i 's/create_context(standalone=True)/create_standalone_context(backend="egl")/' "$TRIPOSR_ROOT/tsr/bake_texture.py"
+          sed -i 's/rembg.new_session()/rembg.new_session("u2netp")/' "$TRIPOSR_ROOT/run.py"
+          hf download stabilityai/TripoSR config.yaml model.ckpt --revision 5b521936b01fbe1890f6f9baed0254ab6351c04a --local-dir "$TRIPOSR_WEIGHTS"
+          mkdir -p "$U2NET_HOME"
+          curl -fsSL --retry 3 https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx -o "$U2NET_HOME/u2netp.onnx"
+      - name: Generate and publish textured drafts
+        if: steps.queue.outputs.pending == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          result=0
+          for job in forge/jobs/3d/*.json; do
+            [ -f "$job" ] || continue
+            name=$(basename "$job" .json)
+            [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]] || continue
+            dest="forge/mesh-results/$name"
+            [ ! -f "$dest/done.json" ] || continue
+            python forge/mesh_worker.py --job "$name" || result=1
+            git add --all -- "$dest"
+            git commit -qm "[skip ci] forge: publish 3D draft"
+            published=false
+            for attempt in 1 2 3; do
+              if git pull -q --rebase origin main && git push -q origin HEAD:main; then
+                published=true
+                break
+              fi
+              sleep 5
+            done
+            if ! "$published"; then exit 1; fi
+          done
+          exit "$result"
