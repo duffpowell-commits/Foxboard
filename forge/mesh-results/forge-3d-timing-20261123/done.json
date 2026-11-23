@@ -1,0 +1,1 @@
+{"status": "done", "timings_seconds": {"reference_decode": 0.03, "model_load": 5.165, "image_processing": 0.42, "inference": 20.095, "mesh_extraction": 4.517, "texture_bake": 39.881, "intermediate_export": 0.678, "glb_export": 0.588, "job_total": 120.55, "runner_setup": 80}}
