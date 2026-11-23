@@ -13,7 +13,7 @@ jobs:
   render:
     if: github.ref == 'refs/heads/main' && !github.event.repository.private
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 120
     env:
       OMP_NUM_THREADS: 4
       OPENBLAS_NUM_THREADS: 1
@@ -57,26 +57,29 @@ jobs:
           hf download stabilityai/TripoSR config.yaml model.ckpt --revision 5b521936b01fbe1890f6f9baed0254ab6351c04a --local-dir "$TRIPOSR_WEIGHTS"
           mkdir -p "$U2NET_HOME"
           curl -fsSL --retry 3 https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx -o "$U2NET_HOME/u2netp.onnx"
-      - name: Generate textured drafts
-        if: steps.queue.outputs.pending == 'true'
-        id: render
-        run: |
-          rc=0
-          python forge/mesh_worker.py || rc=$?
-          echo "result=$rc" >> "$GITHUB_OUTPUT"
-      - name: Publish GLBs and job status
+      - name: Generate and publish textured drafts
         if: steps.queue.outputs.pending == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add --all -- forge/mesh-results
-          git diff --cached --quiet && exit 0
-          git commit -qm "[skip ci] forge: publish 3D drafts"
-          for attempt in 1 2 3; do
-            if git pull -q --rebase origin main && git push -q origin HEAD:main; then exit 0; fi
-            sleep 5
+          result=0
+          for job in forge/jobs/3d/*.json; do
+            [ -f "$job" ] || continue
+            name=$(basename "$job" .json)
+            [[ "$name" =~ ^[a-z0-9][a-z0-9-]{0,63}$ ]] || continue
+            dest="forge/mesh-results/$name"
+            [ ! -f "$dest/done.json" ] || continue
+            python forge/mesh_worker.py --job "$name" || result=1
+            git add --all -- "$dest"
+            git commit -qm "[skip ci] forge: publish 3D draft"
+            published=false
+            for attempt in 1 2 3; do
+              if git pull -q --rebase origin main && git push -q origin HEAD:main; then
+                published=true
+                break
+              fi
+              sleep 5
+            done
+            if ! "$published"; then exit 1; fi
           done
-          exit 1
-      - name: Report failed jobs
-        if: steps.render.outputs.result != '' && steps.render.outputs.result != '0'
-        run: exit 1
+          exit "$result"

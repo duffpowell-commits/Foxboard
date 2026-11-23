@@ -63,9 +63,14 @@ def render(job, dest):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=ROOT)
+    parser.add_argument("--job", help="Process just this job ID")
     args = parser.parse_args()
+    pending = args.root / "forge/jobs/3d"
+    if args.job and not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", args.job):
+        parser.error("Invalid job ID")
+    jobs = [pending / f"{args.job}.json"] if args.job else sorted(pending.glob("*.json"))
     failed = False
-    for job in sorted((args.root / "forge/jobs/3d").glob("*.json")):
+    for job in jobs:
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", job.stem):
             print(f"Ignoring invalid mesh job filename: {job.name}", file=sys.stderr)
             continue
