@@ -13,6 +13,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Foxboard">
 
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+</script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Silkscreen:wght@400;700&family=Bangers&family=Creepster&family=Cinzel:wght@400;600;700&family=Pirata+One&family=Permanent+Marker&display=swap">
 <style>
 :root{--bg:#0b0c12;--panel:#121a2a;--panel2:#1a2438;--line:#26344d;--text:#dae0e5;--dim:#8a97ab;--acc:#c2602f;--acc-ink:#fff3e4;--amber:#f0a040;--teal:#2f6e73;--danger:#e0605a;--ai:#3f8f95;--glass:rgba(16,22,36,.92)}
@@ -1002,11 +1005,379 @@ function play(){
 $('#plFps').addEventListener('input',e=>{ doc.fps=+e.target.value; $('#plFpsLbl').textContent=doc.fps+' fps'; autosave(); });
 $('#plClose').onclick=()=>{ clearTimeout(playT); $('#player').classList.remove('open'); };
 
+/* ---------- 3D texture studio ---------- */
+const studioModules = [
+  'three', 'three/addons/loaders/GLTFLoader.js', 'three/addons/exporters/GLTFExporter.js',
+  'three/addons/controls/OrbitControls.js', 'three/addons/environments/RoomEnvironment.js'
+];
+let closeTextureStudio;
+
+function forgeModelUrl(id){
+  return `https://raw.githubusercontent.com/${FORGE_REPO.owner}/${FORGE_REPO.repo}/main/forge/mesh-results/${id}/model.glb`;
+}
+
+function openTextureStudio(job){
+  openSheet('3D Texture Studio','textureStudio',body=>{
+    const status=h('div',{class:'hint',role:'status'},'Loading 3D renderer…');
+    body.append(status);
+    mountTextureStudio(body,status,job).catch(e=>{ status.textContent=e.message; });
+  });
+}
+
+async function mountTextureStudio(body,status,job){
+  let active=true;
+  let cleanup=()=>{};
+  closeTextureStudio=()=>{ active=false; cleanup(); closeTextureStudio=null; };
+  let modules;
+  try{ modules=await Promise.all(studioModules.map(name=>import(name))); }
+  catch{ throw new Error('The 3D renderer could not load. Reopen Texture Studio with an internet connection.'); }
+  if(!active) return;
+  const [T,{GLTFLoader},{GLTFExporter},{OrbitControls},{RoomEnvironment}]=modules;
+  let renderer;
+  try{ renderer=new T.WebGLRenderer({antialias:true,preserveDrawingBuffer:true}); }
+  catch{ throw new Error('Texture Studio requires WebGL 2.'); }
+  const view=h('div',{style:'height:clamp(220px,37vh,420px);border-radius:10px;overflow:hidden;background:#292733'});
+  renderer.domElement.style.cssText='display:block;touch-action:none;width:100%;height:100%';
+  renderer.domElement.setAttribute('aria-label','Interactive 3D model preview');
+  view.append(renderer.domElement);
+  const scene=new T.Scene();
+  scene.background=new T.Color(0x292733);
+  const camera=new T.PerspectiveCamera(42,1,0.01,100);
+  camera.position.set(2,1.4,2);
+  const orbit=new OrbitControls(camera,renderer.domElement);
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.toneMapping=T.ACESFilmicToneMapping;
+  const pmrem=new T.PMREMGenerator(renderer);
+  const room=new RoomEnvironment();
+  const environment=pmrem.fromScene(room);
+  room.dispose();
+  pmrem.dispose();
+  scene.environment=environment.texture;
+  const key=new T.DirectionalLight(0xffdfb6,0);
+  key.position.set(3,4,-2);
+  scene.add(key);
+  let asset,materials=[],retiredTextures=new Set(),undo=[],drawing=null,name='model',loadVersion=0,materialVersion=0;
+  const say=message=>{ status.textContent=message; };
+  const drawPreview=()=>{ if(active) renderer.render(scene,camera); };
+  orbit.addEventListener('change',drawPreview);
+  const observer=new ResizeObserver(()=>{
+    const {clientWidth:w,clientHeight:height}=view;
+    if(!w||!height) return;
+    camera.aspect=w/height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w,height,false);
+    drawPreview();
+  });
+  observer.observe(view);
+
+  function release(model){
+    const resources=new Set();
+    model.scene.traverse(o=>{
+      if(!o.isMesh) return;
+      resources.add(o.geometry);
+      for(const m of [o.material].flat()){
+        resources.add(m);
+        for(const value of Object.values(m)) if(value?.isTexture) resources.add(value);
+      }
+    });
+    resources.forEach(resource=>resource.dispose());
+  }
+  cleanup=()=>{
+    observer.disconnect();
+    orbit.dispose();
+    if(asset) release(asset);
+    for(const texture of retiredTextures) texture.dispose();
+    environment.dispose();
+    renderer.dispose();
+    renderer.forceContextLoss();
+  };
+
+  const modelFile=h('input',{type:'file',accept:'.glb,model/gltf-binary','aria-label':'Open GLB'});
+  const slot=h('select',{'aria-label':'Material'});
+  const light=h('select',{'aria-label':'Preview lighting'},
+    h('option',{value:'studio'},'Studio'),h('option',{value:'warm'},'Warm sidelight'),h('option',{value:'dim'},'Dim room'));
+  const mode=h('select',{'aria-label':'Interaction'},
+    h('option',{value:'orbit'},'Orbit'),h('option',{value:'paint'},'Paint base color'));
+  const color=h('input',{type:'color',value:'#c28456','aria-label':'Brush color'});
+  const size=h('input',{type:'range',min:'2',max:'96',value:'16','aria-label':'Brush radius'});
+  const roughness=h('input',{type:'range',min:'0',max:'1',step:'.01','aria-label':'Roughness'});
+  const metalness=h('input',{type:'range',min:'0',max:'1',step:'.01','aria-label':'Metallic'});
+  const mapSlot=h('select',{'aria-label':'Texture map'},...[
+    ['map','Base color'],['normalMap','Normal'],['roughnessMap','Roughness'],
+    ['metalnessMap','Metallic'],['aoMap','Ambient occlusion']
+  ].map(([value,label])=>h('option',{value},label)));
+  const mapFile=h('input',{type:'file',accept:'image/png,image/jpeg,image/webp','aria-label':'Import texture'});
+  const relief=h('input',{type:'range',min:'0.1',max:'4',step:'.1',value:'1','aria-label':'Relief strength'});
+  const makeNormal=h('button',{type:'button'},'Bake relief normal');
+  const undoButton=h('button',{type:'button'},'Undo stroke');
+  const exportModel=h('button',{class:'acc'},'Export textured GLB');
+  const exportImage=h('button',{},'Save preview PNG');
+  const exportMap=h('button',{},'Save base color PNG');
+  const assetControls=h('fieldset',{disabled:'',style:'border:0;padding:0;margin:0;min-width:0'},
+    row('Material',slot),row('View',light,mode),row('Brush',color,size,undoButton),
+    row('Roughness',roughness),row('Metallic',metalness),row('Import map',mapSlot,mapFile),
+    row('Base color relief',relief,makeNormal),
+    row('',exportModel,exportMap,exportImage));
+  body.append(row('Open GLB',modelFile),view,assetControls);
+  const current=()=>materials[Number(slot.value)];
+  const refresh=()=>{
+    const material=current();
+    const pbr=!!material?.isMeshStandardMaterial;
+    roughness.disabled=metalness.disabled=!pbr;
+    if(pbr){ roughness.value=material.roughness; metalness.value=material.metalness; }
+    undoButton.disabled=!undo.length;
+    relief.disabled=makeNormal.disabled=!pbr||!material.map;
+  };
+  light.onchange=()=>{
+    scene.environmentIntensity={studio:1,warm:0.45,dim:0.18}[light.value];
+    key.intensity=light.value==='warm'?3:0;
+    drawPreview();
+  };
+  mode.onchange=()=>{ orbit.enabled=mode.value==='orbit'; refresh(); };
+  slot.onchange=()=>{ materialVersion++; refresh(); };
+  for(const field of [roughness,metalness]) field.oninput=()=>{
+    current()[field===roughness?'roughness':'metalness']=Number(field.value);
+    drawPreview();
+  };
+  function materialMeshes(model){
+    const list=[];
+    model.traverse(o=>{ if(o.isMesh&&o.geometry.hasAttribute('position')) list.push(o); });
+    return list;
+  }
+  async function load(bytes,label,version){
+    const header=new DataView(bytes);
+    if(bytes.byteLength<20||header.getUint32(0,true)!==0x46546c67||header.getUint32(4,true)!==2)
+      throw new Error('Choose a self-contained glTF 2.0 GLB.');
+    const manager=new T.LoadingManager();
+    manager.setURLModifier(url=>{
+      if(!/^(blob:|data:)/.test(url)) throw new Error('This GLB needs external resources. Embed them before importing.');
+      return url;
+    });
+    const next=await new GLTFLoader(manager).parseAsync(bytes,'');
+    if(!active||version!==loadVersion){ release(next); return; }
+    const meshes=materialMeshes(next.scene);
+    const bounds=new T.Box3().setFromObject(next.scene);
+    if(!meshes.length||bounds.isEmpty()){ release(next); throw new Error('The GLB has no mesh to texture.'); }
+    if(asset){ scene.remove(asset.scene); release(asset); }
+    for(const texture of retiredTextures) texture.dispose();
+    asset=next;
+    materials=[...new Set(meshes.flatMap(mesh=>[mesh.material].flat()))];
+    retiredTextures=new Set();
+    undo=[];
+    name=label;
+    slot.replaceChildren(...materials.map((m,i)=>h('option',{value:i},m.name||`Material ${i+1}`)));
+    scene.add(asset.scene);
+    const sphere=bounds.getBoundingSphere(new T.Sphere());
+    const radius=Math.max(sphere.radius,0.0001);
+    const halfFov=T.MathUtils.degToRad(camera.fov/2);
+    const fitFov=Math.min(halfFov,Math.atan(Math.tan(halfFov)*camera.aspect));
+    camera.near=radius/100;
+    camera.far=radius*100;
+    camera.updateProjectionMatrix();
+    orbit.target.copy(sphere.center);
+    camera.position.copy(sphere.center).addScaledVector(new T.Vector3(2,1.3,2).normalize(),radius/Math.sin(fitFov)*1.12);
+    orbit.update();
+    assetControls.disabled=false;
+    refresh();
+    drawPreview();
+    say(`${label} · ${materials.length} material${materials.length===1?'':'s'}`);
+  }
+  async function runLoad(read,label){
+    const version=++loadVersion;
+    say('Opening model…');
+    try{ await load(await read(),label,version); }
+    catch(e){ if(version===loadVersion) say(e.message); }
+  }
+  modelFile.onchange=()=>{
+    const file=modelFile.files[0];
+    if(!file) return;
+    modelFile.value='';
+    runLoad(()=>file.arrayBuffer(),file.name.replace(/\.glb$/i,''));
+  };
+  function setMap(material,key,texture){
+    const previous=material[key];
+    if(previous) retiredTextures.add(previous);
+    material[key]=texture;
+    material.needsUpdate=true;
+  }
+  function canvasTexture(canvas,key,previous){
+    const texture=new T.CanvasTexture(canvas);
+    texture.flipY=false;
+    texture.colorSpace=key==='map'?T.SRGBColorSpace:T.NoColorSpace;
+    if(previous){
+      for(const attr of ['channel','wrapS','wrapT','magFilter','minFilter','rotation']) texture[attr]=previous[attr];
+      for(const attr of ['offset','repeat','center']) texture[attr].copy(previous[attr]);
+    }
+    return texture;
+  }
+  mapFile.onchange=async()=>{
+    const file=mapFile.files[0];
+    if(!file) return;
+    mapFile.value='';
+    const material=current(), key=mapSlot.value, label=mapSlot.selectedOptions[0].textContent;
+    const version=++materialVersion, target=asset;
+    try{
+      if(key!=='map'&&!material.isMeshStandardMaterial) throw new Error('Choose a PBR material for this map.');
+      const bitmap=await createImageBitmap(file,{colorSpaceConversion:key==='map'?'default':'none'});
+      try{
+        if(!active||asset!==target||version!==materialVersion) return;
+        const scale=Math.min(1,2048/Math.max(bitmap.width,bitmap.height));
+        const canvas=h('canvas',{width:Math.max(1,Math.round(bitmap.width*scale)),height:Math.max(1,Math.round(bitmap.height*scale))});
+        canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+        setMap(material,key,canvasTexture(canvas,key,material[key]));
+        if(key==='map') material.color.set(0xffffff);
+        if(key==='roughnessMap') { material.roughnessMap=scalarMap(material.roughnessMap,1); material.roughness=1; }
+        if(key==='metalnessMap') { material.metalnessMap=scalarMap(material.metalnessMap,2); material.metalness=1; }
+        if(key==='map') undo=undo.filter(stroke=>stroke.material!==material);
+        refresh();
+        drawPreview();
+        say(`Applied ${label} · ${canvas.width} × ${canvas.height}`);
+      }finally{ bitmap.close(); }
+    }catch(e){ say(e.message); }
+  };
+  function scalarMap(texture,channel){
+    const canvas=texture.image;
+    const ctx=canvas.getContext('2d');
+    const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
+    for(let i=0;i<pixels.data.length;i+=4) pixels.data[i+channel]=pixels.data[i];
+    ctx.putImageData(pixels,0,0);
+    texture.needsUpdate=true;
+    return texture;
+  }
+  function editableMap(material){
+    if(material.map?.image instanceof HTMLCanvasElement) return material.map;
+    const source=material.map?.image;
+    const scale=source?Math.min(1,2048/Math.max(source.width,source.height)):1;
+    const canvas=h('canvas',{width:source?Math.max(1,Math.round(source.width*scale)):1024,height:source?Math.max(1,Math.round(source.height*scale)):1024});
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(source) ctx.drawImage(source,0,0,canvas.width,canvas.height);
+    else{ ctx.fillStyle='white'; ctx.fillRect(0,0,canvas.width,canvas.height); }
+    const texture=canvasTexture(canvas,'map',material.map);
+    setMap(material,'map',texture);
+    return texture;
+  }
+  makeNormal.onclick=()=>{
+    const material=current(), base=editableMap(material);
+    const {width,height}=base.image;
+    const canvas=h('canvas',{width,height});
+    const ctx=canvas.getContext('2d');
+    ctx.drawImage(base.image,0,0);
+    const pixels=ctx.getImageData(0,0,width,height);
+    const heights=new Float32Array(width*height);
+    for(let i=0;i<heights.length;i++){
+      const j=i*4;
+      const luma=0.2126*pixels.data[j]+0.7152*pixels.data[j+1]+0.0722*pixels.data[j+2];
+      heights[i]=luma/255;
+    }
+    const strength=Number(relief.value);
+    for(let y=0;y<height;y++){
+      const above=Math.max(0,y-1)*width, below=Math.min(height-1,y+1)*width;
+      for(let x=0;x<width;x++){
+        const i=y*width+x, j=i*4;
+        const nx=strength*(heights[y*width+Math.max(0,x-1)]-heights[y*width+Math.min(width-1,x+1)]);
+        const ny=strength*(heights[below+x]-heights[above+x]);
+        const length=Math.hypot(nx,ny,1);
+        pixels.data[j]=Math.round((nx/length+1)*127.5);
+        pixels.data[j+1]=Math.round((ny/length+1)*127.5);
+        pixels.data[j+2]=Math.round((1/length+1)*127.5);
+        pixels.data[j+3]=255;
+      }
+    }
+    ctx.putImageData(pixels,0,0);
+    setMap(material,'normalMap',canvasTexture(canvas,'normalMap',base));
+    material.normalScale.set(1,1);
+    drawPreview();
+    say('Baked a normal map from base-color brightness.');
+  };
+  const ray=new T.Raycaster(), pointer=new T.Vector2();
+  function stamp(x,y){
+    const rect=view.getBoundingClientRect();
+    pointer.set((x-rect.left)/rect.width*2-1,1-(y-rect.top)/rect.height*2);
+    ray.setFromCamera(pointer,camera);
+    const hit=ray.intersectObject(asset.scene,true)[0];
+    if(!hit?.uv) return;
+    const material=Array.isArray(hit.object.material)?hit.object.material[hit.face.materialIndex]:hit.object.material;
+    if(material!==current()) return;
+    const channel=material.map?.channel||0;
+    const coords=channel===0?hit.uv:hit.uv1;
+    if(channel>1||!coords) return;
+    const texture=editableMap(material), canvas=texture.image;
+    const ctx=canvas.getContext('2d');
+    if(!drawing.snapshot){
+      drawing.snapshot={material,texture,pixels:ctx.getImageData(0,0,canvas.width,canvas.height)};
+    }
+    const uv=coords.clone();
+    texture.updateMatrix();
+    texture.transformUv(uv);
+    ctx.fillStyle=color.value;
+    ctx.beginPath();
+    ctx.arc(uv.x*canvas.width,uv.y*canvas.height,Number(size.value),0,Math.PI*2);
+    ctx.fill();
+    texture.needsUpdate=true;
+  }
+  const surface=renderer.domElement;
+  surface.addEventListener('pointerdown',e=>{
+    if(mode.value!=='paint'||!asset||drawing||e.button!==0) return;
+    surface.setPointerCapture(e.pointerId);
+    drawing={id:e.pointerId,x:e.clientX,y:e.clientY};
+    stamp(drawing.x,drawing.y);
+    drawPreview();
+  });
+  surface.addEventListener('pointermove',e=>{
+    if(drawing?.id!==e.pointerId) return;
+    const dx=e.clientX-drawing.x,dy=e.clientY-drawing.y;
+    const steps=Math.ceil(Math.hypot(dx,dy)/3);
+    for(let i=1;i<=steps;i++) stamp(drawing.x+dx*i/steps,drawing.y+dy*i/steps);
+    drawing.x=e.clientX;
+    drawing.y=e.clientY;
+    drawPreview();
+  });
+  surface.addEventListener('lostpointercapture',e=>{
+    if(drawing?.id!==e.pointerId) return;
+    if(drawing.snapshot){
+      undo.push(drawing.snapshot);
+      if(undo.length>4) undo.shift();
+    }else say('Paint on a UV-mapped surface using the selected material.');
+    drawing=null;
+    refresh();
+  });
+  undoButton.onclick=()=>{
+    const {texture,pixels}=undo.pop();
+    texture.image.getContext('2d').putImageData(pixels,0,0);
+    texture.needsUpdate=true;
+    refresh();
+    drawPreview();
+  };
+  const exportAction=fn=>async e=>{
+    const button=e.currentTarget;
+    button.disabled=true;
+    try{ await fn(); }catch(error){ say(error.message); }
+    finally{ button.disabled=false; }
+  };
+  async function savePng(canvas,suffix){
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob) throw new Error('The PNG could not be encoded.');
+    await deliver(blob,`${name}-${suffix}.png`);
+  }
+  exportModel.onclick=exportAction(async()=>{
+    const bytes=await new GLTFExporter().parseAsync(asset.scene,{binary:true,animations:asset.animations});
+    await deliver(new Blob([bytes],{type:'model/gltf-binary'}),`${name}-textured.glb`);
+  });
+  exportMap.onclick=exportAction(async()=>{ await savePng(editableMap(current()).image,'base-color'); });
+  exportImage.onclick=exportAction(async()=>{ drawPreview(); await savePng(surface,'preview'); });
+  say('Open a GLB to start texturing.');
+  if(job) await runLoad(async()=>{
+    const response=await fetch(forgeModelUrl(job.id));
+    if(!response.ok) throw new Error('The Forge model could not be loaded. Try again.');
+    return response.arrayBuffer();
+  },`foxboard-${job.id}`);
+}
+
 /* ---------- sheet ---------- */
-function openSheet(title,kind,build){ curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML='';
+function openSheet(title,kind,build){ closeTextureStudio?.(); curSheet=kind; $('#shTitle').textContent=title; const b=$('#shBody'); b.innerHTML='';
   if(!window.claude&&['ai','aiexpand','magicedit','library','send'].includes(kind)) b.append(h('div',{class:'cloudnote'},'🦊 This part runs on Claude, so it works when Foxboard is opened inside the Claude app. Everything else (drawing, layers, elements, magic eraser, expand, export) works right here.'));
   build(b); b.scrollTop=0; $('#sheet').classList.add('open'); $('#scrim').classList.add('open'); }
-function closeSheet(){ endEdit(); if(curSheet==='bible'&&pendingBible) applyBible(pendingBible); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
+function closeSheet(){ closeTextureStudio?.(); endEdit(); if(curSheet==='bible'&&pendingBible) applyBible(pendingBible); $('#sheet').classList.remove('open'); $('#scrim').classList.remove('open'); draw(); }
 $('#shClose').onclick=closeSheet; $('#scrim').onclick=closeSheet;
 function h(tag,attrs,...kids){ const el=document.createElement(tag); for(const k in attrs||{}){ if(k.startsWith('on')) el.addEventListener(k.slice(2),attrs[k]); else el.setAttribute(k,attrs[k]); } for(const c of kids) el.append(c); return el; }
 function longPress(el,fn,ms){ let t=null; const stop=()=>clearTimeout(t);
@@ -1189,7 +1560,7 @@ function openMenu(){
     g.append(h('button',{onclick:saveProject},'💾 Save project file'));
     g.append(h('button',{onclick:()=>$('#fileProj').click()},'📂 Open project file'));
     g.append(h('button',{onclick:openPages},'🎞 Frames'));
-    g.append(h('button',{onclick:()=>openAI()},'✨ AI studio'));
+    g.append(h('button',{onclick:()=>openAI()},'✨ AI studio'),h('button',{onclick:()=>openTextureStudio()},'3D Texture Studio'));
     g.append(h('button',{onclick:openSaveTemplate},'⭐ Save as template'));
     g.append(h('button',{onclick:()=>openBible()},'📖 Style bible'));
     g.append(h('button',{onclick:openLibrary},'📚 Shared library'));
@@ -1395,7 +1766,7 @@ function buildForge(b,ta){
           download.onclick=async()=>{
             download.disabled=true;
             try{
-              const url=`https://raw.githubusercontent.com/${FORGE_REPO.owner}/${FORGE_REPO.repo}/main/forge/mesh-results/${j.id}/model.glb`;
+              const url=forgeModelUrl(j.id);
               const response=await fetch(url);
               if(!response.ok) throw new Error('The GLB could not be loaded. Try again.');
               const bytes=await response.arrayBuffer();
@@ -1404,7 +1775,7 @@ function buildForge(b,ta){
             }catch(e){ toast(e.message||'Download failed. Try again.'); }
             finally{ download.disabled=false; }
           };
-          box.append(download);
+          box.append(h('button',{class:'acc',onclick:()=>openTextureStudio(j)},'Open in Texture Studio'),download);
         }
         list.append(box);
         return;
@@ -1453,6 +1824,7 @@ function openAI(mode){
     }
     const tabs=h('div',{class:'tabs'});
     [['forge','🔥 Forge'],['pixel','👾 Pixel sprite'],['vector','🎨 Vector art'],['layout','📐 Design it'],['critique','🧐 Critique']].forEach(([k,l])=>{ const bt=h('button',{class:k===mode?'on':''},l); bt.onclick=()=>openAI(k); tabs.append(bt); });
+    tabs.append(h('button',{onclick:()=>openTextureStudio()},'3D Texture Studio'));
     b.append(tabs);
     const ta=h('textarea',{placeholder:''});
     const out=h('div',{class:'out hidden'});
