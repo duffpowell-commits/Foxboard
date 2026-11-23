@@ -69,11 +69,11 @@ async def main():
         await ev("""(()=>{ const d=__fb.doc; d.w=16; d.h=16; d.pixel=true; d.bg='transparent'; d.name='bearer test';
           d.pages=[{id:'p',objects:[{id:'r',type:'rect',x:4,y:4,w:8,h:8,rot:0,fill:'#c98a2e',stroke:'#000',strokeW:0,opacity:1}]}]; __fb.doc=d; })()""")
 
-        # --- send to game: outbox (default) ---
+        # --- send to game: outbox (Lethemoor defaults to direct since Nov 23, so force the outbox here) ---
         ok = await ev("typeof __fb.openSendToGame==='function'")
         check('send-to-game exists', ok)
         if ok:
-            await ev("__fb.setActiveGame('lethemoor'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
+            await ev("__fb.setDirect('lethemoor',false); __fb.setActiveGame('lethemoor'); __fb.openSendToGame()"); await pg.wait_for_timeout(200)
             await pg.click('button:has-text("Send")'); await pg.wait_for_timeout(900)
             msg = await pg.inner_text('#shBody .out')
             ob = await ev("""(()=>{ const ks=[...window.__store.keys()].filter(k=>k.startsWith('outbox/')); return ks.map(k=>window.__store.get(k)); })()""")

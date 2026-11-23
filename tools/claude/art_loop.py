@@ -4,7 +4,7 @@
 Used by the art-loop skill (render -> judge -> reroll -> deliver). Run from a Foxboard clone.
 
   python3 tools/claude/art_loop.py queue  --id lm-x-20261119 --prompt-file p.txt [--n 2 --w 512 --h 512 --seed N --key '#00FF00']
-       [--mode new|sketch|edit --init a.png --mask m.png --ref style.png --ref-strength 0.55 --strength 0.7 --tile]
+       [--mode new|sketch|edit --init a.png --mask m.png --ref style.png --ref-strength 0.55 --strength 0.7 --tile --send-to lethemoor]
        Sizes must be 256-1024 and a multiple of 64. Job files are committed and published to Foxboard main (job-only).
        Pass --no-publish to write the files without git (tests / a dry run).
   python3 tools/claude/art_loop.py status lm-x-20261119 [more ids]
@@ -116,6 +116,9 @@ def write_job_files(a):
         if mode in ("edit",) and getattr(a, "engine", None) != "flux":
             warnings.append("tile only affects the FLUX path (new/sketch/flux edit), not klein edits")
         job["tile"] = True
+    if getattr(a, "send_to", None):
+        job["game"] = a.send_to  # forge/send_game.py drops each finished take into that game's grok_art inbox
+        job["name"] = a.id
     if a.strength is not None:
         job["strength"] = check_strength("strength", a.strength, 0.3, 0.95)
     if a.init and a.ref:
@@ -466,6 +469,7 @@ def main():
     q.add_argument("--ref-strength", type=float, dest="ref_strength", help="how hard to follow --ref (0.15-0.85, default 0.55)")
     q.add_argument("--strength", type=float, help="img2img strength 0.3-0.95 (sketch default is 0.7 in the renderer)")
     q.add_argument("--tile", action="store_true", help="seamless (sd.cpp --circular). FLUX path only.")
+    q.add_argument("--send-to", dest="send_to", choices=["lethemoor", "duffquest"], help="auto-send each finished take to this game's grok_art/ inbox")
     q.add_argument("--no-publish", action="store_true", help="write job files but do not commit or push")
     s = sub.add_parser("status"); s.add_argument("ids", nargs="+")
     c = sub.add_parser("score"); c.add_argument("id"); c.add_argument("--game", default="lethemoor", choices=sorted(GAMES))

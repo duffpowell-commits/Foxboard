@@ -64,6 +64,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           python forge/render_one.py "${{ matrix.item.job }}" "${{ matrix.item.k }}"
+      - name: Send to game
+        # job field "game": drop the finished take into that game's art inbox (needs the GAME_PUSH_TOKEN secret)
+        env: { GAME_PUSH_TOKEN: "${{ secrets.GAME_PUSH_TOKEN }}" }
+        run: python forge/send_game.py "${{ matrix.item.job }}" "${{ matrix.item.k }}"
   finish:
     needs: [plan, render]
     if: always() && needs.plan.outputs.any == 'true'
