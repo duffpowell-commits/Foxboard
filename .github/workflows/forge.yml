@@ -4,7 +4,7 @@ name: forge
 on:
   push:
     branches: [main]
-    paths: ["forge/jobs/**"]
+    paths: ["forge/jobs/**", "!forge/jobs/3d/**"]
   workflow_dispatch:
 permissions:
   contents: write

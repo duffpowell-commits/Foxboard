@@ -47,3 +47,9 @@ background (`forge/keyfix.py`). Only runs while the repo is public. Prompts and 
 `tools/claude/fbx.py` packs art into the shared-library db format (`push-image`, `push-doc`) and unpacks it
 (`pull`); `tools/claude/render.js` renders a doc with Foxboard's own renderer. Transport is the ArtifactData
 tool on the Foxboard artifact (see the foxboard-link skill). Verified live Nov 19.
+
+### Generate a 3D draft
+
+Select one image layer, open its image tools, and tap **Generate 3D draft**. Confirm the public upload inside Claude with the GitHub connector enabled. **AI › Forge › Check now** shows when the GLB is ready to download. The reference and result are public in this repository.
+
+The separate **Forge 3D** workflow uses TripoSR on a CPU runner and bakes a texture into the GLB. It produces an unrigged draft for review and cleanup in Blender. It does not send models to a game automatically. For scripting, use `Foxboard.forge({mode:'3d', id})` and `Foxboard.meshStatus(jobId)`.
