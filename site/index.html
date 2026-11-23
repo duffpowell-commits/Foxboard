@@ -1391,8 +1391,20 @@ function buildForge(b,ta){
           check.onclick=async()=>{ check.disabled=true; try{ await forgeCheck(j); }catch(e){ toast(ghErr(e)); } render(); };
           box.append(check);
         }else if(j.meshReady&&/^[a-z0-9][a-z0-9-]{0,63}$/.test(j.id)){
-          box.append(h('a',{href:`https://raw.githubusercontent.com/${FORGE_REPO.owner}/${FORGE_REPO.repo}/main/forge/mesh-results/${j.id}/model.glb`,
-            download:'foxboard-draft.glb',target:'_blank',rel:'noopener'},'Download GLB'));
+          const download=h('button',{},'Download GLB');
+          download.onclick=async()=>{
+            download.disabled=true;
+            try{
+              const url=`https://raw.githubusercontent.com/${FORGE_REPO.owner}/${FORGE_REPO.repo}/main/forge/mesh-results/${j.id}/model.glb`;
+              const response=await fetch(url);
+              if(!response.ok) throw new Error('The GLB could not be loaded. Try again.');
+              const bytes=await response.arrayBuffer();
+              if(bytes.byteLength<12||new DataView(bytes).getUint32(0,true)!==0x46546c67) throw new Error('The 3D draft is not a GLB file.');
+              await deliver(new Blob([bytes],{type:'model/gltf-binary'}),`foxboard-${j.id}.glb`);
+            }catch(e){ toast(e.message||'Download failed. Try again.'); }
+            finally{ download.disabled=false; }
+          };
+          box.append(download);
         }
         list.append(box);
         return;
@@ -2577,13 +2589,31 @@ function encSmall(c){ // PNG when it has see-through pixels, else JPEG (keeps up
   return 'jpg:'+c.toDataURL('image/jpeg',0.93).split(',')[1]; }
 function snap64(v){ return Math.max(256,Math.min(1024,Math.round(v/64)*64)); }
 async function forgePut(path,content,msg){ await mcpCap.callTool('github','create_or_update_file',{...FORGE_REPO,branch:'main',path,content,message:msg}); }
+function meshReference(o){
+  const image=srcOf(o);
+  if(!image) throw new Error('Image still loading');
+  if(o.hidden||o.opacity===0) throw new Error('Show the image layer before generating a 3D draft');
+  const r=cropRect(o,image);
+  const w=r.sw, h=r.sh, angle=o.rot||0;
+  const bw=Math.abs(w*Math.cos(angle))+Math.abs(h*Math.sin(angle));
+  const bh=Math.abs(w*Math.sin(angle))+Math.abs(h*Math.cos(angle));
+  const scale=Math.min(1,768/Math.max(bw,bh));
+  const canvas=document.createElement('canvas');
+  canvas.width=Math.min(768,Math.ceil(bw*scale));
+  canvas.height=Math.min(768,Math.ceil(bh*scale));
+  const context=canvas.getContext('2d');
+  context.translate(canvas.width/2,canvas.height/2);
+  context.scale(scale,scale);
+  drawObj(context,{...o,x:-w/2,y:-h/2,w,h,shadow:null,blend:null});
+  return canvas;
+}
 function openMeshDraft(o){
   openSheet('Generate 3D draft','mesh-draft',b=>{
     if(!mcpCap){
       b.append(h('div',{class:'hint'},'Open Foxboard inside Claude with the GitHub connector enabled to queue a model.'));
       return;
     }
-    b.append(h('div',{class:'hint'},'Use one isolated subject. The reference and generated GLB will be public in the Foxboard repository. Review the draft before using it in a game.'));
+    b.append(h('div',{class:'hint'},'Use one isolated subject. The cropped, masked image and generated GLB will be public in the Foxboard repository. Review the draft before using it in a game.'));
     const go=h('button',{class:'acc'},'Publish reference and queue');
     go.onclick=async()=>{
       go.disabled=true;
@@ -2601,8 +2631,7 @@ function forgeBuild(opts){
     const jid=opts.jid||(Date.now().toString(36)+uid());
     if(!/^[a-z0-9][a-z0-9-]{0,63}$/.test(jid)) throw new Error('Invalid 3D job ID');
     const at=Date.now(), job={mode:'3d',at};
-    const source=capCanvas(imageData(o).c,768);
-    const init=encSmall(source);
+    const init=encSmall(meshReference(o));
     if(init.length>1000000) throw new Error('The reference is too large. Try a smaller image.');
     return {jid,job,files:{[`forge/jobs/3d/${jid}.init.b64`]:init,[`forge/jobs/3d/${jid}.json`]:JSON.stringify(job)},
       local:{id:jid,label:'3D draft: '+(o.name||'image'),mode:'3d',at,state:'rendering'}};
