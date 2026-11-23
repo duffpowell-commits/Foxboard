@@ -35,7 +35,11 @@ jobs:
       - uses: actions/checkout@v4
         with: { sparse-checkout: forge }
       - name: Free disk
-        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+        # FLUX schnell + T5 + VAE need ~13 GB; deleting the preinstalled SDKs took ~90 s of every take (Nov 20 runs).
+        # Only pay for it when the runner is actually short on space.
+        run: |
+          avail=$(df --output=avail -BG / | tail -1 | tr -dc 0-9); echo "free on /: ${avail} GB"
+          if [ "${avail:-0}" -lt 20 ]; then sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true; df -h /; fi
       - name: stable-diffusion.cpp
         env: { GH_TOKEN: "${{ github.token }}" }
         run: |
@@ -60,6 +64,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           python forge/render_one.py "${{ matrix.item.job }}" "${{ matrix.item.k }}"
+      - name: Send to game
+        # job field "game": drop the finished take into that game's art inbox (needs the GAME_PUSH_TOKEN secret)
+        env: { GAME_PUSH_TOKEN: "${{ secrets.GAME_PUSH_TOKEN }}" }
+        run: python forge/send_game.py "${{ matrix.item.job }}" "${{ matrix.item.k }}"
   finish:
     needs: [plan, render]
     if: always() && needs.plan.outputs.any == 'true'

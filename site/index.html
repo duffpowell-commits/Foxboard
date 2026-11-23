@@ -1251,6 +1251,7 @@ function gameCharUI(){
 }
 /* ---------- Forge: FLUX.1-schnell on free GitHub runners (repo Foxboard, forge/) ---------- */
 const FORGE_REPO={owner:'duffpowell-commits',repo:'Foxboard'};
+const FORGE_GAMES=['lethemoor','duffquest']; // must match GAMES in forge/send_game.py
 const FORGE_SIZES=[['Square 768 (~15 min)',768,768,15],['Square 512 (~7 min)',512,512,7],['Square 1024 (~27 min)',1024,1024,27],['Portrait 576×1024 (~16 min)',576,1024,16],['Landscape 1024×576 (~16 min)',1024,576,16]];
 const FORGE_LS='foxboard.forgejobs';
 let forgeJobs=[]; const forgeImgs=new Map(); let forgeChecking=false;
@@ -1336,6 +1337,8 @@ function buildForge(b,ta){
   const nv=h('select',{}); [1,2,3,4].forEach(n=>{ const o=h('option',{value:n},n+(n>1?' versions':' version')); if(n===2) o.selected=true; nv.append(o); });
   let keyBg=false; const kb=h('button',{},'Flat key background (sprites to import)'); kb.onclick=()=>{ keyBg=!keyBg; kb.classList.toggle('on',keyBg); };
   let tile=false; const tb=h('button',{},'🧩 Seamless tile'); tb.onclick=()=>{ tile=!tile; tb.classList.toggle('on',tile); };
+  let autoSend=false; try{ autoSend=localStorage.getItem('foxboard.forgeAutoSend')==='1'; }catch(e){}
+  const ab=h('button',{class:autoSend?'on':''},'📦 Auto-send takes to the game'); ab.onclick=()=>{ autoSend=!autoSend; ab.classList.toggle('on',autoSend); try{ localStorage.setItem('foxboard.forgeAutoSend',autoSend?'1':'0'); }catch(e){} };
   // start from: nothing, my sketch (this frame), or the selected image
   const so=sel(); let from='new';
   const fromBtns=[['new','New picture'],['frame','My sketch (this frame)'],...(so&&so.type==='image'?[['layer','Selected image']]:[])].map(([k,l])=>{ const bt=h('button',{class:k===from?'on':''},l); bt.dataset.k=k; bt.onclick=()=>{ from=k; upd(); }; return bt; });
@@ -1347,7 +1350,7 @@ function buildForge(b,ta){
   undoB.onclick=()=>{ if(before!==null) ta.value=before; before=null; undoB.classList.add('hidden'); };
   function upd(){ fromBtns.forEach(x=>x.classList.toggle('on',x.dataset.k===from)); followRow.classList.toggle('hidden',from==='new'); sizeRow.classList.toggle('hidden',from!=='new'); }
   const out=h('div',{class:'out hidden'}); const go=h('button',{class:'acc'},'🔥 Queue it');
-  b.append(ta,row('',...(sampleFn?[boost,undoB]:[])),row('Start from',...fromBtns),followRow,...gc.rows,sizeRow,row('Versions',nv),row('',kb,tb),row('🔒 Seed',seedIn,h('span',{class:'hint'},'same seed + prompt = same picture')),row('',go),out);
+  b.append(ta,row('',...(sampleFn?[boost,undoB]:[])),row('Start from',...fromBtns),followRow,...gc.rows,sizeRow,row('Versions',nv),row('',kb,tb),row('',ab),row('🔒 Seed',seedIn,h('span',{class:'hint'},'same seed + prompt = same picture')),row('',go),out);
   upd();
   b.append(h('div',{class:'hint'},'Free and no cooldown: FLUX renders on GitHub\'s free machines, each version on its own machine at the same time. Takes ~15 min, so queue it and keep working. Prompts and results are public in the Foxboard repo. My sketch: scribble shapes and colors on the canvas, FLUX paints it, and Follow sets how closely.'));
   let view='jobs', pick=null;
@@ -1433,11 +1436,12 @@ function buildForge(b,ta){
     const key=keyBg?((G&&G.key)||'#FF00FF'):null;
     const prompt=[txt||(C?C.name:''), C?('Character details (keep exactly): '+C.look):'', G?('Art style: '+(doc.pixel?G.sprite:G.hd)):'', tile?'Seamless tileable texture, even lighting, no vignette, no single centered subject.':'', key?`Plain flat solid ${keyName(key)} background, nothing else behind the subject, no floor shadow.`:''].filter(Boolean).join(' ');
     const opts={mode:from==='new'?'new':'sketch',prompt,n,w,h:hh,key,tile,seed:seedIn.value.trim()||undefined,label:(from==='new'?'':'Sketch: ')+(txt||(C?C.name:'image'))};
+    if(autoSend){ if(!G||!FORGE_GAMES.includes(G.id)){ out.classList.remove('hidden'); out.textContent='Pick a Game style first so Forge knows where to send the takes.'; return; } opts.game=G.id; opts.name=(C?C.name:txt.split(/\s+/).slice(0,3).join(' '))||'art'; }
     if(from!=='new'){ opts.strength=0.95-((+follow[0].value)-5)/75*0.2; /* follow 5..80 -> strength 0.95 (loose) .. 0.75 (close) */ if(from==='layer'&&so) opts.id=so.id; }
     go.disabled=true; out.classList.remove('hidden'); out.textContent='Queuing on GitHub… (first time asks you to Allow)';
     try{
       await forgeQueue(opts); const j=forgeJobs[0];
-      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working, then come back to ✨AI › Forge and tap Check now.`;
+      out.textContent=`Queued ✓ ${n} version${n>1?'s':''}, about ${Math.round(forgeEta(j)/60000)} min. Keep working, then come back to ✨AI › Forge and tap Check now.`+(opts.game?` Each take also lands in ${G.name}'s ${G.inbox}/ by itself.`:'');
       view='jobs'; pick=null; render();
     }catch(e){ report('forge',e,opts.mode); out.textContent=e&&e.message?e.message:ghErr(e); }
     finally{ go.disabled=false; }
@@ -1759,7 +1763,7 @@ const DEFAULT_BIBLE={games:[
    sprite:'Modern high-detail pixel art with crisp outlines, no blur, no anti-aliasing. Readable at game scale. Comedy RPG set in Omaha, warm and punchy.',
    hd:'Bold flat cartoon: thick near-black ink outlines that taper at the ends, flat solid colour fills with at most ONE hard cel-shadow tone, clean simple shapes, rubbery expressive faces. No gradients, no texture, no gloss, no airbrush. Backgrounds are flat graphics (two-tone sunburst or flat speed lines), never painted scenery.',
    palette:['#14121A','#0E1A33','#1E4A66','#E0A030','#3FF2E6','#FFFFFF']},
-  {id:'lethemoor',name:'Lethemoor',repo:'duffpowell-commits/lethemoor',inbox:'grok_art',key:'#00FF00',decoder:true,direct:false,
+  {id:'lethemoor',name:'Lethemoor',repo:'duffpowell-commits/lethemoor',inbox:'grok_art',key:'#00FF00',decoder:true,direct:true,
    sprite:'HD-2D style pixel art: crisp hand-placed pixels, no anti-aliasing, no blur, no gradients. 3/4 front view, full body, idle, centered. Max 16 colors: desaturated bone, rust, moss green, ink black, ONE warm accent (lantern amber). Single warm light from a lantern, low and to the right; deep shadows, rim light. Gothic, Edgar Allan Poe, quiet dread, something slightly wrong with the anatomy. Never chibi, cute, anime gloss or 3D-render look.',
    hd:'Gothic dark illustration in the amber-and-ink palette: near-black blues, one warm lantern-amber light source, bone and blood accents, heavy shadow, quiet dread.',
    palette:['#05070c','#0b111b','#141d2b','#202d40','#33445a','#4d6078','#2a170a','#5a3414','#8f561f','#c98a2e','#f2c25a','#ffe9a8','#4a0710','#8a1020','#c81e2e','#6f6656','#a99c84','#d9cdb4']}
@@ -2642,6 +2646,7 @@ function forgeBuild(opts){
   const sd=parseInt(opts.seed,10);
   const job={mode,prompt:String(opts.prompt||'').slice(0,1500),n,seed:Number.isFinite(sd)&&sd>=0?sd:Math.floor(Math.random()*1e9),at:Date.now()};
   if(opts.tile) job.tile=true;
+  if(opts.game){ if(!FORGE_GAMES.includes(opts.game)) throw new Error('game: '+FORGE_GAMES.join(' | ')); job.game=opts.game; if(opts.name) job.name=String(opts.name).slice(0,48); } // runner drops each take into that game's art inbox (forge/send_game.py)
   if(opts.engine==='flux'||opts.engine==='klein') job.engine=opts.engine; // flux: whole-area fill (New background); klein: edit model
   else if(mode==='expand') job.engine='klein'; // Nov 20 real-art A/B: klein continued the stones; FLUX gave glassy edges (0.78) or a seam + new texture (0.9)
   if((opts.initCanvas||opts.initSrc) && (opts.refCanvas||opts.refSrc||opts.ref)) throw new Error('Cannot set both init (start from this picture) and ref (style board). FLUX.1-schnell has no separate style-reference encoder.');
@@ -2743,7 +2748,7 @@ const API_DOC={
   addPage:'addPage(copy=true) -> new frame after the current one', goPage:'goPage(i)', delPage:'delPage(i)', setFps:'setFps(n)',
   render:'render(scale=1, page=current) -> PNG data URL', renderCanvas:'renderCanvas(scale,page) -> canvas',
   exportFile:'exportFile(kind, opts) -> Promise<Blob>. kind: png | jpg | gif | sheet | pdf | video. opts: {scale, page, cols, pad, loops}',
-  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?, refCanvas|refSrc?, refStrength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. refCanvas/refSrc: style-board workaround for a new subject (not IP-Adapter; FLUX.1-schnell has no style encoder); refStrength 0.15-0.85 default 0.55. init on mode new switches to sketch. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue with art_loop.py or git. Jobs must land on main to render. Use mode 3d with an image id for a public textured GLB draft.',
+  forge:'forge({prompt, mode:"new"|"sketch"|"edit"|"expand"|"upscale"|"bg", id?, mask?, w,h,n, seed?, tile?, strength?, refCanvas|refSrc?, refStrength?}) -> Promise<jobId>. sketch: img2img from image id (or the whole frame when no id); strength 0.3-0.95 (default 0.87), lower = closer; a flat sketch needs >=0.75 or it stays flat. tile: seamless. seed: lock it to repeat a picture. bg: new background behind a cut-out id. refCanvas/refSrc: style-board workaround for a new subject (not IP-Adapter; FLUX.1-schnell has no style encoder); refStrength 0.15-0.85 default 0.55. game:"lethemoor"|"duffquest" (+ name?): the runner also drops each finished take into that game repo\'s grok_art/<date>-foxboard/<name>-<k>.png (needs the GAME_PUSH_TOKEN secret; result in forge/results/<id>/<k>.sent.json). init on mode new switches to sketch. AI on free GitHub runners (~5-15 min, public). Needs the GitHub connector in the app; Claude can also queue with art_loop.py or git. Jobs must land on main to render. Use mode 3d with an image id for a public textured GLB draft.',
   meshStatus:'meshStatus(jobId) -> checks the 3D job and returns its local status and meshReady flag',
   forgeFiles:'forgeFiles(same opts as forge) -> {jid, files:{repoPath: content}, local}: the job files without sending (Claude commits them with git)',
   vary:'vary(jobId, k, "subtle"|"strong") -> Promise<jobId>. Variations of one Forge take (same prompt, seed kept)',
