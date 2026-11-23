@@ -50,6 +50,8 @@ tool on the Foxboard artifact (see the foxboard-link skill). Verified live Nov 1
 
 ### Generate a 3D draft
 
+See [Forge 3D image prep](docs/forge-3d-image-prep.md) for reference framing, pose, bust crops, and review checks.
+
 Select one image layer, open its image tools, and tap **Generate 3D draft**. Confirm the public upload inside Claude with the GitHub connector enabled. **AI › Forge › Check now** shows when the GLB is ready to download. The reference and result are public in this repository.
 
 The separate **Forge 3D** workflow uses TripoSR on a CPU runner and bakes a texture into the GLB. It produces an unrigged draft for review and cleanup in Blender. It does not send models to a game automatically. For scripting, use `Foxboard.forge({mode:'3d', id})` and `Foxboard.meshStatus(jobId)`.
