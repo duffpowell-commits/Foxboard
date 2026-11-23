@@ -53,3 +53,14 @@ tool on the Foxboard artifact (see the foxboard-link skill). Verified live Nov 1
 Select one image layer, open its image tools, and tap **Generate 3D draft**. Confirm the public upload inside Claude with the GitHub connector enabled. **AI › Forge › Check now** shows when the GLB is ready to download. The reference and result are public in this repository.
 
 The separate **Forge 3D** workflow uses TripoSR on a CPU runner and bakes a texture into the GLB. It produces an unrigged draft for review and cleanup in Blender. It does not send models to a game automatically. For scripting, use `Foxboard.forge({mode:'3d', id})` and `Foxboard.meshStatus(jobId)`.
+
+### Texture and render a 3D model
+
+Open **AI › 3D Texture Studio** and choose a self-contained GLB, or use **Open in Texture Studio** on a finished Forge 3D job. The studio processes the model and image maps in your browser. Your imported assets stay on your device.
+
+1. Orbit or pinch to zoom. Review the model under studio, warm sidelight, and dim lighting.
+2. Choose a material. Import base color, tangent-space normal, grayscale roughness, grayscale metallic, or ambient occlusion maps. Use UV-mapped meshes and export normal maps with the glTF/OpenGL convention. The roughness and metallic sliders multiply their imported maps.
+3. Choose **Paint base color** to touch up the model on its surface. **Undo stroke** restores up to four recent strokes. Use **Bake relief normal** for stylized surface detail derived from base-color brightness. Export before closing the studio to keep your edits.
+4. Save a preview PNG or export the textured GLB with embedded maps. Import the GLB into your Godot project and inspect it under the game's lighting.
+
+The studio opens self-contained GLB 2.0 models with standard glTF materials. Use Forge for image-to-mesh drafts. UV creation, mesh cleanup and rigging remain separate steps.
