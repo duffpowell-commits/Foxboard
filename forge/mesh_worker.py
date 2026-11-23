@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from pathlib import Path
 
 from PIL import Image
@@ -28,6 +29,23 @@ def read_image(path):
         return image.convert("RGBA")
 
 
+def parse_triposr_timings(log):
+    """Read the stage timings emitted by the pinned TripoSR runner."""
+    stages = {
+        "Initializing model": "model_load",
+        "Processing images": "image_processing",
+        "Running model": "inference",
+        "Extracting mesh": "mesh_extraction",
+        "Baking texture": "texture_bake",
+        "Exporting mesh and texture": "intermediate_export",
+    }
+    return {
+        stages[name]: round(float(milliseconds) / 1000, 3)
+        for name, milliseconds in re.findall(r" - INFO - ([^\n]+?) finished in ([0-9.]+)ms\.", log)
+        if name in stages
+    }
+
+
 def render(job, dest):
     if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,63}", job.stem):
         raise ValueError("Invalid job ID")
@@ -38,13 +56,19 @@ def render(job, dest):
     with tempfile.TemporaryDirectory() as temp:
         temp = Path(temp)
         source = temp / "source.png"
+        started = time.perf_counter()
         read_image(job.with_suffix(".init.b64")).save(source)
-        subprocess.run(
+        timings = {"reference_decode": round(time.perf_counter() - started, 3)}
+        process = subprocess.run(
             [sys.executable, str(root / "run.py"), str(source), "--device", "cpu",
              "--pretrained-model-name-or-path", str(weights), "--mc-resolution", "144",
              "--bake-texture", "--texture-resolution", "1024", "--output-dir", str(temp)],
-            cwd=root, check=True, timeout=480,
+            cwd=root, stderr=subprocess.PIPE, text=True, timeout=480,
         )
+        print(process.stderr, file=sys.stderr, end="", flush=True)
+        process.check_returncode()
+        timings.update(parse_triposr_timings(process.stderr))
+        started = time.perf_counter()
         output = temp / "0"
         mesh = trimesh.load_mesh(output / "mesh.obj", process=False)
         if len(mesh.faces) == 0 or mesh.visual.uv is None:
@@ -58,6 +82,8 @@ def render(job, dest):
         # TripoSR is Z-up. glTF expects Y-up.
         mesh.apply_transform(trimesh.transformations.rotation_matrix(-1.5707963267948966, [1, 0, 0]))
         mesh.export(dest / "model.glb")
+        timings["glb_export"] = round(time.perf_counter() - started, 3)
+        return timings
 
 
 def main():
@@ -79,15 +105,22 @@ def main():
         if status.exists():
             continue
         dest.mkdir(parents=True, exist_ok=True)
+        started = time.perf_counter()
+        timings = {}
         try:
-            render(job, dest)
+            timings = render(job, dest)
             result = "done"
         except Exception as exc:
             print(f"{job.name}: {exc}", file=sys.stderr)
             (dest / "model.glb").unlink(missing_ok=True)
             result = "failed"
             failed = True
-        status.write_text(json.dumps({"status": result}) + "\n")
+        timings["job_total"] = round(time.perf_counter() - started, 3)
+        setup_seconds = os.environ.get("FORGE_SETUP_SECONDS")
+        if setup_seconds is not None:
+            timings["runner_setup"] = int(setup_seconds)
+        print(f"{job.stem} timing (seconds): {json.dumps(timings)}", flush=True)
+        status.write_text(json.dumps({"status": result, "timings_seconds": timings}) + "\n")
     return int(failed)
 
 

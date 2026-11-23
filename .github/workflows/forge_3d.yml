@@ -42,6 +42,7 @@ jobs:
       - name: Install CPU reconstruction dependencies
         if: steps.queue.outputs.pending == 'true'
         run: |
+          setup_started=$SECONDS
           export TRIPOSR_ROOT="$RUNNER_TEMP/triposr" TRIPOSR_WEIGHTS="$RUNNER_TEMP/triposr-weights" U2NET_HOME="$RUNNER_TEMP/rembg"
           printf '%s=%s\n' TRIPOSR_ROOT "$TRIPOSR_ROOT" TRIPOSR_WEIGHTS "$TRIPOSR_WEIGHTS" U2NET_HOME "$U2NET_HOME" >> "$GITHUB_ENV"
           python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch==2.15.0'
@@ -57,6 +58,7 @@ jobs:
           hf download stabilityai/TripoSR config.yaml model.ckpt --revision 5b521936b01fbe1890f6f9baed0254ab6351c04a --local-dir "$TRIPOSR_WEIGHTS"
           mkdir -p "$U2NET_HOME"
           curl -fsSL --retry 3 https://github.com/danielgatis/rembg/releases/download/v0.0.0/u2netp.onnx -o "$U2NET_HOME/u2netp.onnx"
+          echo "FORGE_SETUP_SECONDS=$((SECONDS - setup_started))" >> "$GITHUB_ENV"
       - name: Generate and publish textured drafts
         if: steps.queue.outputs.pending == 'true'
         run: |
