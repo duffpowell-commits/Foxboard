@@ -25,7 +25,7 @@ const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#14151b');g.addColor
 const u=Math.min(w,h),vertical=h>w,pad=u*.06;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,u*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
 ctx.textAlign='center';ctx.textBaseline='alphabetic';
 const ctaH=u*.1,ctaY=h-pad-u*.07-ctaH,inner=w-2*pad-u*.08;
-const title=wrap($('game').value.toUpperCase(),vertical?14:22).slice(0,3),hook=wrap($('hook').value.toUpperCase(),vertical?26:44).slice(0,3);
+const title=wrap($('game').value.toUpperCase(),vertical?14:22),hook=wrap($('hook').value.toUpperCase(),vertical?26:44).slice(0,3);
 const logoBox=logo?u*(vertical?.22:.2):0;
 const need=k=>(logo?logoBox+u*.03:0)+u*.05*k+title.length*u*.115*k+u*.03+hook.length*u*.055*k;
 const space=ctaY-u*.04-(pad+u*.05);let k=1;while(k>.5&&need(k)>space)k-=.05;
