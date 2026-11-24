@@ -21,14 +21,22 @@ function wrap(s,max){const words=s.trim().split(/\s+/);let lines=[''];for(const 
 function draw(){
 const [w,h]=dims[$('layout').value];canvas.width=w;canvas.height=h;
 const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#14151b');g.addColorStop(1,'#30251c');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-const pad=w*.08;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,w*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
-const vertical=h>w;const top=vertical?h*.19:h*.20;ctx.textAlign='center';
-const box=Math.min(w*.3,h*.23);if(logo){const ratio=Math.min(box/logo.width,box/logo.height);ctx.drawImage(logo,(w-logo.width*ratio)/2,top-box*.8,logo.width*ratio,logo.height*ratio)}
-ctx.fillStyle='#e0b66a';ctx.font='bold '+Math.round(w*.033)+'px system-ui';ctx.fillText('3 EYED FOX STUDIOS',w/2,top+(logo?box*.35:0));
-ctx.fillStyle='#fff4d9';ctx.font='900 '+Math.round(w*.085)+'px system-ui';const title=wrap($('game').value.toUpperCase(),16);title.forEach((line,i)=>ctx.fillText(line,w/2,h*(vertical?.40:.43)+i*w*.10,w*.82));
-ctx.fillStyle='#dfc79f';ctx.font='bold '+Math.round(w*.037)+'px system-ui';wrap($('hook').value.toUpperCase(),30).forEach((line,i)=>ctx.fillText(line,w/2,h*(vertical?.63:.66)+i*w*.05,w*.80));
-ctx.fillStyle='#e9bc72';ctx.fillRect(w*.22,h*.80,w*.56,h*.075);ctx.fillStyle='#1b1512';ctx.font='bold '+Math.round(w*.038)+'px system-ui';ctx.fillText($('cta').value.toUpperCase(),w/2,h*.846,w*.52);
-ctx.fillStyle='#b3a58f';ctx.font=Math.round(w*.018)+'px system-ui';ctx.fillText('© 3 EYED FOX STUDIOS',w/2,h*.95);
+// Why u (Nov 23 review): sizes scaled with width overflowed the landscape cards; scale with the short side and stack top-down.
+const u=Math.min(w,h),vertical=h>w,pad=u*.06;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,u*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
+ctx.textAlign='center';ctx.textBaseline='alphabetic';
+const ctaH=u*.1,ctaY=h-pad-u*.07-ctaH,inner=w-2*pad-u*.08;
+const title=wrap($('game').value.toUpperCase(),vertical?14:22).slice(0,3),hook=wrap($('hook').value.toUpperCase(),vertical?26:44).slice(0,3);
+const logoBox=logo?u*(vertical?.22:.2):0;
+const need=k=>(logo?logoBox+u*.03:0)+u*.05*k+title.length*u*.115*k+u*.03+hook.length*u*.055*k;
+const space=ctaY-u*.04-(pad+u*.05);let k=1;while(k>.5&&need(k)>space)k-=.05;
+let y=pad+u*.05+Math.max(0,(space-need(k))*.5);
+if(logo){const r=Math.min(logoBox/logo.width,logoBox/logo.height);ctx.drawImage(logo,(w-logo.width*r)/2,y,logo.width*r,logo.height*r);y+=logoBox+u*.03}
+ctx.fillStyle='#e0b66a';ctx.font='bold '+Math.round(u*.038*k)+'px system-ui';y+=u*.04*k;ctx.fillText('3 EYED FOX STUDIOS',w/2,y,inner);y+=u*.01*k;
+ctx.fillStyle='#fff4d9';ctx.font='900 '+Math.round(u*.1*k)+'px system-ui';title.forEach(line=>{y+=u*.115*k;ctx.fillText(line,w/2,y-u*.015*k,inner)});
+y+=u*.03;ctx.fillStyle='#dfc79f';ctx.font='bold '+Math.round(u*.042*k)+'px system-ui';hook.forEach(line=>{y+=u*.055*k;ctx.fillText(line,w/2,y,inner)});
+const ctaW=Math.min(inner,u*(vertical?.62:.75));ctx.fillStyle='#e9bc72';ctx.fillRect((w-ctaW)/2,ctaY,ctaW,ctaH);
+ctx.fillStyle='#1b1512';ctx.font='bold '+Math.round(u*.045)+'px system-ui';ctx.textBaseline='middle';ctx.fillText($('cta').value.toUpperCase(),w/2,ctaY+ctaH/2,ctaW*.9);
+ctx.textBaseline='alphabetic';ctx.fillStyle='#b3a58f';ctx.font=Math.round(u*.022)+'px system-ui';ctx.fillText('© 3 EYED FOX STUDIOS',w/2,h-pad*.35);
 }
 ['layout','game','hook','cta'].forEach(id=>$(id).addEventListener('input',draw));
 $('logo').addEventListener('change',async e=>{const file=e.target.files[0];if(!file){logo=null;draw();return}if(!file.type.startsWith('image/'))return;const url=URL.createObjectURL(file);try{const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});logo=img;draw()}finally{URL.revokeObjectURL(url)}});
