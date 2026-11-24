@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foxboard Studio Marketing Templates</title>
+<style>body{margin:0;background:#101116;color:#f5e7ce;font:16px system-ui;padding:16px;max-width:760px;margin:auto}label{display:block;margin:12px 0}input,select,textarea,button{box-sizing:border-box;width:100%;padding:12px;background:#22252c;color:white;border:1px solid #80643c;border-radius:8px;font:inherit}button{background:#b78a40;color:#14110b;font-weight:700}canvas{display:block;max-width:100%;max-height:55vh;margin:16px auto;background:#17151b;border:1px solid #80643c}small{color:#bdb5aa}</style>
+<h1>3 Eyed Fox Studios · Campaign Art</h1>
+<p>Mobile-friendly static card maker. Export PNG assets for Foxboard editing or approved video end cards. No publishing, account access, or automatic scheduling.</p>
+<label>Layout<select id="layout"><option value="short">Vertical short / reel · 1080×1920</option><option value="end">Trailer end card · 1920×1080</option><option value="thumb">Thumbnail · 1280×720</option></select></label>
+<label>Game title<input id="game" value="DUFF QUEST" maxlength="48"></label>
+<label>Hook / headline<input id="hook" value="THE DINER IS GETTING WEIRD" maxlength="100"></label>
+<label>Call to action<input id="cta" value="PLAY THE DEMO" maxlength="48"></label>
+<label>Approved logo image (optional)<input id="logo" type="file" accept="image/png,image/jpeg,image/webp"></label>
+<button id="export">Export PNG</button>
+<small>Brand artwork must be owner-approved. The optional uploaded logo is used only in this browser session. No logo is invented.</small>
+<canvas id="card" aria-label="Marketing card preview"></canvas>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),canvas=$('card'),ctx=canvas.getContext('2d');
+let logo=null;
+const dims={short:[1080,1920],end:[1920,1080],thumb:[1280,720]};
+function wrap(s,max){const words=s.trim().split(/\s+/);let lines=[''];for(const w of words){let last=lines.length-1;if((lines[last]+' '+w).trim().length>max&&lines[last])lines.push(w);else lines[last]=(lines[last]+' '+w).trim();}return lines}
+function draw(){
+const [w,h]=dims[$('layout').value];canvas.width=w;canvas.height=h;
+const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#14151b');g.addColorStop(1,'#30251c');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+// Why u (Nov 23 review; nothing is cut, text shrinks to fit): sizes scaled with width overflowed the landscape cards; scale with the short side and stack top-down.
+const u=Math.min(w,h),vertical=h>w,pad=u*.06;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,u*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
+ctx.textAlign='center';ctx.textBaseline='alphabetic';
+const ctaH=u*.1,ctaY=h-pad-u*.07-ctaH,inner=w-2*pad-u*.08;
+const title=wrap($('game').value.toUpperCase(),vertical?14:22),hook=wrap($('hook').value.toUpperCase(),vertical?26:44);
+const logoBox=logo?u*(vertical?.22:.2):0;
+const need=k=>(logo?logoBox+u*.03:0)+u*.05*k+title.length*u*.115*k+u*.03+hook.length*u*.055*k;
+const space=ctaY-u*.04-(pad+u*.05);let k=1;while(k>.3&&need(k)>space)k-=.05;
+let y=pad+u*.05+Math.max(0,(space-need(k))*.5);
+if(logo){const r=Math.min(logoBox/logo.width,logoBox/logo.height);ctx.drawImage(logo,(w-logo.width*r)/2,y,logo.width*r,logo.height*r);y+=logoBox+u*.03}
+ctx.fillStyle='#e0b66a';ctx.font='bold '+Math.round(u*.038*k)+'px system-ui';y+=u*.04*k;ctx.fillText('3 EYED FOX STUDIOS',w/2,y,inner);y+=u*.01*k;
+ctx.fillStyle='#fff4d9';ctx.font='900 '+Math.round(u*.1*k)+'px system-ui';title.forEach(line=>{y+=u*.115*k;ctx.fillText(line,w/2,y-u*.015*k,inner)});
+y+=u*.03;ctx.fillStyle='#dfc79f';ctx.font='bold '+Math.round(u*.042*k)+'px system-ui';hook.forEach(line=>{y+=u*.055*k;ctx.fillText(line,w/2,y,inner)});
+const ctaW=Math.min(inner,u*(vertical?.62:.75));ctx.fillStyle='#e9bc72';ctx.fillRect((w-ctaW)/2,ctaY,ctaW,ctaH);
+ctx.fillStyle='#1b1512';ctx.font='bold '+Math.round(u*.045)+'px system-ui';ctx.textBaseline='middle';ctx.fillText($('cta').value.toUpperCase(),w/2,ctaY+ctaH/2,ctaW*.9);
+ctx.textBaseline='alphabetic';ctx.fillStyle='#b3a58f';ctx.font=Math.round(u*.022)+'px system-ui';ctx.fillText('© 3 EYED FOX STUDIOS',w/2,h-pad*.35);
+}
+['layout','game','hook','cta'].forEach(id=>$(id).addEventListener('input',draw));
+$('logo').addEventListener('change',async e=>{const file=e.target.files[0];if(!file){logo=null;draw();return}if(!file.type.startsWith('image/'))return;const url=URL.createObjectURL(file);try{const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});logo=img;draw()}finally{URL.revokeObjectURL(url)}});
+$('export').addEventListener('click',()=>{draw();canvas.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='3-eyed-fox-'+$('layout').value+'.png';a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)},'image/png')});
+draw();
+</script>
