@@ -17,18 +17,18 @@
 const $=id=>document.getElementById(id),canvas=$('card'),ctx=canvas.getContext('2d');
 let logo=null;
 const dims={short:[1080,1920],end:[1920,1080],thumb:[1280,720]};
-function wrap(s,max){const words=s.trim().split(/\s+/);let lines=[''];for(const w of words){let last=lines.length-1;if((lines[last]+' '+w).trim().length>max&&lines[last])lines.push(w);else lines[last]=(lines[last]+' '+w).trim();}return lines.slice(0,4)}
+function wrap(s,max){const words=s.trim().split(/\s+/);let lines=[''];for(const w of words){let last=lines.length-1;if((lines[last]+' '+w).trim().length>max&&lines[last])lines.push(w);else lines[last]=(lines[last]+' '+w).trim();}return lines}
 function draw(){
 const [w,h]=dims[$('layout').value];canvas.width=w;canvas.height=h;
 const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#14151b');g.addColorStop(1,'#30251c');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
-// Why u (Nov 23 review): sizes scaled with width overflowed the landscape cards; scale with the short side and stack top-down.
+// Why u (Nov 23 review; nothing is cut, text shrinks to fit): sizes scaled with width overflowed the landscape cards; scale with the short side and stack top-down.
 const u=Math.min(w,h),vertical=h>w,pad=u*.06;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,u*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
 ctx.textAlign='center';ctx.textBaseline='alphabetic';
 const ctaH=u*.1,ctaY=h-pad-u*.07-ctaH,inner=w-2*pad-u*.08;
-const title=wrap($('game').value.toUpperCase(),vertical?14:22),hook=wrap($('hook').value.toUpperCase(),vertical?26:44).slice(0,3);
+const title=wrap($('game').value.toUpperCase(),vertical?14:22),hook=wrap($('hook').value.toUpperCase(),vertical?26:44);
 const logoBox=logo?u*(vertical?.22:.2):0;
 const need=k=>(logo?logoBox+u*.03:0)+u*.05*k+title.length*u*.115*k+u*.03+hook.length*u*.055*k;
-const space=ctaY-u*.04-(pad+u*.05);let k=1;while(k>.5&&need(k)>space)k-=.05;
+const space=ctaY-u*.04-(pad+u*.05);let k=1;while(k>.3&&need(k)>space)k-=.05;
 let y=pad+u*.05+Math.max(0,(space-need(k))*.5);
 if(logo){const r=Math.min(logoBox/logo.width,logoBox/logo.height);ctx.drawImage(logo,(w-logo.width*r)/2,y,logo.width*r,logo.height*r);y+=logoBox+u*.03}
 ctx.fillStyle='#e0b66a';ctx.font='bold '+Math.round(u*.038*k)+'px system-ui';y+=u*.04*k;ctx.fillText('3 EYED FOX STUDIOS',w/2,y,inner);y+=u*.01*k;
