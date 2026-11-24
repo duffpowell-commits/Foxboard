@@ -23,7 +23,7 @@ const [w,h]=dims[$('layout').value];canvas.width=w;canvas.height=h;
 const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#14151b');g.addColorStop(1,'#30251c');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
 const pad=w*.08;ctx.strokeStyle='#bb914d';ctx.lineWidth=Math.max(4,w*.004);ctx.strokeRect(pad,pad,w-2*pad,h-2*pad);
 const vertical=h>w;const top=vertical?h*.19:h*.20;ctx.textAlign='center';
-if(logo){const box=Math.min(w*.3,h*.23),ratio=Math.min(box/logo.width,box/logo.height);ctx.drawImage(logo,(w-logo.width*ratio)/2,top-box*.8,logo.width*ratio,logo.height*ratio)}
+const box=Math.min(w*.3,h*.23);if(logo){const ratio=Math.min(box/logo.width,box/logo.height);ctx.drawImage(logo,(w-logo.width*ratio)/2,top-box*.8,logo.width*ratio,logo.height*ratio)}
 ctx.fillStyle='#e0b66a';ctx.font='bold '+Math.round(w*.033)+'px system-ui';ctx.fillText('3 EYED FOX STUDIOS',w/2,top+(logo?box*.35:0));
 ctx.fillStyle='#fff4d9';ctx.font='900 '+Math.round(w*.085)+'px system-ui';const title=wrap($('game').value.toUpperCase(),16);title.forEach((line,i)=>ctx.fillText(line,w/2,h*(vertical?.40:.43)+i*w*.10,w*.82));
 ctx.fillStyle='#dfc79f';ctx.font='bold '+Math.round(w*.037)+'px system-ui';wrap($('hook').value.toUpperCase(),30).forEach((line,i)=>ctx.fillText(line,w/2,h*(vertical?.63:.66)+i*w*.05,w*.80));
