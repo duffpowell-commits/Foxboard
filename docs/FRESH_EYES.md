@@ -17,6 +17,9 @@ they're not gated.
      `window.Foxboard` command + an `API_DOC` line, works by touch at 390px and in WebKit, degrades
      without `window.claude`, db rules/capabilities unchanged unless that's the point.
    - Trust the diff, not the claim: `tools/claude/check.sh` was actually run; look at the screenshots.
+   - Rule lock (Nov 24): the head commit has a `rule-lock` status. Missing = block (the workflow was
+     deleted or crashed). If it passed on `duff-ok`, the label's events (`issues/<n>/events`) show it
+     was added after the last push, by a tap, with no agent message near it asking for or adding it.
    - A PR that changes CLAUDE.md's rules says so in its body and is Duff's call.
 3. Blocking findings: fix, push, review again (new commit = new review).
 4. No blockers: post a PR review (event COMMENT) on the head commit whose body starts with
