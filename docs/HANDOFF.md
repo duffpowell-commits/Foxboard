@@ -21,13 +21,12 @@ why: `docs/DECISIONS.md`. Outbox delivery: `SWEEP.md`.
   - **#10 in-browser 3D Texture Studio: needs Duff.** It conflicts with main and breaks the "no CDNs
     except Google Fonts" rule, so it can't merge as is. Duff decides: allow the CDN (a rule change, his
     tap) or rebuild it without one.
-  - #1 (Nov 19, Claude link): old; the feature shipped another way. Leave it for Duff to close.
+  - #1 (Nov 19, Claude link): old. A Claude link is already on main (CLAUDE.md "Claude link"), so diff it against main before doing anything; leave it for Duff.
 
 ## Next steps, in order
 1. Duff's call on #10 (above).
 2. Keep Forge healthy: a hung render becomes a failed take after 3x its expected time; check
    `forge/results/<id>/done.json` and `tools/claude/forge_wait.py` before assuming a job is lost.
-3. The nightly Meshy backup needs `MESHY_API_KEY` in the cloud env (Duff adds it; not set yet).
 
 ## Build and test
 - No build step. Tests: `tools/claude/check.sh` (Chromium, then WebKit, then 390px screenshots in
