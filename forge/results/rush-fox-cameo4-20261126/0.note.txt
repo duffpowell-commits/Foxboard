@@ -1,0 +1,1 @@
+style board from forge/jobs/rush-fox-cameo4-20261126.ref.b64 (ref_strength=0.5, img2img strength=0.82); not IP-Adapter
