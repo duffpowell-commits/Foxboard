@@ -12,14 +12,17 @@ The owner corrected the right-forearm tattoo on 2026-11-26; use the updated trai
 ## Must-keep traits (paste verbatim)
 
 ```
-Duff: man in his early 30s, average build, fair freckled skin, reddish-blond stubble, strawberry-blond hair with a long swept top and shaved undercut sides; a geometric fox tattoo on the neck, a geometric mandala blackwork full sleeve on his LEFT arm and illustrative tattoos on his RIGHT forearm: a large charcoal-blue snarling multi-eyed canine head, amber-orange eyes and markings, curled pink-red tongue, ochre autumn leaves and faded wrist script; round ear plugs with gold and black helix rings; plain black t-shirt with no graphic, dark jeans, worn black boots, a faded red bandana tied loosely at the neck. Do not mirror: the mandala sleeve is on his left arm.
+Duff: man in his early 30s, average build, fair freckled skin, reddish-blond stubble, strawberry-blond hair with a long swept top and shaved undercut sides; a geometric fox tattoo on the neck, a geometric mandala blackwork full sleeve on his LEFT arm and illustrative tattoos on his RIGHT forearm: a large charcoal-blue snarling seven-eyed wolf head, amber-orange eyes and markings, curled pink-red tongue, ochre autumn leaves and faded wrist script; large black ear plugs with gold rims and exactly four closed gold/black/gold/black helix hoops threaded through each ear cartilage, never floating; plain black t-shirt with no graphic, dark jeans, worn black boots, a faded red bandana tied loosely at the neck. Do not mirror: the mandala sleeve is on his left arm.
 ```
 
 ## Laterality (character's own left/right)
 
 - Mandala blackwork full sleeve: **his LEFT arm** (viewer's right in the front view, viewer's left in the back view).
-- Illustrative tattoos: dark multi-eyed canine head, amber-orange eyes, curled pink-red tongue, ochre autumn leaves and faded wrist script: **his RIGHT arm**.
+- Illustrative tattoos: dark seven-eyed wolf head, amber-orange eyes, curled pink-red tongue, ochre autumn leaves and faded wrist script: **his RIGHT arm**.
 - Geometric fox: front/side of the neck, centred.
+- Right hand: large black ornate script across the back, match the owner's reference without inventing words.
+- Left hand: blackwork eye at the center of a geometric sunburst mandala, with black geometric finger accents; connects to the sleeve.
+- Seven-eyed wolf is confined to the right forearm between elbow and wrist, not the upper arm.
 - Red bandana: knotted at the front of the neck, centred.
 
 ## Avoid
