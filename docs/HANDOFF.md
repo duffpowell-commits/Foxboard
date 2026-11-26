@@ -2,7 +2,7 @@
 
 Plain handoff for any coding AI (Claude, Grok, Codex...) or person. Duff, Nov 26, 2026: "keep logs
 for another ai to build where you stop". Update this file in every code PR. The rules and the detail
-of every feature are in `CLAUDE.md` (rule-locked: changes need Duff's `duff-ok` label). History and
+of every feature are in `CLAUDE.md` (its rules are rule-locked: changing them needs Duff's `duff-ok` label). History and
 why: `docs/DECISIONS.md`. Outbox delivery: `SWEEP.md`.
 
 ## Current state (checked 2026-11-26)
@@ -15,7 +15,7 @@ why: `docs/DECISIONS.md`. Outbox delivery: `SWEEP.md`.
   `python3 tools/build_site.py`, push, purge jsDelivr).
 - Forge is busy daily: most commits on main are job/result commits (`forge/jobs/**`, `forge/results/**`),
   pushed straight to main by design. Code still goes through a PR.
-- Last code merges: #9 textured 3D drafts, #11 marketing card generator, #12-#13 Forge timing +
+- Last code merges: #7 Quase art library, #9 textured 3D drafts, #11 marketing card generator, #12-#13 Forge timing +
   auto-send to game repos, #14 fresh-eyes gate, #15 rule lock (Nov 23-25).
 - Open PRs:
   - **#10 in-browser 3D Texture Studio: needs Duff.** It conflicts with main and breaks the "no CDNs
